@@ -1,0 +1,184 @@
+<template>
+  <Loading v-if="loading" />
+  <div v-else class="max-w-5xl mx-auto space-y-6">
+    <div class="card p-6">
+      <div class="flex items-start justify-between mb-6">
+        <div>
+          <div class="flex items-center gap-3">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Venta #{{ sale.sale_number || sale.invoice_number || sale.id?.substring(0, 8) }}</h2>
+            <span class="badge text-sm px-3 py-1" :class="sale.status === 'completed' ? 'badge-green' : sale.status === 'cancelled' ? 'badge-red' : 'badge-yellow'">
+              {{ sale.status === 'completed' ? 'Completada' : sale.status === 'cancelled' ? 'Cancelada' : 'Pendiente' }}
+            </span>
+          </div>
+          <p class="text-sm text-gray-500 mt-1">{{ formatDateTime(sale.created_at) }}</p>
+        </div>
+      </div>
+
+      <!-- Client Info -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 text-sm bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4">
+        <div>
+          <span class="text-gray-400 block text-xs">Cliente</span>
+          <span class="font-medium text-gray-900 dark:text-white">{{ sale.clients?.name || sale.client_name || 'Cliente General' }}</span>
+        </div>
+        <div>
+          <span class="text-gray-400 block text-xs">Tipo de Pago</span>
+          <span class="font-medium text-gray-900 dark:text-white">{{ sale.payment_method || sale.payment_type || '-' }}</span>
+        </div>
+        <div>
+          <span class="text-gray-400 block text-xs">Cajero</span>
+          <span class="font-medium text-gray-900 dark:text-white">{{ sale.users?.name || sale.user_name || '-' }}</span>
+        </div>
+      </div>
+
+      <!-- Items with product info from products table -->
+      <h3 class="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+        <span class="material-icons-outlined text-primary-500">inventory_2</span>
+        Productos ({{ sale.sale_items?.length || sale.items?.length || 0 }})
+      </h3>
+
+      <!-- Desktop -->
+      <div class="hidden md:block overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50 dark:bg-gray-700/50 border-y border-gray-200 dark:border-gray-700">
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Producto</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">SKU / Barra</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Cant.</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Precio U.</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            <tr v-for="item in items" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/20">
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0">
+                    <img v-if="getProductImage(item)" :src="getProductImage(item)" class="w-full h-full object-cover" alt="" />
+                    <span v-else class="flex items-center justify-center h-full text-gray-400">
+                      <span class="material-icons-outlined text-lg">inventory_2</span>
+                    </span>
+                  </div>
+                  <div>
+                    <p class="font-medium text-gray-900 dark:text-white">{{ item.product_name || item.products?.name }}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="text-xs font-mono text-gray-500">
+                  <div v-if="item.sku || item.products?.sku">SKU: {{ item.sku || item.products?.sku }}</div>
+                  <div v-if="item.products?.barcode" class="flex items-center gap-1 mt-0.5">
+                    <span class="material-icons-outlined text-xs">qr_code_scanner</span>
+                    {{ item.products.barcode }}
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3 text-right font-medium">{{ item.quantity }}</td>
+              <td class="px-4 py-3 text-right">{{ formatCurrency(item.unit_price || item.price) }}</td>
+              <td class="px-4 py-3 text-right font-medium text-primary-600 dark:text-primary-400">
+                {{ formatCurrency(item.total || (item.quantity * (item.unit_price || item.price))) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile -->
+      <div class="md:hidden space-y-3">
+        <div v-for="item in items" :key="item.id"
+          class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-3">
+          <div class="flex items-start gap-3">
+            <div class="w-12 h-12 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-600 shrink-0">
+              <img v-if="getProductImage(item)" :src="getProductImage(item)" class="w-full h-full object-cover" alt="" />
+              <span v-else class="flex items-center justify-center h-full text-gray-400">
+                <span class="material-icons-outlined">inventory_2</span>
+              </span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-gray-900 dark:text-white truncate">{{ item.product_name || item.products?.name }}</p>
+              <div class="flex flex-wrap gap-2 mt-1 text-xs text-gray-500">
+                <span v-if="item.sku || item.products?.sku" class="font-mono">SKU: {{ item.sku || item.products?.sku }}</span>
+                <span v-if="item.products?.barcode" class="font-mono flex items-center gap-1">
+                  <span class="material-icons-outlined text-xs">qr_code_scanner</span>
+                  {{ item.products.barcode }}
+                </span>
+              </div>
+              <div class="flex justify-between items-center mt-2 text-sm">
+                <span>{{ item.quantity }} x {{ formatCurrency(item.unit_price || item.price) }}</span>
+                <span class="font-bold text-primary-600 dark:text-primary-400">
+                  {{ formatCurrency(item.total || (item.quantity * (item.unit_price || item.price))) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end border-t border-gray-200 dark:border-gray-700 pt-4">
+        <div class="w-64 space-y-1 text-sm">
+          <div class="flex justify-between"><span class="text-gray-500">Subtotal</span><span class="font-medium">{{ formatCurrency(sale.subtotal) }}</span></div>
+          <div class="flex justify-between"><span class="text-gray-500">IVA</span><span class="font-medium">{{ formatCurrency(sale.tax) }}</span></div>
+          <div class="flex justify-between text-lg font-bold pt-1 border-t"><span>Total</span><span class="text-primary-600">{{ formatCurrency(sale.total) }}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-3">
+      <router-link :to="`/invoices/${sale.invoice_id}`" v-if="sale.invoice_id" class="btn btn-primary">Ver Factura</router-link>
+      <button v-if="sale.status === 'completed'" @click="handleCancel" class="btn btn-danger">Anular Venta</button>
+      <router-link to="/app/sales" class="btn btn-secondary">Volver</router-link>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { normalizeSale } from '../../utils';
+import { useRoute, useRouter } from 'vue-router';
+import { salesAPI } from '../../api';
+import Loading from '../../components/shared/Loading.vue';
+import { formatCurrency, formatDateTime } from '../../utils';
+import Swal from 'sweetalert2';
+
+const route = useRoute();
+const router = useRouter();
+const sale = ref({});
+const loading = ref(true);
+
+const items = computed(() => sale.value.sale_items || sale.value.items || []);
+
+const getProductImage = (item) => {
+  if (item.products?.images && Array.isArray(item.products.images)) {
+    const first = item.products.images[0];
+    return typeof first === 'string' ? first : first?.url || '';
+  }
+  if (item.products?.images && typeof item.products.images === 'string') {
+    try {
+      const parsed = JSON.parse(item.products.images);
+      const first = Array.isArray(parsed) ? parsed[0] : parsed;
+      return typeof first === 'string' ? first : first?.url || '';
+    } catch { /* ignore */ }
+  }
+  return '';
+};
+
+const handleCancel = async () => {
+  const result = await Swal.fire({ title: '¿Anular venta?', text: 'Esta acción no se puede deshacer', icon: 'warning', showCancelButton: true });
+  if (result.isConfirmed) {
+    try {
+      await salesAPI.cancel(route.params.id);
+      await Swal.fire('Anulada', 'La venta ha sido anulada', 'success');
+      router.push('/app/sales');
+    } catch (e) {
+      Swal.fire('Error', 'No se pudo anular la venta', 'error');
+    }
+  }
+};
+
+onMounted(async () => {
+  try {
+    const res = await salesAPI.getById(route.params.id);
+    sale.value = normalizeSale(res.data || {});
+  } catch (e) { /* ignore */ }
+  finally { loading.value = false; }
+});
+</script>

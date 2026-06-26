@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+*.log
+logs/
+reports/
+invoices/
+.DS_Store
+*.pid
+coverage/
+.nyc_output/
