@@ -1,30 +1,30 @@
 <template>
   <Loading v-if="loading" />
   <div v-else class="max-w-4xl mx-auto">
-    <div class="card p-6 mb-6">
+    <div class="dt-card p-6 mb-6">
       <div class="flex items-start justify-between mb-4">
         <div>
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ client.name }}</h2>
-          <p class="text-sm text-gray-500">{{ client.document_type || 'CC' }}: {{ client.document_id }}</p>
+          <h2 class="dt-headline" style="margin-bottom: 0;">{{ client.name }}</h2>
+          <p class="dt-body-sm" style="color: #4f4539;">{{ client.document_type || 'CC' }}: {{ client.document_id }}</p>
         </div>
-        <span class="badge" :class="client.is_active !== false ? 'badge-green' : 'badge-gray'">
+        <span class="dt-badge" :class="client.is_active !== false ? 'dt-badge-success' : 'dt-badge-disabled'">
           {{ client.is_active !== false ? 'Activo' : 'Inactivo' }}
         </span>
       </div>
       <div class="grid grid-cols-2 gap-4 text-sm">
-        <div><span class="font-medium text-gray-500">Email:</span> {{ client.email || '-' }}</div>
-        <div><span class="font-medium text-gray-500">Teléfono:</span> {{ client.phone || '-' }}</div>
-        <div><span class="font-medium text-gray-500">Dirección:</span> {{ client.address || '-' }}</div>
-        <div><span class="font-medium text-gray-500">Miembro desde:</span> {{ formatDate(client.created_at) }}</div>
+        <div><span style="color: #817567; font-weight: 500;">Email:</span> <span style="color: #0b1c30;">{{ client.email || '-' }}</span></div>
+        <div><span style="color: #817567; font-weight: 500;">Teléfono:</span> <span style="color: #0b1c30;">{{ client.phone || '-' }}</span></div>
+        <div><span style="color: #817567; font-weight: 500;">Dirección:</span> <span style="color: #0b1c30;">{{ client.address || '-' }}</span></div>
+        <div><span style="color: #817567; font-weight: 500;">Miembro desde:</span> <span style="color: #0b1c30;">{{ formatDate(client.created_at) }}</span></div>
       </div>
     </div>
 
-    <div class="card p-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Historial de Compras</h3>
+    <div class="dt-card p-6">
+      <h3 class="dt-headline-sm" style="margin-bottom: 1rem;">Historial de Compras</h3>
       <DataTable :columns="saleColumns" :data="client.sales || []" empty-message="No hay compras registradas" />
     </div>
 
-    <router-link to="/app/clients" class="btn btn-secondary mt-4">Volver</router-link>
+    <router-link to="/app/clients" class="dt-btn-secondary mt-4" style="display: inline-flex; align-items: center; gap: 0.5rem;">Volver</router-link>
   </div>
 </template>
 

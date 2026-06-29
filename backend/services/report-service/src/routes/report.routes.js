@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate, hasPermission } = require('../../../../shared/middleware/auth');
-const { PERMISSIONS } = require('../../../../shared/types/roles');
+const { authenticate, hasPermission } = require('@inventory/shared');
+const { PERMISSIONS } = require('@inventory/shared');
 const {
   getDashboardStats, getSalesReport, getInventoryReport, getTopProducts, getClientReport, getSalesChartData
 } = require('../controllers/report.controller');

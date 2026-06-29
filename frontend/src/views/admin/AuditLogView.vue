@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="flex gap-4 mb-4">
-      <select v-model="filters.entity" @change="fetchLogs" class="form-input w-48">
+      <select v-model="filters.entity" @change="fetchLogs" class="dt-input" style="width: 12rem;">
         <option value="">Todas las entidades</option>
         <option value="user">Usuario</option>
         <option value="product">Producto</option>
@@ -9,7 +9,7 @@
         <option value="purchase">Compra</option>
         <option value="inventory">Inventario</option>
       </select>
-      <select v-model="filters.action" @change="fetchLogs" class="form-input w-40">
+      <select v-model="filters.action" @change="fetchLogs" class="dt-input" style="width: 10rem;">
         <option value="">Todas las acciones</option>
         <option value="create">Crear</option>
         <option value="update">Actualizar</option>
@@ -18,7 +18,7 @@
     </div>
     <DataTable :columns="columns" :data="logs" searchable :per-page="20">
       <template #cell-action="{ row }">
-        <span class="badge" :class="row.action === 'create' ? 'badge-green' : row.action === 'update' ? 'badge-blue' : 'badge-red'">{{ row.action }}</span>
+        <span class="dt-badge" :class="row.action === 'create' ? 'dt-badge-success' : row.action === 'update' ? 'dt-badge-info' : 'dt-badge-danger'">{{ row.action }}</span>
       </template>
       <template #cell-details="{ row }">
         <span class="text-xs text-gray-500 truncate max-w-xs inline-block">{{ JSON.stringify(row.details) }}</span>

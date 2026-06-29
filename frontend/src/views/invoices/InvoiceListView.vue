@@ -1,7 +1,7 @@
 <template>
   <DataTable :columns="columns" :data="invoices" title="Facturas" searchable @rowClick="goToDetail" :per-page="15">
     <template #cell-status="{ row }">
-      <span class="badge" :class="row.status === 'active' ? 'badge-green' : row.status === 'cancelled' ? 'badge-red' : 'badge-yellow'">
+      <span class="dt-badge" :class="row.status === 'active' ? 'dt-badge-success' : row.status === 'cancelled' ? 'dt-badge-danger' : 'dt-badge-warning'">
         {{ row.status === 'active' ? 'Vigente' : row.status === 'cancelled' ? 'Anulada' : 'Pendiente' }}
       </span>
     </template>

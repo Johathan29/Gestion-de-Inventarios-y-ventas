@@ -73,7 +73,9 @@
   --gutter: 1.5rem;
   --unit: 1rem;
 }
-
+* {
+    
+    scrollbar-width: none;}
 /* Deep Purple Design Tokens */
 :root {
   /* Primary — Deep Purple (anchored at #4F2361) */
@@ -834,7 +836,9 @@ box-shadow:
   opacity: 0;
   transform: scale(0.95);
 }
-
+button:hover{
+  cursor: pointer;
+}
 /* =============================================
    DESIGN TOKENS — Admin Theme Variables
    ============================================= */

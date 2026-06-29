@@ -1,31 +1,29 @@
 <template>
-  <div class="flex h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="dashboard-theme flex h-screen" style="background-color: #fdfbf7;">
     <!-- Sidebar -->
     <Sidebar />
 
     <!-- Main Content -->
     <div class="flex-1 flex flex-col overflow-hidden"
-         :class="{ 'lg:ml-64': appStore.sidebarOpen, 'lg:ml-20': !appStore.sidebarOpen }">
+         :class="{ 'lg:ml-[280px]': appStore.sidebarOpen, 'lg:ml-[88px]': !appStore.sidebarOpen }">
       <!-- Top Navbar -->
       <Navbar />
 
       <!-- Page Content -->
-      <main class="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">
-        <div class="container">
+      <main class="flex-1 overflow-y-auto p-6" style="background-color: #fdfbf7;">
+        <div class="max-w-[1400px] mx-auto w-full">
           <!-- Page Header -->
-          <div class="mb-6" v-if="appStore.pageTitle">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ appStore.pageTitle }}
-            </h1>
+          <div class="dt-section-header" v-if="appStore.pageTitle">
+            <h2 class="dt-headline-md">{{ appStore.pageTitle }}</h2>
             <nav class="flex mt-1" v-if="appStore.pageBreadcrumb?.length">
-              <ol class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+              <ol class="flex items-center space-x-2 dt-body-sm" style="color: #4f4539;">
                 <li>
-                  <router-link to="/app/dashboard" class="hover:text-primary-600">Inicio</router-link>
+                  <router-link to="/app/dashboard" style="color: #624200; text-decoration: none;">Inicio</router-link>
                 </li>
                 <li v-for="(crumb, idx) in appStore.pageBreadcrumb" :key="idx">
-                  <span class="mx-1">/</span>
-                  <span v-if="idx === appStore.pageBreadcrumb.length - 1" class="text-gray-900 dark:text-white font-medium">{{ crumb }}</span>
-                  <router-link v-else :to="crumb.path || ''" class="hover:text-primary-600">{{ crumb.label || crumb }}</router-link>
+                  <span class="mx-1" style="color: #817567;">/</span>
+                  <span v-if="idx === appStore.pageBreadcrumb.length - 1" class="font-medium" style="color: #0b1c30;">{{ crumb }}</span>
+                  <router-link v-else :to="crumb.path || ''" style="color: #624200; text-decoration: none;">{{ crumb.label || crumb }}</router-link>
                 </li>
               </ol>
             </nav>

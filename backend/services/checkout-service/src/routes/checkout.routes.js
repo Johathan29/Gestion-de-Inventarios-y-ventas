@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../../../../shared/middleware/auth');
+const { authenticate } = require('@inventory/shared');
 const { processCheckout, getPaymentMethods } = require('../controllers/checkout.controller');
 
 router.use(authenticate());

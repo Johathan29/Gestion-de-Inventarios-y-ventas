@@ -1,7 +1,7 @@
 <template>
-  <div class="card p-6">
+  <div class="dt-card p-6">
     <div class="flex justify-between items-center mb-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Moderación de Reseñas</h3>
+      <h3 class="dt-headline-sm" style="margin-bottom: 0;">Moderación de Reseñas</h3>
 
       <!-- Filtros -->
       <div class="flex gap-2">
@@ -24,30 +24,30 @@
     <div v-else class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
-          <tr class="text-left border-b border-gray-200 dark:border-gray-700">
-            <th class="pb-3 font-semibold text-gray-900 dark:text-white">Cliente</th>
-            <th class="pb-3 font-semibold text-gray-900 dark:text-white">Producto</th>
-            <th class="pb-3 font-semibold text-gray-900 dark:text-white">Rating</th>
-            <th class="pb-3 font-semibold text-gray-900 dark:text-white">Comentario</th>
-            <th class="pb-3 font-semibold text-gray-900 dark:text-white">Fecha</th>
-            <th class="pb-3 font-semibold text-gray-900 dark:text-white">Estado</th>
-            <th class="pb-3 font-semibold text-gray-900 dark:text-white">Acciones</th>
+          <tr class="dt-table-header-row">
+            <th class="dt-table-th text-left">Cliente</th>
+            <th class="dt-table-th text-left">Producto</th>
+            <th class="dt-table-th text-left">Rating</th>
+            <th class="dt-table-th text-left">Comentario</th>
+            <th class="dt-table-th text-left">Fecha</th>
+            <th class="dt-table-th text-left">Estado</th>
+            <th class="dt-table-th text-left">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="review in reviews" :key="review.id" class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <tr v-for="review in reviews" :key="review.id" class="border-b hover:bg-gray-50" style="border-color: #d2c4b4;">
             <td class="py-3">
-              <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300">
-                  {{ review.client_name?.charAt(0).toUpperCase() }}
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold" style="color: #4f4539;">
+                  {{ review.client_name?.charAt(0) || '?' }}
                 </div>
                 <div>
-                  <p class="font-medium text-gray-900 dark:text-white">{{ review.client_name }}</p>
+                  <p class="font-medium" style="color: #0b1c30;">{{ review.client_name }}</p>
                   <p v-if="review.client_title" class="text-xs text-gray-500">{{ review.client_title }}</p>
                 </div>
               </div>
             </td>
-            <td class="py-3 text-gray-600 dark:text-gray-400 max-w-[150px] truncate">
+            <td class="py-3" style="color: #4f4539; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
               {{ review.products?.name || '—' }}
             </td>
             <td class="py-3">
@@ -57,35 +57,37 @@
               </div>
             </td>
             <td class="py-3 max-w-[250px]">
-              <p class="text-gray-600 dark:text-gray-400 truncate" :title="review.comment">{{ review.comment }}</p>
+              <p style="color: #4f4539; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="review.comment">{{ review.comment }}</p>
               <p v-if="review.title" class="text-xs text-gray-500 font-medium mt-0.5">{{ review.title }}</p>
             </td>
             <td class="py-3 text-gray-500 text-xs">{{ formatDate(review.created_at) }}</td>
             <td class="py-3">
-              <span v-if="review.is_approved" class="badge badge-green">Aprobada</span>
-              <span v-else class="badge badge-yellow">Pendiente</span>
+              <span v-if="review.is_approved" class="dt-badge dt-badge-success">Aprobada</span>
+              <span v-else class="dt-badge dt-badge-warning">Pendiente</span>
             </td>
             <td class="py-3">
               <div class="flex gap-1.5">
                 <button
                   v-if="!review.is_approved"
                   @click="approveReview(review)"
-                  class="btn btn-sm btn-success"
+                  class="dt-btn-secondary"
+                  style="padding: 0.25rem 0.75rem; font-size: 0.875rem; border-color: #059669; color: #059669;"
                   title="Aprobar"
                 >
                   <span class="material-symbols-outlined text-sm" data-icon="check">check</span>
                 </button>
                 <button
                   @click="toggleFeatured(review)"
-                  class="btn btn-sm"
-                  :class="review.is_featured ? 'btn-primary' : 'btn-secondary'"
+                  class="dt-btn-secondary"
+                  :style="{ padding: '0.25rem 0.75rem', fontSize: '0.875rem', borderColor: review.is_featured ? '#624200' : '', color: review.is_featured ? '#624200' : '' }"
                   :title="review.is_featured ? 'Quitar destacado' : 'Destacar'"
                 >
                   <span class="material-symbols-outlined text-sm" data-icon="star">star</span>
                 </button>
                 <button
                   @click="confirmDelete(review)"
-                  class="btn btn-sm btn-danger"
+                  class="dt-btn-secondary"
+                  style="padding: 0.25rem 0.75rem; font-size: 0.875rem; border-color: #ef4444; color: #ef4444;"
                   title="Eliminar"
                 >
                   <span class="material-symbols-outlined text-sm" data-icon="delete">delete</span>
@@ -103,9 +105,9 @@
 
       <!-- Paginación -->
       <div v-if="totalPages > 1" class="flex justify-center items-center gap-4 mt-6">
-        <button @click="changePage(page - 1)" :disabled="page <= 1" class="btn btn-sm btn-secondary">Anterior</button>
-        <span class="text-sm text-gray-500">Página {{ page }} de {{ totalPages }}</span>
-        <button @click="changePage(page + 1)" :disabled="page >= totalPages" class="btn btn-sm btn-secondary">Siguiente</button>
+        <button @click="changePage(page - 1)" :disabled="page <= 1" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Anterior</button>
+        <span class="dt-body-sm" style="color: #4f4539;">Página {{ page }} de {{ totalPages }}</span>
+        <button @click="changePage(page + 1)" :disabled="page >= totalPages" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Siguiente</button>
       </div>
     </div>
 

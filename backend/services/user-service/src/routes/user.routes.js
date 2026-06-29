@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate, authorize, hasPermission } = require('../../../../shared/middleware/auth');
-const { ROLES, PERMISSIONS } = require('../../../../shared/types/roles');
+const { authenticate, authorize, hasPermission, validate, createUserSchema, updateUserSchema } = require('@inventory/shared');
+const { ROLES, PERMISSIONS } = require('@inventory/shared');
 const {
   getUsers, getUserById, createUser, updateUser, updateMyProfile, deleteUser,
   updateUserRole, blockUser, unblockUser, getUserHistory,
@@ -35,13 +35,13 @@ router.delete('/clients/:id', hasPermission(PERMISSIONS.USER_DELETE), deleteClie
 router.get('/:id', getUserById);
 
 // POST /api/users - Crear usuario (Admin)
-router.post('/', hasPermission(PERMISSIONS.USER_CREATE), createUser);
+router.post('/', hasPermission(PERMISSIONS.USER_CREATE), validate(createUserSchema), createUser);
 
 // PUT /api/users/me/perfil - Actualizar perfil propio (sin permisos especiales)
 router.put('/me/perfil', updateMyProfile);
 
 // PUT /api/users/:id - Actualizar usuario
-router.put('/:id', hasPermission(PERMISSIONS.USER_UPDATE), updateUser);
+router.put('/:id', hasPermission(PERMISSIONS.USER_UPDATE), validate(updateUserSchema), updateUser);
 
 // DELETE /api/users/:id - Eliminar usuario (Admin)
 router.delete('/:id', hasPermission(PERMISSIONS.USER_DELETE), deleteUser);

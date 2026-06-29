@@ -1,14 +1,14 @@
 <template>
   <DataTable :columns="columns" :data="users" title="Usuarios del Sistema" searchable @rowClick="goToDetail">
     <template #cell-status="{ row }">
-      <span class="badge" :class="row.is_active ? 'badge-green' : 'badge-red'">{{ row.is_active ? 'Activo' : 'Bloqueado' }}</span>
+      <span class="dt-badge" :class="row.is_active ? 'dt-badge-success' : 'dt-badge-danger'">{{ row.is_active ? 'Activo' : 'Bloqueado' }}</span>
     </template>
     <template #cell-role_name="{ row }">
-      <span class="badge badge-primary">{{ row.role_name }}</span>
+      <span class="dt-badge dt-badge-info">{{ row.role_name }}</span>
     </template>
     <template #actions="{ row }">
-      <button @click.stop="$router.push(`/app/admin/users/${row.id}`)" class="btn btn-sm btn-secondary">Ver</button>
-      <button v-if="can('admin', 'access')" @click.stop="toggleBlock(row)" class="btn btn-sm" :class="row.is_active ? 'btn-danger' : 'btn-secondary'">
+      <button @click.stop="$router.push(`/app/admin/users/${row.id}`)" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Ver</button>
+      <button v-if="can('admin', 'access')" @click.stop="toggleBlock(row)" class="dt-btn-secondary" :style="{ padding: '0.25rem 0.75rem', fontSize: '0.875rem', borderColor: row.is_active ? '#ef4444' : '', color: row.is_active ? '#ef4444' : '' }">
         {{ row.is_active ? 'Bloquear' : 'Activar' }}
       </button>
     </template>

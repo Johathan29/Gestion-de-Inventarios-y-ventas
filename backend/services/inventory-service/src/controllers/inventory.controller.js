@@ -1,9 +1,6 @@
-const { createClient } = require('@supabase/supabase-js');
+const { getSupabaseClient } = require('@inventory/shared');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabase = getSupabaseClient();
 
 /**
  * Obtener stock de todos los productos
@@ -437,7 +434,7 @@ const getInventorySummary = async (req, res, next) => {
       .from('inventory')
       .select(`
         product_id,
-        quantity,
+        stock,
         products(name, sku, price, cost_price)
       `)
       .order('product_id');
@@ -445,11 +442,11 @@ const getInventorySummary = async (req, res, next) => {
     if (error) throw error;
 
     const totalProducts = summary.length;
-    const totalStock = summary.reduce((sum, s) => sum + s.quantity, 0);
-    const totalValue = summary.reduce((sum, s) => sum + (s.quantity * (s.products?.cost_price || 0)), 0);
+    const totalStock = summary.reduce((sum, s) => sum + s.stock, 0);
+    const totalValue = summary.reduce((sum, s) => sum + (s.stock * (s.products?.cost_price || 0)), 0);
 
-    const lowStock = summary.filter(s => s.quantity <= (s.products?.min_stock || 0));
-    const outOfStock = summary.filter(s => s.quantity <= 0);
+    const lowStock = summary.filter(s => s.stock <= (s.products?.min_stock || 0));
+    const outOfStock = summary.filter(s => s.stock <= 0);
 
     res.json({
       success: true,

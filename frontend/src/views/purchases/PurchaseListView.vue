@@ -1,13 +1,13 @@
 <template>
   <DataTable :columns="columns" :data="purchases" title="Compras" searchable @rowClick="goToDetail">
     <template #toolbar>
-      <button v-if="can('purchases', 'create')" @click="$router.push('/app/purchases/create')" class="btn btn-primary btn-sm">
+      <button v-if="can('purchases', 'create')" @click="$router.push('/app/purchases/create')" class="dt-btn-primary">
         <span class="material-icons-outlined text-lg">add</span>
         Nueva Compra
       </button>
     </template>
     <template #cell-status="{ row }">
-      <span class="badge" :class="row.status === 'received' ? 'badge-green' : row.status === 'cancelled' ? 'badge-red' : 'badge-yellow'">
+      <span class="dt-badge" :class="row.status === 'received' ? 'dt-badge-success' : row.status === 'cancelled' ? 'dt-badge-danger' : 'dt-badge-warning'">
         {{ row.status === 'received' ? 'Recibida' : row.status === 'cancelled' ? 'Cancelada' : 'Pendiente' }}
       </span>
     </template>

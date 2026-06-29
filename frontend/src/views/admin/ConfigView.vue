@@ -1,16 +1,16 @@
 <template>
-  <div class="card p-6 max-w-3xl mx-auto">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">Configuración del Sistema</h3>
+  <div class="dt-card p-6 max-w-3xl mx-auto">
+    <h3 class="dt-headline-sm" style="margin-bottom: 1.5rem;">Configuración del Sistema</h3>
     <Alert v-if="successMsg" type="success" :message="successMsg" :show="!!successMsg" dismissible @close="successMsg = ''" class="mb-4" />
 
     <div v-for="(group, section) in groupedConfig" :key="section" class="mb-8">
-      <h4 class="font-medium text-gray-800 dark:text-gray-200 capitalize mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">{{ section }}</h4>
+      <h4 class="font-medium capitalize mb-4 pb-2" style="color: #0b1c30; border-bottom: 1px solid #e2d6c8;">{{ section }}</h4>
       <div class="space-y-4">
         <div v-for="item in group" :key="item.key" class="grid grid-cols-3 gap-4 items-center">
-          <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ item.key }}</label>
-          <input v-if="item.type === 'number' || item.type === 'integer'" v-model.number="item.value" type="number" class="form-input col-span-2" @change="updateConfig(item.key, item.value)" />
+          <label class="dt-body-sm" style="color: #4f4539; font-weight: 500;">{{ item.key }}</label>
+          <input v-if="item.type === 'number' || item.type === 'integer'" v-model.number="item.value" type="number" class="dt-input" style="grid-column: span 2;" @change="updateConfig(item.key, item.value)" />
           <input v-else-if="item.type === 'boolean'" type="checkbox" v-model="item.value" class="rounded" @change="updateConfig(item.key, item.value)" />
-          <input v-else v-model="item.value" class="form-input col-span-2" @change="updateConfig(item.key, item.value)" />
+          <input v-else v-model="item.value" class="dt-input" style="grid-column: span 2;" @change="updateConfig(item.key, item.value)" />
         </div>
       </div>
     </div>

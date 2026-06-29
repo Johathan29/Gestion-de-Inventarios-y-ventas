@@ -1,8 +1,8 @@
 <template>
   <div>
     <div class="flex justify-between items-center mb-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Slides del Carrusel (Hero)</h3>
-      <button @click="openModal(null)" class="btn btn-primary btn-sm">
+      <h3 class="dt-headline-sm" style="margin-bottom: 0;">Slides del Carrusel (Hero)</h3>
+      <button @click="openModal(null)" class="dt-btn-primary">
         <span class="material-symbols-outlined text-sm mr-1" data-icon="add">add</span>
         Nuevo Slide
       </button>
@@ -16,8 +16,8 @@
 
     <div v-else class="space-y-4">
       <div v-for="(slide, index) in slides" :key="slide.id"
-        class="card p-4 flex flex-col md:flex-row gap-4 items-start"
-        :class="{ 'border-primary/50': slide.is_active }"
+        class="dt-card p-4 flex flex-col md:flex-row gap-4 items-start"
+        :style="{ borderColor: slide.is_active ? '#624200' : '' }"
       >
         <!-- Imagen preview -->
         <div class="w-full md:w-48 h-32 rounded-xl overflow-hidden flex-shrink-0 bg-white/5">
@@ -29,18 +29,18 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-1">
             <span class="text-xs font-medium text-gray-400">#{{ index + 1 }}</span>
-            <span v-if="slide.is_active" class="badge badge-green text-xs">Activo</span>
-            <span v-else class="badge badge-gray text-xs">Inactivo</span>
+            <span v-if="slide.is_active" class="dt-badge dt-badge-success" style="font-size: 0.75rem;">Activo</span>
+            <span v-else class="dt-badge dt-badge-disabled" style="font-size: 0.75rem;">Inactivo</span>
           </div>
-          <h4 class="font-medium text-gray-900 dark:text-white truncate">{{ slide.badge || 'Sin badge' }}</h4>
+          <h4 class="font-medium truncate" style="color: #0b1c30;">{{ slide.badge || 'Sin badge' }}</h4>
           <p class="text-sm text-gray-500 truncate">{{ slide.title_line1 }} {{ slide.title_line2 }}</p>
           <p class="text-xs text-gray-400 mt-1 truncate">{{ slide.description }}</p>
         </div>
 
         <!-- Actions -->
         <div class="flex gap-2 flex-shrink-0">
-          <button @click="openModal(slide)" class="btn btn-sm btn-secondary">Editar</button>
-          <button @click="confirmDelete(slide)" class="btn btn-sm btn-danger">Eliminar</button>
+          <button @click="openModal(slide)" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Editar</button>
+          <button @click="confirmDelete(slide)" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem; border-color: #ef4444; color: #ef4444;">Eliminar</button>
         </div>
       </div>
     </div>
@@ -162,12 +162,12 @@
 
         <div class="flex items-center gap-2">
           <input type="checkbox" v-model="form.is_active" id="slide_active" class="w-4 h-4 rounded border-white/20" />
-          <label for="slide_active" class="text-sm text-gray-700 dark:text-gray-300">Slide activo</label>
+          <label for="slide_active" class="text-sm" style="color: #4f4539;">Slide activo</label>
         </div>
 
         <div class="flex justify-end gap-3 pt-4 border-t border-white/10">
-          <button type="button" @click="closeModal" class="btn btn-secondary">Cancelar</button>
-          <button type="submit" :disabled="saving || uploading" class="btn btn-primary">
+          <button type="button" @click="closeModal" class="dt-btn-secondary">Cancelar</button>
+          <button type="submit" :disabled="saving || uploading" class="dt-btn-primary">
             <span v-if="saving" class="material-symbols-outlined animate-spin inline-block mr-2" data-icon="refresh">refresh</span>
             {{ editing ? 'Actualizar Slide' : 'Crear Slide' }}
           </button>

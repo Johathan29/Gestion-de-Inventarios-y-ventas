@@ -1,10 +1,7 @@
 const bcrypt = require('bcryptjs');
-const { createClient } = require('@supabase/supabase-js');
+const { getSupabaseClient } = require('@inventory/shared');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabase = getSupabaseClient();
 
 const BCRYPT_SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 12;
 

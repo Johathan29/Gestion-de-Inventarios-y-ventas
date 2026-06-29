@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../../../../shared/middleware/auth');
+const { authenticate, validate, addCartItemSchema, updateCartItemSchema } = require('@inventory/shared');
 const {
   getCart, addItem, updateItemQuantity, removeItem, clearCart
 } = require('../controllers/cart.controller');
@@ -8,8 +8,8 @@ const {
 router.use(authenticate());
 
 router.get('/', getCart);
-router.post('/items', addItem);
-router.put('/items/:itemId', updateItemQuantity);
+router.post('/items', validate(addCartItemSchema), addItem);
+router.put('/items/:itemId', validate(updateCartItemSchema), updateItemQuantity);
 router.delete('/items/:itemId', removeItem);
 router.delete('/', clearCart);
 

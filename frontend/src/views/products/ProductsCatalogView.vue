@@ -202,6 +202,16 @@
           </div>
         </div>
       </div>
+      <!-- Offers Section -->
+      <div class="mt-16">
+        <OfferShowcase
+          title="Ofertas Especiales"
+          subtitle="Aprovecha descuentos exclusivos por tiempo limitado en productos seleccionados."
+          :limit="3"
+          :show-view-all="false"
+          @error="(msg) => console.warn('Offers error:', msg)"
+        />
+      </div>
     </main>
 
     <!-- Footer -->
@@ -213,6 +223,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { productsAPI, categoriesAPI, cartAPI } from '../../api/index.js';
+import OfferShowcase from '../../components/shared/OfferShowcase.vue';
 import AppNavBar from '../../components/layout/AppNavBar.vue';
 import AppFooter from '../../components/layout/AppFooter.vue';
 

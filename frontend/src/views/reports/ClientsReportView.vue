@@ -1,12 +1,12 @@
 <template>
-  <div class="card p-6">
+  <div class="dt-card p-6">
     <div class="flex flex-wrap items-center gap-4 mb-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Reporte de Clientes</h3>
+      <h3 class="dt-headline-sm" style="margin-bottom: 0;">Reporte de Clientes</h3>
       <div class="flex-1"></div>
-      <button @click="downloadPDF" class="btn btn-sm btn-secondary flex items-center gap-1">
+      <button @click="downloadPDF" class="dt-btn-secondary" style="display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.375rem 0.75rem; font-size: 0.875rem;">
         <span class="material-icons-outlined text-lg">picture_as_pdf</span> PDF
       </button>
-      <button @click="downloadExcel" class="btn btn-sm btn-secondary flex items-center gap-1">
+      <button @click="downloadExcel" class="dt-btn-secondary" style="display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.375rem 0.75rem; font-size: 0.875rem;">
         <span class="material-icons-outlined text-lg">table_chart</span> Excel
       </button>
     </div>

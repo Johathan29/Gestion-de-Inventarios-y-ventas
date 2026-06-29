@@ -1,8 +1,9 @@
 <template>
   <div>
+    <InventoryTabs />
     <div class="flex justify-between items-center mb-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Transferencias</h3>
-      <button @click="showForm = true" class="btn btn-primary btn-sm">Nueva Transferencia</button>
+      <h3 class="dt-headline-sm" style="margin-bottom: 0;">Transferencias</h3>
+      <button @click="showForm = true" class="dt-btn-primary">Nueva Transferencia</button>
     </div>
 
     <DataTable :columns="columns" :data="transfers" searchable />
@@ -10,27 +11,27 @@
     <Modal :show="showForm" title="Nueva Transferencia" @close="showForm = false">
       <form @submit.prevent="handleSubmit" class="space-y-4">
         <div>
-          <label class="form-label">Producto</label>
-          <select v-model="form.product_id" class="form-input" required>
+          <label class="dt-label">Producto</label>
+          <select v-model="form.product_id" class="dt-input" required>
             <option value="">Seleccionar...</option>
             <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</option>
           </select>
         </div>
         <div>
-          <label class="form-label">Ubicación Origen</label>
-          <input v-model="form.from_location" class="form-input" required />
+          <label class="dt-label">Ubicación Origen</label>
+          <input v-model="form.from_location" class="dt-input" required />
         </div>
         <div>
-          <label class="form-label">Ubicación Destino</label>
-          <input v-model="form.to_location" class="form-input" required />
+          <label class="dt-label">Ubicación Destino</label>
+          <input v-model="form.to_location" class="dt-input" required />
         </div>
         <div>
-          <label class="form-label">Cantidad</label>
-          <input v-model.number="form.quantity" type="number" min="1" class="form-input" required />
+          <label class="dt-label">Cantidad</label>
+          <input v-model.number="form.quantity" type="number" min="1" class="dt-input" required />
         </div>
         <div class="flex justify-end gap-3 pt-3">
-          <button type="button" @click="showForm = false" class="btn btn-secondary">Cancelar</button>
-          <button type="submit" :disabled="saving" class="btn btn-primary">Transferir</button>
+          <button type="button" @click="showForm = false" class="dt-btn-secondary">Cancelar</button>
+          <button type="submit" :disabled="saving" class="dt-btn-primary">Transferir</button>
         </div>
       </form>
     </Modal>
@@ -40,6 +41,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { inventoryAPI, productsAPI } from '../../api';
+import InventoryTabs from '../../components/inventory/InventoryTabs.vue';
 import DataTable from '../../components/shared/DataTable.vue';
 import Modal from '../../components/shared/Modal.vue';
 

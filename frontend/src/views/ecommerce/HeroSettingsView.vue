@@ -1,6 +1,6 @@
 <template>
-  <div class="card p-6 max-w-4xl mx-auto">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">Configuración de Hero (Landing Page)</h3>
+  <div class="dt-card p-6 max-w-4xl mx-auto">
+    <h3 class="dt-headline-sm" style="margin-bottom: 1.5rem;">Configuración de Hero (Landing Page)</h3>
 
     <Alert v-if="successMsg" type="success" :message="successMsg" :show="!!successMsg" dismissible @close="successMsg = ''" class="mb-4" />
     <Alert v-if="errorMsg" type="error" :message="errorMsg" :show="!!errorMsg" dismissible @close="errorMsg = ''" class="mb-4" />
@@ -54,30 +54,30 @@
         </div>
       </div>
 
-      <div class="border-t border-white/10 pt-6">
-        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-4">Imágenes</h4>
+      <div class="pt-6" style="border-top: 1px solid #e2d6c8;">
+        <h4 class="font-semibold" style="color: #0b1c30; margin-bottom: 1rem; font-size: 1rem;">Imágenes</h4>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label class="form-label">Imagen Principal</label>
-            <input v-model="form.image_main_url" class="form-input text-xs" placeholder="URL de imagen principal" />
+            <label class="dt-label">Imagen Principal</label>
+            <input v-model="form.image_main_url" class="dt-input" style="font-size: 0.75rem;" placeholder="URL de imagen principal" />
             <img v-if="form.image_main_url" :src="form.image_main_url" class="mt-2 w-full h-32 object-cover rounded-lg" />
           </div>
           <div>
-            <label class="form-label">Imagen Superior Izquierda</label>
-            <input v-model="form.image_top_url" class="form-input text-xs" placeholder="URL" />
+            <label class="dt-label">Imagen Superior Izquierda</label>
+            <input v-model="form.image_top_url" class="dt-input" style="font-size: 0.75rem;" placeholder="URL" />
             <img v-if="form.image_top_url" :src="form.image_top_url" class="mt-2 w-full h-32 object-cover rounded-lg" />
           </div>
           <div>
-            <label class="form-label">Imagen Inferior Derecha</label>
-            <input v-model="form.image_bottom_url" class="form-input text-xs" placeholder="URL" />
+            <label class="dt-label">Imagen Inferior Derecha</label>
+            <input v-model="form.image_bottom_url" class="dt-input" style="font-size: 0.75rem;" placeholder="URL" />
             <img v-if="form.image_bottom_url" :src="form.image_bottom_url" class="mt-2 w-full h-32 object-cover rounded-lg" />
           </div>
         </div>
       </div>
 
       <!-- Preview -->
-      <div class="border-t border-white/10 pt-6">
-        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-4">Vista Previa</h4>
+      <div class="pt-6" style="border-top: 1px solid #e2d6c8;">
+        <h4 class="font-semibold" style="color: #0b1c30; margin-bottom: 1rem; font-size: 1rem;">Vista Previa</h4>
         <div class="bg-[#151215] rounded-2xl p-8 border border-white/10">
           <span class="text-xs uppercase tracking-widest text-[#e9b3fc] mb-3 block">{{ form.badge }}</span>
           <h2 class="text-3xl text-[#e8e0e4] mb-2">
@@ -92,7 +92,7 @@
       </div>
 
       <div class="flex justify-end pt-4">
-        <button type="submit" :disabled="saving" class="btn btn-primary">
+        <button type="submit" :disabled="saving" class="dt-btn-primary">
           <span v-if="saving" class="material-symbols-outlined animate-spin inline-block mr-2" data-icon="refresh">refresh</span>
           Guardar Cambios
         </button>

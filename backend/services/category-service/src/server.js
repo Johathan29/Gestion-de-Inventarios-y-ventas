@@ -1,13 +1,11 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const express = require('express');
-const cors = require('cors');
 const { categoryRouter } = require('./routes/category.routes');
 
 const app = express();
 const PORT = process.env.CATEGORY_SERVICE_PORT || 3004;
 
-app.use(cors());
 app.use(express.json());
 
 app.get('/health', (req, res) => {

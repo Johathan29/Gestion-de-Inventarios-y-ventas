@@ -1,8 +1,8 @@
 <template>
   <div>
     <div class="flex justify-between items-center mb-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Banners Flotantes</h3>
-      <button @click="openModal(null)" class="btn btn-primary btn-sm">
+      <h3 class="dt-headline-sm" style="margin-bottom: 0;">Banners Flotantes</h3>
+      <button @click="openModal(null)" class="dt-btn-primary">
         <span class="material-symbols-outlined text-sm mr-1" data-icon="add">add</span>
         Nuevo Banner Flotante
       </button>
@@ -16,8 +16,8 @@
 
     <div v-else class="space-y-4">
       <div v-for="banner in banners" :key="banner.id"
-        class="card p-4 flex items-start gap-4"
-        :class="{ 'border-primary/50': banner.is_active }"
+        class="dt-card p-4 flex items-start gap-4"
+        :style="{ borderColor: banner.is_active ? '#624200' : '' }"
       >
         <!-- Preview -->
         <div class="w-full md:w-48 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-white/5">
@@ -29,13 +29,13 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-1 flex-wrap">
             <span class="text-xs font-medium text-gray-400">#{{ banner.sort_order }}</span>
-            <span :class="banner.is_active ? 'badge badge-green' : 'badge badge-gray'" class="text-xs">{{ banner.is_active ? 'Activo' : 'Inactivo' }}</span>
+            <span :class="banner.is_active ? 'dt-badge dt-badge-success' : 'dt-badge dt-badge-disabled'" style="font-size: 0.75rem;">{{ banner.is_active ? 'Activo' : 'Inactivo' }}</span>
             <span class="text-xs px-2 py-0.5 rounded-full bg-white/10">
               {{ banner.position === 'top' ? 'Superior' : 'Inferior' }}
             </span>
             <span v-if="banner.is_sticky" class="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">Sticky</span>
           </div>
-          <h4 class="font-medium text-gray-900 dark:text-white">{{ banner.title || 'Sin título' }}</h4>
+          <h4 class="font-medium" style="color: #0b1c30;">{{ banner.title || 'Sin título' }}</h4>
           <p class="text-sm text-gray-500 truncate">{{ banner.subtitle || '' }}</p>
           <p v-if="banner.start_date || banner.end_date" class="text-xs text-gray-400 mt-1">
             {{ banner.start_date ? 'Desde: ' + new Date(banner.start_date).toLocaleDateString() : '' }}
@@ -45,8 +45,8 @@
 
         <!-- Actions -->
         <div class="flex gap-2 flex-shrink-0">
-          <button @click="openModal(banner)" class="btn btn-sm btn-secondary">Editar</button>
-          <button @click="confirmDelete(banner)" class="btn btn-sm btn-danger">Eliminar</button>
+          <button @click="openModal(banner)" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Editar</button>
+          <button @click="confirmDelete(banner)" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem; border-color: #ef4444; color: #ef4444;">Eliminar</button>
         </div>
       </div>
     </div>
@@ -70,15 +70,51 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="form-label">URL de Imagen</label>
-            <input v-model="form.image_url" class="form-input" placeholder="https://ejemplo.com/banner.jpg" />
+            <label class="form-label">Imagen del Banner</label>
+            <!-- Upload zone -->
+            <div
+              @click="triggerUpload"
+              @dragover.prevent="dragOver = true"
+              @dragleave="dragOver = false"
+              @drop.prevent="onDrop"
+              class="relative border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all duration-300 hover:border-primary/50"
+              :class="dragOver ? 'border-primary bg-primary/10 scale-[1.02]' : 'border-white/20 bg-white/5'"
+            >
+              <input type="file" ref="fileInputRef" accept="image/*" class="hidden" @change="onFileSelected" />
+
+              <div v-if="uploading" class="flex flex-col items-center gap-2 py-4">
+                <span class="material-symbols-outlined animate-spin text-3xl text-primary" data-icon="refresh">refresh</span>
+                <span class="text-sm text-gray-400">Subiendo imagen...</span>
+              </div>
+
+              <div v-else-if="previewFile || form.image_url" class="flex flex-col items-center gap-2">
+                <img :src="previewFile || form.image_url" class="max-h-28 rounded-lg object-contain" @error="e => e.target.style.display = 'none'" />
+                <span class="text-xs text-gray-500 mt-1">Click para cambiar imagen</span>
+              </div>
+
+              <div v-else class="flex flex-col items-center gap-2 py-6">
+                <span class="material-symbols-outlined text-3xl text-gray-500" data-icon="image">image</span>
+                <span class="text-sm text-gray-400">Arrastra una imagen o click para subir</span>
+                <span class="text-xs text-gray-500">JPG, PNG, WebP, GIF — Máx 10MB</span>
+              </div>
+            </div>
+            <div v-if="form.image_url && !uploading" class="mt-2 flex items-center gap-2">
+              <span class="text-xs text-gray-400 truncate flex-1">{{ form.image_url }}</span>
+              <button type="button" @click="clearImage" class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-red-400/10 flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm" data-icon="delete">delete</span>
+                Quitar
+              </button>
+            </div>
+            <div class="mt-2">
+              <label class="text-xs text-gray-500">O ingresa una URL manualmente:</label>
+              <input v-model="form.image_url" class="form-input text-xs mt-1" placeholder="https://ejemplo.com/banner.jpg" />
+            </div>
           </div>
           <div>
             <label class="form-label">URL de Destino (link)</label>
             <input v-model="form.link_url" class="form-input" placeholder="#products" />
           </div>
         </div>
-        <img v-if="form.image_url" :src="form.image_url" class="w-full h-32 object-cover rounded-lg" @error="e => e.target.style.display = 'none'" />
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -98,37 +134,37 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="form-label">Posición</label>
-            <select v-model="form.position" class="form-input">
+            <label class="dt-label">Posición</label>
+            <select v-model="form.position" class="dt-input">
               <option value="top">Superior (top)</option>
               <option value="bottom">Inferior (bottom)</option>
             </select>
           </div>
           <div>
-            <label class="form-label">Fecha Inicio</label>
-            <input v-model="form.start_date" type="date" class="form-input" />
+            <label class="dt-label">Fecha Inicio</label>
+            <input v-model="form.start_date" type="date" class="dt-input" />
           </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="form-label">Fecha Fin</label>
-            <input v-model="form.end_date" type="date" class="form-input" />
+            <label class="dt-label">Fecha Fin</label>
+            <input v-model="form.end_date" type="date" class="dt-input" />
           </div>
           <div class="flex items-center gap-6 pt-6">
             <div class="flex items-center gap-2">
               <input type="checkbox" v-model="form.is_active" id="fb_active" class="w-4 h-4 rounded border-white/20" />
-              <label for="fb_active" class="text-sm text-gray-700 dark:text-gray-300">Activo</label>
+              <label for="fb_active" class="dt-body-sm" style="color: #4f4539;">Activo</label>
             </div>
             <div class="flex items-center gap-2">
               <input type="checkbox" v-model="form.is_sticky" id="fb_sticky" class="w-4 h-4 rounded border-white/20" />
-              <label for="fb_sticky" class="text-sm text-gray-700 dark:text-gray-300">Sticky (fijo al hacer scroll)</label>
+              <label for="fb_sticky" class="dt-body-sm" style="color: #4f4539;">Sticky (fijo al hacer scroll)</label>
             </div>
           </div>
         </div>
 
         <div class="flex justify-end gap-3 pt-4">
-          <button type="button" @click="closeModal" class="btn btn-secondary">Cancelar</button>
-          <button type="submit" :disabled="saving" class="btn btn-primary">
+          <button type="button" @click="closeModal" class="dt-btn-secondary">Cancelar</button>
+          <button type="submit" :disabled="saving" class="dt-btn-primary">
             <span v-if="saving" class="material-symbols-outlined animate-spin inline-block mr-2" data-icon="refresh">refresh</span>
             {{ editing ? 'Actualizar Banner' : 'Crear Banner' }}
           </button>
@@ -143,6 +179,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { ecommerceAPI } from '../../api';
+import { supabase } from '../../api/supabase';
 import Modal from '../../components/shared/Modal.vue';
 import ConfirmDialog from '../../components/shared/ConfirmDialog.vue';
 import Alert from '../../components/shared/Alert.vue';
@@ -157,6 +194,14 @@ const editing = ref(null);
 const deleting = ref(null);
 const successMsg = ref('');
 const errorMsg = ref('');
+
+// Upload state
+const uploading = ref(false);
+const dragOver = ref(false);
+const previewFile = ref('');
+const fileInputRef = ref(null);
+const pendingUpload = ref(null);
+const STORAGE_BUCKET = 'floating-banners';
 
 const form = ref({
   title: '',
@@ -186,6 +231,8 @@ async function fetchBanners() {
 
 function openModal(banner) {
   editing.value = banner;
+  previewFile.value = '';
+  pendingUpload.value = null;
   form.value = banner ? { ...banner, start_date: banner.start_date ? banner.start_date.slice(0, 10) : '', end_date: banner.end_date ? banner.end_date.slice(0, 10) : '' } : {
     title: '', subtitle: '', image_url: '', link_url: '', background_color: '#1a1a2e', text_color: '#ffffff',
     position: 'top', is_sticky: true, sort_order: banners.value.length, is_active: true, start_date: '', end_date: ''
@@ -193,7 +240,72 @@ function openModal(banner) {
   showModal.value = true;
 }
 
-function closeModal() { showModal.value = false; editing.value = null; }
+function closeModal() {
+  showModal.value = false;
+  editing.value = null;
+  previewFile.value = '';
+  pendingUpload.value = null;
+}
+
+function triggerUpload() { fileInputRef.value?.click(); }
+
+function onDrop(e) {
+  dragOver.value = false;
+  const files = e.dataTransfer?.files;
+  if (files && files.length > 0) uploadFile(files[0]);
+}
+
+function onFileSelected(e) {
+  const files = e.target.files;
+  if (files && files.length > 0) uploadFile(files[0]);
+}
+
+async function uploadFile(file) {
+  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+  if (!allowed.includes(file.type)) {
+    errorMsg.value = 'Formato no soportado. Usa JPG, PNG, WebP, GIF o AVIF.';
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    errorMsg.value = 'La imagen es demasiado grande. Máximo 10MB.';
+    return;
+  }
+
+  uploading.value = true;
+  errorMsg.value = '';
+  previewFile.value = URL.createObjectURL(file);
+  pendingUpload.value = file;
+  uploading.value = false;
+}
+
+function clearImage() {
+  form.value.image_url = '';
+  previewFile.value = '';
+  pendingUpload.value = null;
+  if (fileInputRef.value) fileInputRef.value.value = '';
+}
+
+async function uploadToSupabase(bannerId) {
+  if (!pendingUpload.value) return form.value.image_url;
+
+  const file = pendingUpload.value;
+  const ext = file.name.split('.').pop();
+  const fileName = `floating-banners/${bannerId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+  if (uploadError) throw uploadError;
+
+  const { data: { publicUrl } } = supabase.storage
+    .from(STORAGE_BUCKET)
+    .getPublicUrl(fileName);
+
+  form.value.image_url = publicUrl;
+  pendingUpload.value = null;
+  return publicUrl;
+}
 
 async function handleSave() {
   saving.value = true;
@@ -202,6 +314,25 @@ async function handleSave() {
     const payload = { ...form.value };
     if (!payload.start_date) delete payload.start_date;
     if (!payload.end_date) delete payload.end_date;
+
+    let bannerId = editing.value?.id;
+
+    // If there's a pending upload but no banner exists yet, create it first
+    if (pendingUpload.value && !bannerId) {
+      const createPayload = { ...payload, image_url: '' };
+      const res = await ecommerceAPI.createFloatingBanner(createPayload);
+      bannerId = res.data?.id || res.data?.[0]?.id;
+      if (!bannerId) throw new Error('No se pudo crear el banner');
+      editing.value = { id: bannerId };
+      form.value.id = bannerId;
+      successMsg.value = 'Banner creado. Subiendo imagen...';
+    }
+
+    // Upload image if pending
+    if (pendingUpload.value && bannerId) {
+      await uploadToSupabase(bannerId);
+      payload.image_url = form.value.image_url;
+    }
 
     if (editing.value) {
       await ecommerceAPI.updateFloatingBanner(editing.value.id, payload);
@@ -212,8 +343,15 @@ async function handleSave() {
     }
     closeModal();
     await fetchBanners();
-  } catch {
-    errorMsg.value = 'Error al guardar banner';
+  } catch (err) {
+    console.error('Error saving banner:', err);
+    if (err.message?.includes('row-level security')) {
+      errorMsg.value = 'Error de permisos: Crea el bucket "floating-banners" en Supabase Storage y configura las políticas RLS.';
+    } else if (err.message?.includes('bucket')) {
+      errorMsg.value = 'El bucket "floating-banners" no existe. Créalo en Supabase Dashboard → Storage.';
+    } else {
+      errorMsg.value = err.message || 'Error al guardar banner';
+    }
   } finally {
     saving.value = false;
   }

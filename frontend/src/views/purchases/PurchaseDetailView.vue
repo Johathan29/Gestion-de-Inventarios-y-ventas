@@ -2,19 +2,19 @@
   <Loading v-if="loading" />
   <div v-else class="max-w-5xl mx-auto space-y-6">
     <!-- Cabecera -->
-    <div class="card p-6">
+    <div class="dt-card p-6">
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
           <div class="flex items-center gap-3">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+            <h2 class="dt-headline" style="margin-bottom: 0;">
               Compra #{{ purchase.purchase_number || purchase.id?.substring(0, 8) }}
             </h2>
-            <span class="badge text-sm"
-              :class="purchase.status === 'received' ? 'badge-green' : purchase.status === 'cancelled' ? 'badge-red' : 'badge-yellow'">
+            <span class="dt-badge"
+              :class="purchase.status === 'received' ? 'dt-badge-success' : purchase.status === 'cancelled' ? 'dt-badge-danger' : 'dt-badge-warning'">
               {{ purchase.status === 'received' ? 'Recibida' : purchase.status === 'cancelled' ? 'Cancelada' : 'Pendiente' }}
             </span>
           </div>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p class="dt-body-sm" style="color: #4f4539;">
             Creada el {{ formatDateTime(purchase.created_at) }}
             <template v-if="purchase.received_at">| Recibida el {{ formatDateTime(purchase.received_at) }}</template>
           </p>
@@ -22,12 +22,12 @@
       </div>
 
       <!-- Info del Proveedor COMPLETA desde suppliers -->
-      <div v-if="purchase.suppliers" class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 mb-6">
-        <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Proveedor</h3>
+      <div v-if="purchase.suppliers" class="rounded-xl p-4 mb-6" style="background: rgba(98,66,0,0.03);">
+        <h3 class="dt-label-caps mb-3">Proveedor</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
           <div>
             <span class="text-gray-400 block text-xs">Nombre</span>
-            <span class="font-medium text-gray-900 dark:text-white">{{ purchase.suppliers.name || '-' }}</span>
+            <span class="font-medium" style="color: #0b1c30;">{{ purchase.suppliers.name || '-' }}</span>
           </div>
           <div>
             <span class="text-gray-400 block text-xs">Contacto</span>
@@ -64,13 +64,13 @@
       </div>
 
       <!-- Notas -->
-      <div v-if="purchase.notes" class="mb-6 p-3 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg text-sm text-gray-600 dark:text-gray-400">
+      <div v-if="purchase.notes" class="mb-6 p-3 rounded-lg text-sm" style="background: rgba(98,66,0,0.03); color: #4f4539;">
         <span class="font-medium">Notas:</span> {{ purchase.notes }}
       </div>
 
       <!-- Productos -->
-      <h3 class="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-        <span class="material-icons-outlined text-primary-500">inventory_2</span>
+      <h3 class="font-semibold" style="color: #0b1c30; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+        <span class="material-icons-outlined" style="color: #624200;">inventory_2</span>
         Productos ({{ purchase.purchase_items?.length || 0 }})
       </h3>
 
@@ -78,27 +78,27 @@
       <div class="hidden md:block overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
-            <tr class="bg-gray-50 dark:bg-gray-700/50 border-y border-gray-200 dark:border-gray-700">
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Producto</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">SKU / Barra</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Cant.</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Costo U.</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Subtotal</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase w-20">Acción</th>
+            <tr class="dt-table-header-row">
+              <th class="dt-table-th text-left">Producto</th>
+              <th class="dt-table-th text-left">SKU / Barra</th>
+              <th class="dt-table-th text-right">Cant.</th>
+              <th class="dt-table-th text-right">Costo U.</th>
+              <th class="dt-table-th text-right">Subtotal</th>
+              <th class="dt-table-th text-right">Acción</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            <tr v-for="item in purchase.purchase_items || []" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/20">
+          <tbody class="dt-table-tbody">
+            <tr v-for="item in purchase.purchase_items || []" :key="item.id" style="transition: background 0.15s;" @mouseenter="e => e.currentTarget.style.background = 'rgba(98,66,0,0.03)'" @mouseleave="e => e.currentTarget.style.background = ''">
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0">
+                  <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                     <img v-if="item.product_image" :src="item.product_image" class="w-full h-full object-cover" alt="" />
                     <span v-else class="flex items-center justify-center h-full text-gray-400">
                       <span class="material-icons-outlined text-lg">inventory_2</span>
                     </span>
                   </div>
                   <div>
-                    <p class="font-medium text-gray-900 dark:text-white">{{ item.product_name }}</p>
+                    <p class="font-medium" style="color: #0b1c30;">{{ item.product_name }}</p>
                     <p v-if="item.products?.name && item.products.name !== item.product_name" class="text-xs text-gray-400">
                       {{ item.products.name }}
                     </p>
@@ -116,15 +116,15 @@
               </td>
               <td class="px-4 py-3 text-right font-medium">{{ item.quantity }}</td>
               <td class="px-4 py-3 text-right">{{ formatCurrency(item.unit_price) }}</td>
-              <td class="px-4 py-3 text-right font-medium text-primary-600 dark:text-primary-400">
+              <td class="px-4 py-3 text-right font-medium dt-financial">
                 {{ formatCurrency((item.quantity || 0) * (item.unit_price || 0)) }}
               </td>
               <td class="px-4 py-3 text-right">
                 <div class="flex items-center gap-1 justify-end">
-                  <button @click="openEditItem(item)" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-400 hover:text-primary-600" title="Editar">
+                  <button @click="openEditItem(item)" class="dt-btn-icon" title="Editar">
                     <span class="material-icons-outlined text-lg">edit</span>
                   </button>
-                  <button @click="deleteItem(item)" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-400 hover:text-red-600" title="Eliminar">
+                  <button @click="deleteItem(item)" class="dt-btn-icon" style="color: #dc2626;" title="Eliminar">
                     <span class="material-icons-outlined text-lg">delete</span>
                   </button>
                 </div>
@@ -137,16 +137,16 @@
       <!-- Mobile -->
       <div class="md:hidden space-y-3">
         <div v-for="item in purchase.purchase_items || []" :key="item.id"
-          class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-3">
+          class="dt-card-sm p-3">
           <div class="flex items-start gap-3">
-            <div class="w-12 h-12 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-600 shrink-0">
+            <div class="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
               <img v-if="item.product_image" :src="item.product_image" class="w-full h-full object-cover" alt="" />
               <span v-else class="flex items-center justify-center h-full text-gray-400">
                 <span class="material-icons-outlined">inventory_2</span>
               </span>
             </div>
             <div class="flex-1 min-w-0">
-              <p class="font-semibold text-gray-900 dark:text-white truncate">{{ item.product_name }}</p>
+              <p class="font-semibold truncate" style="color: #0b1c30;">{{ item.product_name }}</p>
               <div class="flex flex-wrap gap-2 mt-1 text-xs text-gray-500">
                 <span v-if="item.sku" class="font-mono">SKU: {{ item.sku }}</span>
                 <span v-if="item.barcode || item.products?.barcode" class="font-mono flex items-center gap-1">
@@ -156,11 +156,11 @@
               </div>
               <div class="flex justify-between items-center mt-2 text-sm">
                 <span>{{ item.quantity }} x {{ formatCurrency(item.unit_price) }}</span>
-                <span class="font-bold text-primary-600 dark:text-primary-400">
+                <span class="font-bold dt-financial">
                   {{ formatCurrency((item.quantity || 0) * (item.unit_price || 0)) }}
                 </span>
               </div>
-              <div class="flex gap-2 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+              <div class="flex gap-2 mt-2 pt-2" style="border-top: 1px solid #e2d6c8;">
                 <button @click="openEditItem(item)" class="text-xs text-primary-600 hover:text-primary-800 flex items-center gap-1">
                   <span class="material-icons-outlined text-sm">edit</span> Editar
                 </button>
@@ -174,46 +174,44 @@
       </div>
 
       <!-- Totales con desglose -->
-      <div class="flex justify-end mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex justify-end mt-6 pt-4" style="border-top: 1px solid #e2d6c8;">
         <div class="text-right space-y-1 w-64">
-          <div class="flex justify-between text-sm text-gray-500">
+          <div class="flex justify-between text-sm" style="color: #4f4539;">
             <span>Subtotal</span>
             <span>{{ formatCurrency(purchase.subtotal) }}</span>
           </div>
-          <div class="flex justify-between text-sm text-gray-500">
+          <div class="flex justify-between text-sm" style="color: #4f4539;">
             <span>IVA (19%)</span>
             <span>{{ formatCurrency(purchase.tax) }}</span>
           </div>
-          <div v-if="purchase.discount" class="flex justify-between text-sm text-red-500">
+          <div v-if="purchase.discount" class="flex justify-between text-sm" style="color: #ef4444;">
             <span>Descuento</span>
             <span>-{{ formatCurrency(purchase.discount) }}</span>
           </div>
-          <div class="flex justify-between text-lg font-bold text-gray-900 dark:text-white pt-1 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex justify-between text-lg font-bold pt-1" style="color: #0b1c30; border-top: 1px solid #e2d6c8;">
             <span>Total</span>
-            <span class="text-primary-600 dark:text-primary-400">{{ formatCurrency(purchase.total) }}</span>
+            <span style="color: #624200;">{{ formatCurrency(purchase.total) }}</span>
           </div>
         </div>
       </div>
 
       <!-- Acciones -->
-      <div class="flex flex-wrap gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <router-link to="/app/purchases" class="btn btn-secondary btn-sm flex items-center gap-1">
+      <div class="flex flex-wrap gap-3 mt-6 pt-4" style="border-top: 1px solid #e2d6c8;">
+        <router-link to="/app/purchases" class="dt-btn-secondary" style="display: inline-flex; align-items: center; gap: 0.25rem;">
           <span class="material-icons-outlined text-lg">arrow_back</span> Volver
         </router-link>
 
-        <!-- Send to Inventory (solo si está pendiente/aprobada) -->
         <button v-if="purchase.status === 'pending' || purchase.status === 'approved'"
                 @click="handleSendToInventory"
                 :disabled="sendingToInventory"
-                class="btn btn-primary btn-sm flex items-center gap-1">
+                class="dt-btn-primary" style="display: inline-flex; align-items: center; gap: 0.25rem;">
           <span class="material-icons-outlined text-lg">inventory</span>
           {{ sendingToInventory ? 'Enviando...' : 'Enviar a Inventario' }}
         </button>
 
-        <!-- Botón Cancelar Compra -->
         <button v-if="purchase.status !== 'cancelled' && purchase.status !== 'received'"
                 @click="handleCancel"
-                class="btn btn-danger btn-sm flex items-center gap-1">
+                class="dt-btn-secondary" style="display: inline-flex; align-items: center; gap: 0.25rem; border-color: #ef4444; color: #ef4444;">
           <span class="material-icons-outlined text-lg">cancel</span> Cancelar Compra
         </button>
       </div>
@@ -222,8 +220,8 @@
     <!-- Item Edit Modal -->
     <Teleport to="body">
       <div v-if="showItemModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="closeItemModal">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
-          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Editar Item</h3>
+        <div class="bg-white rounded-2xl w-full max-w-md mx-4 p-6" style="box-shadow: 0px 12px 48px rgba(98, 66, 0, 0.16);">
+          <h3 class="dt-headline-sm" style="margin-bottom: 1rem;">Editar Item</h3>
           <div class="space-y-4">
             <div>
               <label class="form-label">Nombre del Producto</label>
@@ -244,9 +242,9 @@
               <input v-model="editingItem.barcode" class="form-input font-mono" />
             </div>
           </div>
-          <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button @click="closeItemModal" class="btn btn-secondary btn-sm">Cancelar</button>
-            <button @click="saveItem" :disabled="savingItem" class="btn btn-primary btn-sm">
+          <div class="flex justify-end gap-3 mt-6 pt-4" style="border-top: 1px solid #e2d6c8;">
+            <button @click="closeItemModal" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Cancelar</button>
+            <button @click="saveItem" :disabled="savingItem" class="dt-btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">
               {{ savingItem ? 'Guardando...' : 'Guardar' }}
             </button>
           </div>

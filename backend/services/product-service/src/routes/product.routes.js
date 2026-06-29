@@ -1,8 +1,8 @@
 const express = require('express');
 const multer = require('multer');
 const router = express.Router();
-const { authenticate, authorize, hasPermission } = require('../../../../shared/middleware/auth');
-const { ROLES, PERMISSIONS } = require('../../../../shared/types/roles');
+const { authenticate, hasPermission, validate, createProductSchema, updateProductSchema } = require('@inventory/shared');
+const { PERMISSIONS } = require('@inventory/shared');
 const {
   getProducts, getProductById, createProduct, updateProduct, deleteProduct,
   getFeaturedProducts, getProductsByCategory, getLowStockProducts,
@@ -32,8 +32,8 @@ router.get('/low-stock', authenticate(), hasPermission(PERMISSIONS.INVENTORY_REA
 router.get('/:id', getProductById);
 
 // Rutas protegidas
-router.post('/', authenticate(), hasPermission(PERMISSIONS.PRODUCT_CREATE), createProduct);
-router.put('/:id', authenticate(), hasPermission(PERMISSIONS.PRODUCT_UPDATE), updateProduct);
+router.post('/', authenticate(), hasPermission(PERMISSIONS.PRODUCT_CREATE), validate(createProductSchema), createProduct);
+router.put('/:id', authenticate(), hasPermission(PERMISSIONS.PRODUCT_UPDATE), validate(updateProductSchema), updateProduct);
 router.delete('/:id', authenticate(), hasPermission(PERMISSIONS.PRODUCT_DELETE), deleteProduct);
 
 // Variantes

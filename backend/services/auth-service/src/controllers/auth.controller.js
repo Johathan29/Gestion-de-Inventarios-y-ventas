@@ -1,15 +1,12 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
+const { getSupabaseClient } = require('@inventory/shared');
 
 // Cargar variables de entorno desde el backend/.env
 require('dotenv').config({ path: path.resolve(__dirname, '../../../../.env') });
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabase = getSupabaseClient();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;

@@ -1,11 +1,8 @@
-const { createClient } = require('@supabase/supabase-js');
+const { getSupabaseClient } = require('@inventory/shared');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabase = getSupabaseClient();
 
 const COMPANY = {
   name: process.env.INVOICE_COMPANY_NAME || 'Tu Empresa S.A.',

@@ -1,23 +1,66 @@
 <template>
-  <div class="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
+  <div class="whatsapp-widget fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
     <!-- Tooltip / Mensaje -->
-    <Transition name="bubble">
+    <Transition
+  appear
+  enter-active-class="bubble-enter-active"
+  enter-from-class="bubble-enter-from"
+  enter-to-class="bubble-enter-to"
+  leave-active-class="bubble-leave-active"
+  leave-from-class="bubble-leave-from"
+  leave-to-class="bubble-leave-to"
+>
       <div
-        v-if="showBubble"
-        class="bg-[#25D366] text-white px-4 py-2 rounded-2xl rounded-br-none text-sm font-body-md shadow-lg relative animate-fade-in"
-      >
-        {{ bubbleMessage }}
-      </div>
+  v-if="showBubble"
+  class="
+    max-w-[260px]
+    rounded-2xl
+    rounded-br-md
+    bg-[#25D366]
+    px-4
+    py-3
+    text-sm
+    font-body-md
+    text-white
+    shadow-[0_18px_40px_rgba(37,211,102,.28)]
+    backdrop-blur-xl
+    origin-bottom-right
+    will-change-transform
+    select-none
+  "
+>
+  {{ bubbleMessage }}
+</div>
+        
     </Transition>
 
     <!-- Botón flotante WhatsApp -->
     <button
-      @click="openWhatsApp"
-      @mouseenter="showBubble = true"
-      @mouseleave="showBubble = false"
-      class="w-16 h-16 rounded-full bg-[#25D366] hover:bg-[#20BD5B] shadow-2xl shadow-[#25D366]/30 flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
-      aria-label="Chat por WhatsApp"
-    >
+  @click="openWhatsApp"
+  @mouseenter="showBubble = true"
+  @mouseleave="showBubble = false"
+  class="
+    group
+    relative
+    flex
+    h-8
+    w-8
+    items-center
+    justify-center
+    rounded-full
+    bg-[#25D366]
+    shadow-[0_18px_45px_rgba(37,211,102,.35)]
+    transition-all
+    duration-500
+    ease-[cubic-bezier(.22,1,.36,1)]
+    hover:scale-110
+    hover:shadow-[0_25px_55px_rgba(37,211,102,.45)]
+    active:scale-95
+    cursor-pointer
+    will-change-transform
+  "
+  aria-label="Chat por WhatsApp"
+>
       <svg
         viewBox="0 0 24 24"
         class="w-8 h-8 fill-white"
@@ -30,46 +73,91 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { ecommerceAPI } from '../../api';
 
 const phoneNumber = ref('');
 const bubbleMessage = ref('¡Hola! ¿En qué podemos ayudarte?');
 const showBubble = ref(true);
 
+let bubbleTimeout = null;
+
 onMounted(async () => {
   try {
     const res = await ecommerceAPI.getWhatsappConfig();
-    if (res.data) {
-      if (res.data.phone_number) phoneNumber.value = res.data.phone_number;
-      if (res.data.welcome_message) bubbleMessage.value = res.data.welcome_message;
-    }
-  } catch {
-    // Usar valores por defecto
-  }
 
-  // Auto-ocultar el bubble después de 5 segundos
-  setTimeout(() => { showBubble.value = false; }, 5000);
+    if (res.data) {
+      phoneNumber.value = res.data.phone_number || '';
+      bubbleMessage.value =
+        res.data.welcome_message || bubbleMessage.value;
+    }
+  } catch {}
+
+  bubbleTimeout = setTimeout(() => {
+    showBubble.value = false;
+  }, 5000);
+});
+
+onUnmounted(() => {
+  if (bubbleTimeout) clearTimeout(bubbleTimeout);
 });
 
 function openWhatsApp() {
-  const number = phoneNumber.value.replace(/[^0-9]/g, '');
+  const number = phoneNumber.value.replace(/\D/g, '');
+
   if (!number) return;
 
-  const message = encodeURIComponent(bubbleMessage.value);
-  const url = `https://wa.me/${number}?text=${message}`;
-  window.open(url, '_blank', 'noopener,noreferrer');
+  window.open(
+    `https://wa.me/${number}?text=${encodeURIComponent(bubbleMessage.value)}`,
+    '_blank',
+    'noopener,noreferrer'
+  );
 }
 </script>
-
 <style scoped>
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(10px) scale(0.9); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+.bubble-enter-active,
+.bubble-leave-active{
+    transition:
+        opacity .55s cubic-bezier(.22,1,.36,1),
+        transform .55s cubic-bezier(.22,1,.36,1),
+        filter .55s cubic-bezier(.22,1,.36,1);
+    transform-origin: bottom right;
+    will-change: transform, opacity, filter;
 }
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out forwards;
+
+.bubble-enter-from{
+    opacity:0;
+    transform:
+        translate3d(12px,18px,0)
+        scale(.65)
+        rotate(3deg);
+    filter:blur(10px);
 }
-.bubble-enter-active { animation: fade-in 0.3s ease-out; }
-.bubble-leave-active { animation: fade-in 0.3s ease-in reverse; }
+
+.bubble-enter-to{
+    opacity:1;
+    transform:
+        translate3d(0,0,0)
+        scale(1)
+        rotate(0deg);
+    filter:blur(0);
+}
+
+.bubble-leave-from{
+    opacity:1;
+    transform:
+        translate3d(0,0,0)
+        scale(1);
+    filter:blur(0);
+}
+
+.bubble-leave-to{
+    opacity:0;
+    transform:
+        translate3d(12px,18px,0)
+        scale(.70)
+        rotate(3deg);
+    filter:blur(8px);
+}
+
 </style>

@@ -1,6 +1,6 @@
 <template>
-  <div class="card p-6 max-w-4xl mx-auto">
-    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Nueva Venta</h2>
+  <div class="dt-card p-6 max-w-4xl mx-auto">
+    <h2 class="dt-headline" style="margin-bottom: 1.5rem;">Nueva Venta</h2>
 
     <Alert v-if="errorMsg" type="error" :message="errorMsg" :show="!!errorMsg" dismissible @close="errorMsg = ''" class="mb-4" />
 
@@ -29,20 +29,20 @@
       <div>
         <div class="flex items-center justify-between mb-3">
           <label class="form-label mb-0">Productos</label>
-          <button type="button" @click="addItem" class="btn btn-sm btn-secondary">
+          <button type="button" @click="addItem" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">
             <span class="material-icons-outlined text-lg">add</span> Agregar Producto
           </button>
         </div>
 
         <div class="space-y-2" v-if="form.items.length">
           <div v-for="(item, idx) in form.items" :key="idx"
-               class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+               class="flex items-center gap-3 p-3 rounded-xl" style="background: rgba(98,66,0,0.03);">
             <select v-model="item.product_id" @change="selectProduct(idx)" class="form-input flex-1" required>
               <option value="">Seleccionar...</option>
               <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }} - ${{ formatCurrency(p.price) }} (Stock: {{ p.stock }})</option>
             </select>
             <input v-model.number="item.quantity" type="number" min="1" class="form-input w-20 text-center" placeholder="Cant" required />
-            <span class="text-sm font-medium text-gray-900 dark:text-white w-24 text-right">{{ formatCurrency(item.subtotal) }}</span>
+            <span class="dt-financial" style="width: 6rem; text-align: right;">{{ formatCurrency(item.subtotal) }}</span>
             <button type="button" @click="removeItem(idx)" class="text-red-500 hover:text-red-700">
               <span class="material-icons-outlined">delete</span>
             </button>
@@ -52,28 +52,28 @@
       </div>
 
       <!-- Totals -->
-      <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+      <div class="pt-4" style="border-top: 1px solid #e2d6c8;">
         <div class="flex justify-end">
           <div class="w-64 space-y-2">
             <div class="flex justify-between text-sm">
-              <span class="text-gray-500">Subtotal</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ formatCurrency(subtotal) }}</span>
+              <span style="color: #817567;">Subtotal</span>
+              <span class="dt-financial">{{ formatCurrency(subtotal) }}</span>
             </div>
             <div class="flex justify-between text-sm">
-              <span class="text-gray-500">IVA (19%)</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ formatCurrency(tax) }}</span>
+              <span style="color: #817567;">IVA (19%)</span>
+              <span class="dt-financial">{{ formatCurrency(tax) }}</span>
             </div>
-            <div class="flex justify-between text-lg font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
-              <span class="text-gray-900 dark:text-white">Total</span>
-              <span class="text-primary-600">{{ formatCurrency(total) }}</span>
+            <div class="flex justify-between text-lg font-bold pt-2" style="border-top: 1px solid #e2d6c8;">
+              <span style="color: #0b1c30;">Total</span>
+              <span style="color: #624200;">{{ formatCurrency(total) }}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <router-link to="/app/sales" class="btn btn-secondary">Cancelar</router-link>
-        <button type="submit" :disabled="loading || !form.items.length" class="btn btn-primary btn-lg">
+      <div class="flex justify-end gap-3 pt-4" style="border-top: 1px solid #e2d6c8;">
+        <router-link to="/app/sales" class="dt-btn-secondary">Cancelar</router-link>
+        <button type="submit" :disabled="loading || !form.items.length" class="dt-btn-primary">
           <span v-if="loading" class="material-icons-outlined animate-spin">refresh</span>
           <span v-else>Completar Venta</span>
         </button>

@@ -1,36 +1,36 @@
 <template>
   <div>
-    <div class="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 pb-2 flex-wrap">
-      <router-link to="/app/ecommerce" class="px-4 py-2 text-sm font-medium rounded-t-lg"
-                   :class="$route.path === '/app/ecommerce' ? 'bg-white dark:bg-gray-800 text-primary-600 border-b-2 border-primary-600' : 'text-gray-500 hover:text-gray-700'">
+    <div class="dt-tabs mb-6 flex-wrap">
+      <router-link to="/app/ecommerce" class="dt-tab"
+                   :class="$route.path === '/app/ecommerce' ? 'dt-tab-active' : 'dt-tab'">
         General
       </router-link>
-      <router-link to="/app/ecommerce/hero-slides" class="px-4 py-2 text-sm font-medium rounded-t-lg"
-                   :class="$route.path === '/app/ecommerce/hero-slides' ? 'bg-white dark:bg-gray-800 text-primary-600 border-b-2 border-primary-600' : 'text-gray-500 hover:text-gray-700'">
+      <router-link to="/app/ecommerce/hero-slides" class="dt-tab"
+                   :class="$route.path === '/app/ecommerce/hero-slides' ? 'dt-tab-active' : 'dt-tab'">
         Hero Carrusel
       </router-link>
-      <router-link to="/app/ecommerce/banners" class="px-4 py-2 text-sm font-medium rounded-t-lg"
-                   :class="$route.path === '/app/ecommerce/banners' ? 'bg-white dark:bg-gray-800 text-primary-600 border-b-2 border-primary-600' : 'text-gray-500 hover:text-gray-700'">
+      <router-link to="/app/ecommerce/banners" class="dt-tab"
+                   :class="$route.path === '/app/ecommerce/banners' ? 'dt-tab-active' : 'dt-tab'">
         Banners
       </router-link>
-      <router-link to="/app/ecommerce/floating-banners" class="px-4 py-2 text-sm font-medium rounded-t-lg"
-                   :class="$route.path === '/app/ecommerce/floating-banners' ? 'bg-white dark:bg-gray-800 text-primary-600 border-b-2 border-primary-600' : 'text-gray-500 hover:text-gray-700'">
+      <router-link to="/app/ecommerce/floating-banners" class="dt-tab"
+                   :class="$route.path === '/app/ecommerce/floating-banners' ? 'dt-tab-active' : 'dt-tab'">
         Banners Flotantes
       </router-link>
-      <router-link to="/app/ecommerce/offers" class="px-4 py-2 text-sm font-medium rounded-t-lg"
-                   :class="$route.path === '/app/ecommerce/offers' ? 'bg-white dark:bg-gray-800 text-primary-600 border-b-2 border-primary-600' : 'text-gray-500 hover:text-gray-700'">
+      <router-link to="/app/ecommerce/offers" class="dt-tab"
+                   :class="$route.path === '/app/ecommerce/offers' ? 'dt-tab-active' : 'dt-tab'">
         Ofertas
       </router-link>
-      <router-link to="/app/ecommerce/hero" class="px-4 py-2 text-sm font-medium rounded-t-lg"
-                   :class="$route.path === '/app/ecommerce/hero' ? 'bg-white dark:bg-gray-800 text-primary-600 border-b-2 border-primary-600' : 'text-gray-500 hover:text-gray-700'">
+      <router-link to="/app/ecommerce/hero" class="dt-tab"
+                   :class="$route.path === '/app/ecommerce/hero' ? 'dt-tab-active' : 'dt-tab'">
         Hero (legacy)
       </router-link>
-      <router-link to="/app/ecommerce/reviews" class="px-4 py-2 text-sm font-medium rounded-t-lg"
-                   :class="$route.path === '/app/ecommerce/reviews' ? 'bg-white dark:bg-gray-800 text-primary-600 border-b-2 border-primary-600' : 'text-gray-500 hover:text-gray-700'">
+      <router-link to="/app/ecommerce/reviews" class="dt-tab"
+                   :class="$route.path === '/app/ecommerce/reviews' ? 'dt-tab-active' : 'dt-tab'">
         Reseñas
       </router-link>
-      <router-link to="/app/ecommerce/settings" class="px-4 py-2 text-sm font-medium rounded-t-lg"
-                   :class="$route.path === '/app/ecommerce/settings' ? 'bg-white dark:bg-gray-800 text-primary-600 border-b-2 border-primary-600' : 'text-gray-500 hover:text-gray-700'">
+      <router-link to="/app/ecommerce/settings" class="dt-tab"
+                   :class="$route.path === '/app/ecommerce/settings' ? 'dt-tab-active' : 'dt-tab'">
         Configuración
       </router-link>
     </div>

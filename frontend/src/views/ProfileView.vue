@@ -3,7 +3,7 @@
     <!-- Profile Header -->
     <div class="relative mb-8">
       <!-- Cover -->
-      <div class="h-48 rounded-2xl bg-gradient-to-r from-purple-600 via-primary-600 to-fuchsia-600 relative overflow-hidden">
+      <div class="h-48 rounded-2xl" style="background: linear-gradient(135deg, #624200, #795900, #a17808); position: relative; overflow: hidden;">
         <div class="absolute inset-0 opacity-20">
           <div class="absolute -top-10 -right-10 w-40 h-40 bg-white rounded-full blur-3xl"></div>
           <div class="absolute -bottom-10 -left-10 w-60 h-60 bg-white rounded-full blur-3xl"></div>
@@ -12,7 +12,7 @@
       <!-- Avatar -->
       <div class="absolute -bottom-16 left-8">
         <div class="relative group cursor-pointer" @click="triggerAvatarUpload">
-          <div class="w-32 h-32 rounded-2xl border-4 border-white dark:border-gray-800 bg-gradient-to-br from-purple-500 to-primary-600 flex items-center justify-center text-white text-4xl font-bold shadow-xl transition-transform duration-300 group-hover:scale-105">
+          <div class="w-32 h-32 rounded-2xl border-4 border-white" style="background: linear-gradient(135deg, #624200, #795900); display: flex; align-items: center; justify-content: center; color: white; font-size: 2.25rem; font-weight: bold; box-shadow: 0 10px 15px -3px rgba(98,66,0,0.2); transition: transform 0.3s;" @mouseenter="e => e.currentTarget.style.transform = 'scale(1.05)'" @mouseleave="e => e.currentTarget.style.transform = ''">
             {{ userInitials }}
           </div>
           <div class="absolute inset-0 rounded-2xl bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -26,7 +26,7 @@
         <button @click="editing = !editing"
           class="px-6 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 shadow-lg"
           :class="editing
-            ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             : 'bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/30'">
           <span class="flex items-center gap-2">
             <span class="material-icons-outlined text-lg">{{ editing ? 'close' : 'edit' }}</span>
@@ -38,21 +38,20 @@
 
     <!-- Profile Info -->
     <div class="mt-20">
-      <div class="card p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+      <div class="dt-card p-6">
         <div class="flex items-center justify-between mb-6">
           <div>
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ user?.name }}</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+            <h2 class="dt-headline" style="margin-bottom: 0;">{{ user?.name }}</h2>
+            <p class="dt-body-sm" style="color: #4f4539; display: flex; align-items: center; gap: 0.5rem;">
               <span class="material-icons-outlined text-base">email</span>
               {{ user?.email }}
             </p>
           </div>
           <div class="flex items-center gap-2">
-            <span class="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+            <span class="dt-badge dt-badge-info">
               {{ user?.role_name || user?.roles?.name || 'Usuario' }}
             </span>
-            <span v-if="user?.is_active"
-              class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+            <span v-if="user?.is_active" class="dt-badge dt-badge-success">
               Activo
             </span>
           </div>
@@ -62,28 +61,28 @@
         <form v-if="editing" @submit.prevent="saveProfile" class="space-y-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nombre Completo</label>
+              <label class="dt-label">Nombre Completo</label>
               <input v-model="form.name" type="text"
-                class="input w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                class="dt-input"
                 placeholder="Tu nombre" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Teléfono</label>
+              <label class="dt-label">Teléfono</label>
               <input v-model="form.phone" type="tel"
-                class="input w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                class="dt-input"
                 placeholder="+58 412 123 4567" />
             </div>
             <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avatar URL</label>
+              <label class="dt-label">Avatar URL</label>
               <input v-model="form.avatar_url" type="url"
-                class="input w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                class="dt-input"
                 placeholder="https://..." />
             </div>
           </div>
 
-          <div class="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex items-center gap-3 pt-4" style="border-top: 1px solid #e2d6c8;">
             <button type="submit" :disabled="saving"
-              class="btn-primary px-8 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-primary-600 text-white font-medium hover:from-purple-700 hover:to-primary-700 disabled:opacity-50 transition-all duration-300 shadow-lg shadow-purple-600/20">
+              class="dt-btn-primary">
               <span class="flex items-center gap-2">
                 <span v-if="saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 <span class="material-icons-outlined text-lg" v-else>save</span>
@@ -91,7 +90,7 @@
               </span>
             </button>
             <button type="button" @click="editing = false"
-              class="px-6 py-2.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
+              class="dt-btn-secondary">
               Cancelar
             </button>
           </div>
@@ -100,36 +99,36 @@
         <!-- View Mode -->
         <div v-else class="space-y-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium">Teléfono</p>
-              <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">{{ user?.phone || 'No registrado' }}</p>
+            <div class="p-4 rounded-xl" style="background: rgba(98,66,0,0.03);">
+              <p class="dt-caption" style="text-transform: uppercase;">Teléfono</p>
+              <p class="text-sm font-medium" style="color: #0b1c30; margin-top: 0.25rem;">{{ user?.phone || 'No registrado' }}</p>
             </div>
-            <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium">Último Acceso</p>
-              <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">{{ formatDate(user?.last_login) }}</p>
+            <div class="p-4 rounded-xl" style="background: rgba(98,66,0,0.03);">
+              <p class="dt-caption" style="text-transform: uppercase;">Último Acceso</p>
+              <p class="text-sm font-medium" style="color: #0b1c30; margin-top: 0.25rem;">{{ formatDate(user?.last_login) }}</p>
             </div>
-            <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium">Miembro Desde</p>
-              <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">{{ formatDate(user?.created_at) }}</p>
+            <div class="p-4 rounded-xl" style="background: rgba(98,66,0,0.03);">
+              <p class="dt-caption" style="text-transform: uppercase;">Miembro Desde</p>
+              <p class="text-sm font-medium" style="color: #0b1c30; margin-top: 0.25rem;">{{ formatDate(user?.created_at) }}</p>
             </div>
-            <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium">Rol</p>
-              <p class="text-sm font-medium text-gray-900 dark:text-white mt-1 capitalize">{{ user?.role_name || user?.roles?.name || 'Usuario' }}</p>
+            <div class="p-4 rounded-xl" style="background: rgba(98,66,0,0.03);">
+              <p class="dt-caption" style="text-transform: uppercase;">Rol</p>
+              <p class="text-sm font-medium" style="color: #0b1c30; margin-top: 0.25rem; text-transform: capitalize;">{{ user?.role_name || user?.roles?.name || 'Usuario' }}</p>
             </div>
           </div>
 
           <!-- Security Section -->
-          <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <span class="material-icons-outlined text-primary-500">security</span>
+          <div class="pt-6" style="border-top: 1px solid #e2d6c8;">
+            <h3 class="dt-headline-sm" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span class="material-icons-outlined" style="color: #624200;">security</span>
               Seguridad
             </h3>
-            <div class="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+            <div class="flex items-center justify-between p-4 rounded-xl" style="background: rgba(98,66,0,0.03);">
               <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">Contraseña</p>
-                <p class="text-xs text-gray-500 mt-1">Último cambio: —</p>
+                <p class="text-sm font-medium" style="color: #0b1c30;">Contraseña</p>
+                <p class="dt-caption">Último cambio: —</p>
               </div>
-              <button class="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
+              <button class="dt-btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
                 Cambiar
               </button>
             </div>

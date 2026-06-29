@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate, hasPermission } = require('../../../../shared/middleware/auth');
-const { PERMISSIONS } = require('../../../../shared/types/roles');
+const { authenticate, hasPermission } = require('@inventory/shared');
+const { PERMISSIONS } = require('@inventory/shared');
 const { getConfig, updateConfig, bulkUpdateConfig, getSections } = require('../controllers/config.controller');
 
 router.use(authenticate());

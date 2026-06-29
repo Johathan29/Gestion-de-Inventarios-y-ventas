@@ -1,7 +1,7 @@
 <template>
   <section class="py-8 px-4 bg-surface-container-lowest/30">
     <div class="max-w-7xl mx-auto">
-      <div class="flex md:flex-row flex-col justify-between items-end mb-20 entrance-reveal">
+      <div class="flex md:flex-row flex-col justify-between items-end mb-20" data-gsap="section-title">
         <div>
           <h2 class="font-bold text-[1.7rem] text-on-surface mb-4">{{ title }}</h2>
           <p class="font-body-md text-body-md text-on-surface-variant max-w-md">{{ subtitle }}</p>
@@ -47,11 +47,12 @@
       </div>
 
       <!-- Product Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div data-gsap="stagger" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
   v-for="product in products"
   :key="product.id"
   class="perspective"
+  data-gsap="item"
 >
     <div
       class="glass-card rounded-[32px] p-6 h-full flex flex-col group cursor-pointer overflow-hidden product-card"

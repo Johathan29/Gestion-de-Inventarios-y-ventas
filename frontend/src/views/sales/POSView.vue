@@ -8,11 +8,14 @@
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <div v-for="p in products" :key="p.id"
              @click="addToCart(p)"
-             class="card p-3 cursor-pointer hover:shadow-md transition-shadow text-center">
-          <div class="w-full h-20 bg-gray-100 dark:bg-gray-700 rounded-lg mb-2 flex items-center justify-center">
+             class="dt-card p-3 cursor-pointer text-center"
+             style="transition: box-shadow 0.2s ease, transform 0.2s ease;"
+             @mouseenter="e => { e.currentTarget.style.boxShadow = '0px 8px 30px rgba(98,66,0,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)'; }"
+             @mouseleave="e => { e.currentTarget.style.boxShadow = ''; e.currentTarget.style.transform = ''; }">
+          <div class="w-full h-20 bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
             <span class="material-icons-outlined text-3xl text-gray-400">inventory_2</span>
           </div>
-          <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ p.name }}</p>
+          <p class="text-sm font-medium truncate" style="color: #0b1c30;">{{ p.name }}</p>
           <p class="text-sm font-bold text-primary-600">{{ formatCurrency(p.price) }}</p>
           <p class="text-xs text-gray-500">Stock: {{ p.stock }}</p>
         </div>
@@ -21,22 +24,22 @@
     </div>
 
     <!-- Cart Panel -->
-    <div class="w-96 card p-4 flex flex-col">
-      <h3 class="font-semibold text-gray-900 dark:text-white mb-4">Carrito</h3>
+    <div class="w-96 dt-card p-4 flex flex-col">
+<h3 class="dt-headline-sm" style="margin-bottom: 1rem;">Carrito</h3>
 
       <div class="flex-1 overflow-y-auto space-y-2 mb-4">
         <div v-for="(item, idx) in cart" :key="idx"
-             class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+             class="flex items-center gap-2 p-2 rounded-xl" style="background: rgba(98,66,0,0.03);">
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ item.name }}</p>
+            <p class="text-sm font-medium truncate" style="color: #0b1c30;">{{ item.name }}</p>
             <p class="text-xs text-gray-500">{{ formatCurrency(item.price) }} x {{ item.quantity }}</p>
           </div>
           <div class="flex items-center gap-1">
-            <button @click="updateQty(idx, -1)" class="w-6 h-6 rounded bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-sm">-</button>
+            <button @click="updateQty(idx, -1)" class="w-6 h-6 rounded flex items-center justify-center text-sm" style="background: #e2d6c8;">-</button>
             <span class="w-6 text-center text-sm font-medium">{{ item.quantity }}</span>
-            <button @click="updateQty(idx, 1)" class="w-6 h-6 rounded bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-sm">+</button>
+            <button @click="updateQty(idx, 1)" class="w-6 h-6 rounded flex items-center justify-center text-sm" style="background: #e2d6c8;">+</button>
           </div>
-          <p class="text-sm font-medium text-gray-900 dark:text-white w-20 text-right">{{ formatCurrency(item.price * item.quantity) }}</p>
+          <p class="text-sm font-medium w-20 text-right" style="color: #0b1c30;">{{ formatCurrency(item.price * item.quantity) }}</p>
           <button @click="removeItem(idx)" class="text-red-500">
             <span class="material-icons-outlined text-lg">close</span>
           </button>
@@ -45,11 +48,11 @@
       </div>
 
       <!-- Totals -->
-      <div class="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-1 text-sm mb-4">
+      <div class="pt-3 space-y-1 text-sm mb-4" style="border-top: 1px solid #e2d6c8;">
         <div class="flex justify-between"><span class="text-gray-500">Subtotal</span><span class="font-medium">{{ formatCurrency(subtotal) }}</span></div>
         <div class="flex justify-between"><span class="text-gray-500">IVA (19%)</span><span class="font-medium">{{ formatCurrency(tax) }}</span></div>
-        <div class="flex justify-between text-lg font-bold pt-1 border-t border-gray-200 dark:border-gray-700">
-          <span>Total</span><span class="text-primary-600">{{ formatCurrency(total) }}</span>
+        <div class="flex justify-between text-lg font-bold pt-1" style="border-top: 1px solid #e2d6c8;">
+          <span>Total</span><span style="color: #624200;">{{ formatCurrency(total) }}</span>
         </div>
       </div>
 
@@ -60,7 +63,7 @@
           <option value="card">Tarjeta</option>
           <option value="transfer">Transferencia</option>
         </select>
-        <button @click="checkout" :disabled="!cart.length || loading" class="btn btn-primary flex-1">
+        <button @click="checkout" :disabled="!cart.length || loading" class="dt-btn-primary" style="flex: 1;">
           <span v-if="loading" class="material-icons-outlined animate-spin">refresh</span>
           <span v-else>Cobrar</span>
         </button>

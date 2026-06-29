@@ -1,9 +1,6 @@
-const { createClient } = require('@supabase/supabase-js');
+const { getSupabaseClient } = require('@inventory/shared');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabase = getSupabaseClient();
 
 /**
  * Obtener datos completos para la página principal
@@ -206,6 +203,7 @@ const getHomeSettings = async (req, res, next) => {
     const { data: settings, error } = await supabase
       .from('ecommerce_settings')
       .select('*')
+      .eq('id', '00000000-0000-0000-0000-000000000001')
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
@@ -216,6 +214,7 @@ const getHomeSettings = async (req, res, next) => {
         store_name: 'Mi Tienda',
         description: '',
         logo_url: '',
+        favicon_url: '',
         contact_email: '',
         contact_phone: '',
         social_networks: {},
@@ -229,32 +228,21 @@ const getHomeSettings = async (req, res, next) => {
 
 const updateHomeSettings = async (req, res, next) => {
   try {
-    const { data: existing } = await supabase
+    const payload = {
+      ...req.body,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
       .from('ecommerce_settings')
-      .select('id')
+      .update(payload)
+      .eq('id', '00000000-0000-0000-0000-000000000001')
+      .select()
       .single();
 
-    let result;
-    if (existing) {
-      const { data, error } = await supabase
-        .from('ecommerce_settings')
-        .update(req.body)
-        .eq('id', existing.id)
-        .select()
-        .single();
-      if (error) throw error;
-      result = data;
-    } else {
-      const { data, error } = await supabase
-        .from('ecommerce_settings')
-        .insert(req.body)
-        .select()
-        .single();
-      if (error) throw error;
-      result = data;
-    }
+    if (error) throw error;
 
-    res.json({ success: true, data: result });
+    res.json({ success: true, data });
   } catch (error) {
     next(error);
   }

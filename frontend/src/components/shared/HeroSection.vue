@@ -4,8 +4,54 @@
     class="min-h-screen flex flex-col justify-center px-4 pt-32 pb-20 relative overflow-hidden bg-[#151215]"
   >
     <!-- ============================================ -->
+    <!-- SKELETON LOADING STATE                       -->
+    <!-- ============================================ -->
+    <template v-if="loading">
+      <!-- Background skeleton -->
+      <div class="absolute inset-0 bg-white/5 animate-pulse" />
+
+      <div class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-gutter items-center relative z-10 flex-1">
+        <!-- Text skeleton -->
+        <div class="lg:col-span-7 space-y-6">
+          <div class="h-4 w-32 bg-white/10 rounded animate-pulse mb-6"></div>
+          <div class="h-16 w-3/4 bg-white/10 rounded animate-pulse mb-4"></div>
+          <div class="h-16 w-2/3 bg-white/10 rounded animate-pulse mb-8"></div>
+          <div class="h-6 w-full max-w-xl bg-white/10 rounded animate-pulse mb-3"></div>
+          <div class="h-6 w-3/4 max-w-xl bg-white/10 rounded animate-pulse mb-12"></div>
+          <div class="flex md:flex-row flex-col gap-6">
+            <div class="h-14 w-48 bg-white/10 rounded-full animate-pulse"></div>
+            <div class="h-14 w-36 bg-white/10 rounded-full animate-pulse"></div>
+          </div>
+        </div>
+
+        <!-- Image skeleton -->
+        <div class="lg:col-span-5 relative mt-20 lg:mt-0">
+          <div class="relative h-[600px] w-full flex items-center justify-center">
+            <div class="relative w-full h-[500px] rounded-3xl overflow-hidden glass-card p-1 z-10">
+              <div class="w-full h-full rounded-2xl bg-white/10 animate-pulse"></div>
+            </div>
+          </div>
+          <!-- Thumbnails skeleton -->
+          <div class="flex items-center justify-center gap-3 mt-6">
+            <div v-for="n in 3" :key="'sk-thumb-' + n" class="w-[80px] h-[56px] rounded-xl bg-white/10 animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom nav skeleton -->
+      <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-white/10 animate-pulse"></div>
+        <div class="flex items-center gap-2">
+          <div v-for="n in 3" :key="'sk-dot-' + n" class="w-[10px] h-[10px] rounded-full bg-white/10 animate-pulse"></div>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-white/10 animate-pulse"></div>
+      </div>
+    </template>
+
+    <!-- ============================================ -->
     <!-- BACKGROUND – crossfade entre capas           -->
     <!-- ============================================ -->
+    <template v-else>
     <div
       v-for="(slide, index) in slides"
       :key="'bg-' + (slide.id || index)"
@@ -33,14 +79,14 @@
       <!-- ========================================== -->
       <div class="lg:col-span-7 relative">
         <Transition name="text-stagger" mode="out-in">
-          <div :key="'text-' + textDisplayIndex" class="entrance-reveal">
+          <div :key="'text-' + textDisplayIndex" data-gsap="hero-content">
             <span
               v-if="textSlide.badge"
-              class="font-label-sm text-label-sm uppercase tracking-widest text-primary mb-6 block"
+              class="font-label-sm text-label-sm uppercase tracking-widest text-primary mb-6 block hero-badge"
             >
               {{ textSlide.badge }}
             </span>
-            <h1 class="font-display-xl text-7xl leading-tight mb-8 text-on-surface">
+            <h1 class="font-display-xl text-7xl leading-tight mb-8 text-on-surface hero-title">
               {{ textSlide.title_line1 }} <br />
               <span
                 :class="[
@@ -51,10 +97,10 @@
                 {{ textSlide.title_line2 }}
               </span>
             </h1>
-            <p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl mb-12">
+            <p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl mb-12 hero-description">
               {{ textSlide.description }}
             </p>
-            <div class="flex md:flex-row flex-col gap-6">
+            <div class="flex md:flex-row flex-col gap-6 hero-cta">
               <a
                 v-if="textSlide.button1_text"
                 :href="textSlide.button1_url || '#'"
@@ -247,6 +293,7 @@
         <span class="material-symbols-outlined text-lg text-on-surface" data-icon="chevron_right">chevron_right</span>
       </button>
     </div>
+    </template> <!-- end v-else -->
   </section>
 </template>
 
@@ -274,6 +321,7 @@ const D = {
 // ───────────────────────────────────────────────
 // STATE
 // ───────────────────────────────────────────────
+const loading = ref(true);
 const slides = ref([]);
 const currentIndex = ref(0);   // slide activo (cambia AL FINAL)
 const nextIndex = ref(null);   // slide destino (durante transición)
@@ -660,6 +708,8 @@ onMounted(async () => {
   if (slides.value.length > 1) {
     startAutoPlay();
   }
+
+  loading.value = false;
 });
 
 onUnmounted(() => {

@@ -3,10 +3,13 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div v-for="r in reportLinks" :key="r.path"
            @click="$router.push(r.path)"
-           class="card p-6 cursor-pointer hover:shadow-md transition-shadow">
+           class="dt-card p-6 cursor-pointer"
+           style="transition: box-shadow 0.2s ease, transform 0.2s ease;"
+           @mouseenter="e => { e.currentTarget.style.boxShadow = '0px 8px 30px rgba(98,66,0,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)'; }"
+           @mouseleave="e => { e.currentTarget.style.boxShadow = ''; e.currentTarget.style.transform = ''; }">
         <span class="material-icons-outlined text-3xl mb-3" :class="r.color">{{ r.icon }}</span>
-        <h3 class="font-semibold text-gray-900 dark:text-white mb-1">{{ r.title }}</h3>
-        <p class="text-sm text-gray-500">{{ r.desc }}</p>
+        <h3 class="font-semibold" style="color: #0b1c30; margin-bottom: 0.25rem;">{{ r.title }}</h3>
+        <p class="dt-body-sm" style="color: #4f4539;">{{ r.desc }}</p>
       </div>
     </div>
 

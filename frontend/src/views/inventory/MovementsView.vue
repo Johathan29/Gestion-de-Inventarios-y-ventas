@@ -1,8 +1,9 @@
 <template>
   <div>
+    <InventoryTabs />
     <div class="flex justify-between items-center mb-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Movimientos de Inventario</h3>
-      <select v-model="typeFilter" @change="fetchMovements" class="form-input w-48">
+      <h3 class="dt-headline-sm" style="margin-bottom: 0;">Movimientos de Inventario</h3>
+      <select v-model="typeFilter" @change="fetchMovements" class="dt-input" style="width: 12rem;">
         <option value="">Todos los tipos</option>
         <option value="entry">Entrada</option>
         <option value="exit">Salida</option>
@@ -12,7 +13,7 @@
     </div>
     <DataTable :columns="columns" :data="movements" searchable>
       <template #cell-type="{ row }">
-        <span class="badge" :class="row.type === 'entry' ? 'badge-green' : row.type === 'exit' ? 'badge-red' : row.type === 'adjustment' ? 'badge-yellow' : 'badge-blue'">
+        <span class="dt-badge" :class="row.type === 'entry' ? 'dt-badge-success' : row.type === 'exit' ? 'dt-badge-danger' : row.type === 'adjustment' ? 'dt-badge-warning' : 'dt-badge-info'">
           {{ row.type === 'entry' ? 'Entrada' : row.type === 'exit' ? 'Salida' : row.type === 'adjustment' ? 'Ajuste' : 'Transferencia' }}
         </span>
       </template>
@@ -23,6 +24,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { inventoryAPI } from '../../api';
+import InventoryTabs from '../../components/inventory/InventoryTabs.vue';
 import DataTable from '../../components/shared/DataTable.vue';
 
 const movements = ref([]);

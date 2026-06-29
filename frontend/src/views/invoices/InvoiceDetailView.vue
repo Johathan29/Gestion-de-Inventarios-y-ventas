@@ -2,19 +2,17 @@
   <Loading v-if="loading" />
   <div v-else class="max-w-5xl mx-auto space-y-6">
     <!-- Invoice Display -->
-    <div class="card p-8 mb-6" id="invoice-content"
-         :class="{
-           'border-l-4 border-green-500': invoice.status === 'paid',
-           'border-l-4 border-yellow-500': invoice.status === 'issued',
-           'border-l-4 border-red-500': invoice.status === 'cancelled' || invoice.status === 'voided'
+    <div class="dt-card p-8 mb-6" id="invoice-content"
+         :style="{
+           borderLeft: invoice.status === 'paid' ? '4px solid #22c55e' : invoice.status === 'issued' ? '4px solid #eab308' : (invoice.status === 'cancelled' || invoice.status === 'voided') ? '4px solid #ef4444' : '4px solid #e2d6c8'
          }">
       <!-- Status ribbon -->
       <div class="flex justify-between items-start mb-8">
         <div>
           <div class="flex items-center gap-3">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Factura</h1>
-            <span class="badge text-sm px-3 py-1"
-              :class="invoice.status === 'paid' ? 'badge-green' : invoice.status === 'issued' ? 'badge-yellow' : 'badge-red'">
+            <h1 class="dt-headline" style="margin-bottom: 0;">Factura</h1>
+            <span class="dt-badge"
+              :class="invoice.status === 'paid' ? 'dt-badge-success' : invoice.status === 'issued' ? 'dt-badge-warning' : 'dt-badge-danger'">
               {{ invoice.status === 'paid' ? 'PAGADA' : invoice.status === 'issued' ? 'EMITIDA' : invoice.status === 'cancelled' ? 'ANULADA' : 'ANULADA' }}
             </span>
           </div>
@@ -30,10 +28,10 @@
       </div>
 
       <!-- Client & Invoice Info -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 p-4 rounded-xl" style="background: rgba(98,66,0,0.03);">
         <div>
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Cliente</p>
-          <p class="font-semibold text-gray-900 dark:text-white">{{ invoice.clients?.name || invoice.client_name || 'Cliente General' }}</p>
+          <p class="font-semibold" style="color: #0b1c30;">{{ invoice.clients?.name || invoice.client_name || 'Cliente General' }}</p>
           <p v-if="invoice.clients?.document_id || invoice.client_document" class="text-sm text-gray-500">
             Doc: {{ invoice.clients?.document_id || invoice.client_document }}
           </p>
@@ -43,9 +41,9 @@
         </div>
         <div class="sm:text-right">
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Detalles de Factura</p>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Emisión: {{ formatDate(invoice.created_at) }}</p>
-          <p v-if="invoice.due_date" class="text-sm text-gray-600 dark:text-gray-400">Vencimiento: {{ formatDate(invoice.due_date) }}</p>
-          <p v-if="invoice.sales?.sale_number" class="text-sm text-gray-600 dark:text-gray-400">
+          <p class="text-sm" style="color: #4f4539;">Emisión: {{ formatDate(invoice.created_at) }}</p>
+          <p v-if="invoice.due_date" class="text-sm" style="color: #4f4539;">Vencimiento: {{ formatDate(invoice.due_date) }}</p>
+          <p v-if="invoice.sales?.sale_number" class="text-sm" style="color: #4f4539;">
             Venta: {{ invoice.sales.sale_number }}
           </p>
         </div>
@@ -54,21 +52,21 @@
       <!-- Products Table -->
       <table class="w-full text-sm mb-8">
         <thead>
-          <tr class="bg-gray-50 dark:bg-gray-700/50">
-            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Producto</th>
-            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Cant.</th>
-            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Precio</th>
+          <tr class="dt-table-header-row">
+            <th class="dt-table-th text-left">Producto</th>
+            <th class="dt-table-th text-right">Cant.</th>
+            <th class="dt-table-th text-right">Precio</th>
             <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Subtotal</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-          <tr v-for="item in items" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/20">
+        <tbody class="divide-y" style="border-color: #d2c4b4;">
+          <tr v-for="item in items" :key="item.id" class="hover:bg-gray-50">
             <td class="px-4 py-3">
               <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 shrink-0">
+                <div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center shrink-0" style="color: #817567;">
                   <span class="material-icons-outlined text-sm">inventory_2</span>
                 </div>
-                <span class="font-medium text-gray-900 dark:text-white">
+                <span class="font-medium" style="color: #0b1c30;">
                   {{ item.products?.name || item.product_name || 'Producto' }}
                 </span>
               </div>
@@ -86,8 +84,8 @@
           <div class="flex justify-between text-gray-500"><span>Subtotal</span><span>{{ formatCurrency(invoice.subtotal) }}</span></div>
           <div class="flex justify-between text-gray-500"><span>Descuento</span><span v-if="invoice.discount > 0" class="text-red-500">-{{ formatCurrency(invoice.discount) }}</span><span v-else>$0</span></div>
           <div class="flex justify-between text-gray-500"><span>IVA (19%)</span><span>{{ formatCurrency(invoice.tax) }}</span></div>
-          <div class="flex justify-between text-lg font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
-            <span class="text-gray-900 dark:text-white">Total</span>
+          <div class="flex justify-between text-lg font-bold pt-2 border-t" style="border-color: #d2c4b4;">
+            <span style="color: #0b1c30;">Total</span>
             <span :class="invoice.status === 'paid' ? 'text-green-600' : 'text-primary-600'">
               {{ formatCurrency(invoice.total) }}
             </span>
@@ -103,33 +101,32 @@
 
     <!-- Actions -->
     <div class="flex flex-wrap gap-3">
-      <button @click="downloadPDF" class="btn btn-primary flex items-center gap-2">
+      <button @click="downloadPDF" class="dt-btn-primary">
         <span class="material-icons-outlined">picture_as_pdf</span> PDF
       </button>
-      <button @click="downloadExcel" class="btn btn-secondary flex items-center gap-2">
+      <button @click="downloadExcel" class="dt-btn-secondary">
         <span class="material-icons-outlined">table_chart</span> Excel
       </button>
-      <button @click="printInvoice" class="btn btn-secondary flex items-center gap-2">
+      <button @click="printInvoice" class="dt-btn-secondary">
         <span class="material-icons-outlined">print</span> Imprimir
       </button>
 
-      <!-- Payment toggle -->
       <button v-if="invoice.status === 'issued'"
               @click="handleTogglePaid"
               :disabled="updatingPayment"
-              class="btn btn-success flex items-center gap-2">
+              class="dt-btn-primary" style="background: #059669;">
         <span class="material-icons-outlined">paid</span>
         {{ updatingPayment ? 'Procesando...' : 'Marcar como Pagada' }}
       </button>
       <button v-if="invoice.status === 'paid'"
               @click="handleToggleIssued"
               :disabled="updatingPayment"
-              class="btn btn-warning flex items-center gap-2">
+              class="dt-btn-secondary" style="border-color: #d97706; color: #d97706;">
         <span class="material-icons-outlined">undo</span>
         {{ updatingPayment ? 'Procesando...' : 'Revertir Pago' }}
       </button>
 
-      <router-link to="/app/invoices" class="btn btn-secondary flex items-center gap-2">
+      <router-link to="/app/invoices" class="dt-btn-secondary">
         <span class="material-icons-outlined">arrow_back</span> Volver
       </router-link>
     </div>

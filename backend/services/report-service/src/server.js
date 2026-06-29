@@ -1,13 +1,11 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const express = require('express');
-const cors = require('cors');
 const { reportRouter } = require('./routes/report.routes');
 
 const app = express();
 const PORT = process.env.REPORT_SERVICE_PORT || 3008;
 
-app.use(cors());
 app.use(express.json());
 
 app.get('/health', (req, res) => {

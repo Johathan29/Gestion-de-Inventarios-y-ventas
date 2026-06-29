@@ -25,10 +25,12 @@
 </div>
 <div class="mouse-light"></div>
       <!-- Hero Section (dinámico desde Supabase) -->
+      <div data-gsap="hero">
       <HeroSection />
+      </div>
 
       <!-- Featured Products (dynamic from product-service) -->
-      <section id="products">
+      <section id="products" data-gsap="section">
       <ProductShowcase
         title="Curated Essentials"
         subtitle="Precision-engineered care products designed for the modern sanctuary."
@@ -41,29 +43,23 @@
       </section>
 
       <!-- Featured Reviews Section (dinámico desde Supabase - aprobados por admin) -->
+      <section data-gsap="section">
       <FeaturedReviews />
+      </section>
 
-      <!-- Newsletter / CTA -->
-      <section id="newsletter" class="py-8 px-4">
-        <div class="max-w-7xl mx-auto">
-          <div class="glass-card rounded-[48px] p-20 text-center relative overflow-hidden entrance-reveal">
-            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary via-transparent to-transparent"></div>
-            <h2 class="font-headline-lg text-headline-lg text-on-surface mb-6 relative z-10">Join the Inner Circle</h2>
-            <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-12 relative z-10">
-              Receive exclusive invitations to collection reveals and bespoke animal care workshops.
-            </p>
-            <form class="max-w-md mx-auto flex flex-col md:flex-row gap-4 relative z-10">
-              <input class="flex-1 bg-black/30 border border-white/10 rounded-full px-8 py-4 focus:border-primary outline-none text-on-surface transition-all" placeholder="Your email address" type="email"/>
-              <button class="magnetic-btn px-8 py-4 bg-primary text-on-primary rounded-full font-label-sm text-label-sm uppercase tracking-widest font-bold">
-                Subscribe
-              </button>
-            </form>
-          </div>
-        </div>
+      <!-- Offers / Featured Products with Impact Effect -->
+      <section data-gsap="section">
+      <OfferShowcase
+        title="Ofertas Especiales"
+        subtitle="Aprovecha descuentos exclusivos por tiempo limitado en productos seleccionados."
+        :limit="3"
+        @view-all="handleViewAll"
+        @error="handleProductError"
+      />
       </section>
 
       <!-- Contact Form -->
-      <section id="contact" class="py-8 px-4">
+      <section id="contact" class="py-8 px-4" data-gsap="section">
         <ContactForm />
       </section>
     </main>
@@ -77,11 +73,14 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
+import { useLandingAnimations } from '../composables/useGsapAnimations';
+import { useBounceIn } from '../composables/useAnimeEffects';
 import HeroSection from '../components/shared/HeroSection.vue';
 import FeaturedReviews from '../components/shared/FeaturedReviews.vue';
 import ProductShowcase from '../components/shared/ProductShowcase.vue';
+import OfferShowcase from '../components/shared/OfferShowcase.vue';
 import AppNavBar from '../components/layout/AppNavBar.vue';
 import AppFooter from '../components/layout/AppFooter.vue';
 import ContactForm from '../components/shared/ContactForm.vue';
@@ -90,11 +89,31 @@ import WhatsAppWidget from '../components/shared/WhatsAppWidget.vue';
 
 const router = useRouter();
 
-onMounted(() => {
+const { init: initGsapAnimations, cleanup: cleanupGsapAnimations } = useLandingAnimations();
+
+onMounted(async () => {
   initShader();
-  initScrollAnimations();
   initTiltEffects();
   initMagneticButtons();
+
+  // Esperar al siguiente tick para que el DOM esté listo
+  await nextTick();
+
+  // Inicializar GSAP ScrollTrigger para todas las secciones
+  initGsapAnimations();
+
+  // WhatsApp bounce-in con anime.js
+  const whatsappBtn = document.querySelector('.whatsapp-widget');
+  if (whatsappBtn) {
+    useBounceIn(whatsappBtn, { delay: 600, duration: 900 });
+  }
+
+  // Animación especial para el hero con anime.js (text stagger)
+  const heroTitle = document.querySelector('[data-gsap="hero"] .hero-title');
+  if (heroTitle) {
+    const { useLetterStagger } = await import('../composables/useAnimeEffects');
+    useLetterStagger(heroTitle, { duration: 1200, stagger: 40 });
+  }
 });
 
 function initShader() {
@@ -215,26 +234,6 @@ void main() {
   };
 }
 
-function initScrollAnimations() {
-  const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-  };
-
-  const revealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        revealObserver.unobserve(entry.target);
-      }
-    });
-  }, observerOptions);
-
-  document.querySelectorAll('.entrance-reveal').forEach(el => {
-    revealObserver.observe(el);
-  });
-}
-
 function initTiltEffects() {
   document.querySelectorAll('.tilt-container').forEach(container => {
     const card = container.querySelector('.glass-card');
@@ -293,6 +292,7 @@ onUnmounted(() => {
   if (window.__shaderCleanup) {
     window.__shaderCleanup();
   }
+  cleanupGsapAnimations();
 });
 document.querySelectorAll(".contact-aurora").forEach(card=>{
 

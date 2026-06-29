@@ -1,7 +1,7 @@
 <template>
   <DataTable :columns="columns" :data="clients" title="Clientes" searchable @rowClick="goToDetail">
     <template #cell-status="{ row }">
-      <span class="badge" :class="row.is_active !== false ? 'badge-green' : 'badge-gray'">
+      <span class="dt-badge" :class="row.is_active !== false ? 'dt-badge-success' : 'dt-badge-disabled'">
         {{ row.is_active !== false ? 'Activo' : 'Inactivo' }}
       </span>
     </template>

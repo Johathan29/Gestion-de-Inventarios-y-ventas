@@ -1,13 +1,11 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const express = require('express');
-const cors = require('cors');
 const { cartRouter } = require('./routes/cart.routes');
 
 const app = express();
 const PORT = process.env.CART_SERVICE_PORT || 3010;
 
-app.use(cors());
 app.use(express.json());
 
 app.get('/health', (req, res) => {

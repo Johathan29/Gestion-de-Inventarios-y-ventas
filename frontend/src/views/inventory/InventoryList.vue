@@ -1,7 +1,7 @@
 <template>
   <DataTable :columns="columns" :data="items" title="Stock Actual" searchable @rowClick="goToKardex">
     <template #cell-status="{ row }">
-      <span class="badge" :class="row.stock <= 0 ? 'badge-red' : row.stock <= (row.min_stock || 0) ? 'badge-yellow' : 'badge-green'">
+      <span class="dt-badge" :class="row.stock <= 0 ? 'dt-badge-danger' : row.stock <= (row.min_stock || 0) ? 'dt-badge-warning' : 'dt-badge-success'">
         {{ row.stock <= 0 ? 'Sin stock' : row.stock <= (row.min_stock || 0) ? 'Bajo' : 'Disponible' }}
       </span>
     </template>

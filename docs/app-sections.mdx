@@ -33,7 +33,7 @@ description: "Documentación exhaustiva de todas las secciones de la aplicación
 **Ruta:** `/` (Home)
 **Archivo:** `src/views/LandingView.vue`
 **Layout:** blank (sin Sidebar)
-**Componentes hijos:** `HeroSection`, `ProductShowcase`, `FeaturedReviews`, `ContactForm`, `AppNavBar`, `AppFooter`
+**Componentes hijos:** `HeroSection`, `ProductShowcase`, `FeaturedReviews`, `OfferShowcase`, `ContactForm`, `AppNavBar`, `AppFooter`
 
 ### Descripción
 Landing page principal con diseño oscuro premium (#151215) y efectos visuales avanzados. Es la cara pública de la tienda "Animal Store | PetCare Pro".
@@ -77,10 +77,18 @@ Landing page principal con diseño oscuro premium (#151215) y efectos visuales a
 - Avatar, nombre del cliente, y comentario
 - Scroll animation con delay progresivo
 
-#### 5. Newsletter Section
-- Formulario de suscripción por email
-- Glass card con gradient radial background
-- Input + botón "Subscribe" con clase `magnetic-btn`
+#### 5. OfferShowcase (componente)
+**Archivo:** `src/components/shared/OfferShowcase.vue`
+
+- Sección de productos en oferta con efecto de impacto visual
+- Grid de productos con descuento desde Ecommerce Service (`/api/v1/ecommerce/offers`)
+- Badge animado de descuento con efecto `pulse-discount` (escala + glow)
+- Countdown de días restantes en cada oferta
+- 3D Tilt hover effect (mismo diseño que ProductShowcase)
+- Enlace directo al detalle del producto (`ProductPublicDetail`)
+- Estados: loading (skeleton cards), error (with retry), empty, success
+- Fallback a productos destacados si no hay ofertas activas
+- Gestionable desde dashboard: `/app/ecommerce/offers`
 
 #### 6. ContactForm (componente)
 **Archivo:** `src/components/shared/ContactForm.vue`

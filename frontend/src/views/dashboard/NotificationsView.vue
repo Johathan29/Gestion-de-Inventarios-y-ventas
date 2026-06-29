@@ -3,16 +3,16 @@
     <!-- Header with stats -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Notificaciones del Sistema</h1>
-        <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Actividades del sistema: inicios de sesión, ventas, inventario y más</p>
+        <h1 class="dt-headline" style="margin-bottom: 0;">Notificaciones del Sistema</h1>
+        <p class="dt-body-sm" style="color: #4f4539;">Actividades del sistema: inicios de sesión, ventas, inventario y más</p>
       </div>
       <div class="flex items-center gap-3">
         <button
           @click="filter = filter === 'unread' ? '' : 'unread'"
           class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200"
           :class="filter === 'unread'
-            ? 'bg-primary-50 border-primary-300 text-primary-700 dark:bg-primary-900/20 dark:border-primary-600 dark:text-primary-300'
-            : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+            ? 'bg-[rgba(98,66,0,0.08)] border-[#624200] text-[#624200]'
+            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'"
         >
           <span class="material-symbols-outlined text-sm">mark_email_unread</span>
           No leídas
@@ -21,7 +21,7 @@
         <button
           @click="handleMarkAllRead"
           v-if="unreadCount > 0"
-          class="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary-dark transition-colors shadow-lg shadow-primary/25"
+          class="dt-btn-primary"
         >
           <span class="material-symbols-outlined text-sm">done_all</span>
           Marcar todas leídas
@@ -31,54 +31,54 @@
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+      <div class="dt-card p-4">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-            <span class="material-symbols-outlined text-red-600 dark:text-red-400 text-lg">notifications</span>
+          <div class="w-10 h-10 rounded-lg" style="background: rgba(239,68,68,0.1); display: flex; align-items: center; justify-content: center;">
+            <span class="material-symbols-outlined" style="color: #ef4444; font-size: 1.25rem;">notifications</span>
           </div>
           <div>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.unread }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">No leídas</p>
+            <p class="text-2xl font-bold" style="color: #0b1c30;">{{ stats.unread }}</p>
+            <p class="dt-caption">No leídas</p>
           </div>
         </div>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+      <div class="dt-card p-4">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-            <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-lg">login</span>
+          <div class="w-10 h-10 rounded-lg" style="background: rgba(59,130,246,0.1); display: flex; align-items: center; justify-content: center;">
+            <span class="material-symbols-outlined" style="color: #3b82f6; font-size: 1.25rem;">login</span>
           </div>
           <div>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.logins }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Inicios sesión</p>
+            <p class="text-2xl font-bold" style="color: #0b1c30;">{{ stats.logins }}</p>
+            <p class="dt-caption">Inicios sesión</p>
           </div>
         </div>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+      <div class="dt-card p-4">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-            <span class="material-symbols-outlined text-green-600 dark:text-green-400 text-lg">point_of_sale</span>
+          <div class="w-10 h-10 rounded-lg" style="background: rgba(34,197,94,0.1); display: flex; align-items: center; justify-content: center;">
+            <span class="material-symbols-outlined" style="color: #16a34a; font-size: 1.25rem;">point_of_sale</span>
           </div>
           <div>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.sales }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Ventas hoy</p>
+            <p class="text-2xl font-bold" style="color: #0b1c30;">{{ stats.sales }}</p>
+            <p class="dt-label-caps">Ventas hoy</p>
           </div>
         </div>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+      <div class="dt-card p-4">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-            <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-lg">inventory_2</span>
+          <div class="w-10 h-10 rounded-lg" style="background: rgba(245,158,11,0.1); display: flex; align-items: center; justify-content: center;">
+            <span class="material-symbols-outlined" style="color: #d97706; font-size: 1.25rem;">inventory_2</span>
           </div>
           <div>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.lowStock }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Stock bajo</p>
+            <p class="text-2xl font-bold" style="color: #0b1c30;">{{ stats.lowStock }}</p>
+            <p class="dt-label-caps">Stock bajo</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Notifications Feed -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="dt-card overflow-hidden">
       <div class="p-4 sm:p-6">
         <NotificationsFeed
           ref="feedRef"

@@ -1,29 +1,29 @@
 <template>
   <Loading v-if="loading" />
   <div v-else class="max-w-4xl mx-auto">
-    <div class="card p-6 mb-6">
+    <div class="dt-card p-6 mb-6">
       <div class="flex items-start justify-between mb-4">
         <div>
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ user.name }}</h2>
-          <p class="text-gray-500">{{ user.email }}</p>
+          <h2 class="dt-headline" style="margin-bottom: 0;">{{ user.name }}</h2>
+          <p class="dt-body-sm" style="color: #4f4539;">{{ user.email }}</p>
         </div>
-        <span class="badge text-sm" :class="user.is_active ? 'badge-green' : 'badge-red'">{{ user.is_active ? 'Activo' : 'Bloqueado' }}</span>
+        <span class="dt-badge" :class="user.is_active ? 'dt-badge-success' : 'dt-badge-danger'">{{ user.is_active ? 'Activo' : 'Bloqueado' }}</span>
       </div>
       <div class="grid grid-cols-2 gap-4 text-sm">
-        <div><span class="font-medium text-gray-500">Rol:</span> <span class="badge badge-primary">{{ user.role_name }}</span></div>
-        <div><span class="font-medium text-gray-500">Teléfono:</span> {{ user.phone || '-' }}</div>
-        <div><span class="font-medium text-gray-500">Último acceso:</span> {{ user.last_login ? formatRelativeTime(user.last_login) : 'Nunca' }}</div>
-        <div><span class="font-medium text-gray-500">Miembro desde:</span> {{ formatDate(user.created_at) }}</div>
+        <div><span style="color: #4f4539; font-weight: 500;">Rol:</span> <span class="dt-badge dt-badge-info">{{ user.role_name }}</span></div>
+        <div><span style="color: #4f4539; font-weight: 500;">Teléfono:</span> {{ user.phone || '-' }}</div>
+        <div><span style="color: #4f4539; font-weight: 500;">Último acceso:</span> {{ user.last_login ? formatRelativeTime(user.last_login) : 'Nunca' }}</div>
+        <div><span style="color: #4f4539; font-weight: 500;">Miembro desde:</span> {{ formatDate(user.created_at) }}</div>
       </div>
     </div>
 
-    <div class="card p-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Historial de Acceso</h3>
+    <div class="dt-card p-6">
+      <h3 class="dt-headline-sm" style="margin-bottom: 1rem;">Historial de Acceso</h3>
       <DataTable :columns="histColumns" :data="user.access_history || []" empty-message="Sin historial" />
     </div>
 
     <div class="flex gap-3 mt-4">
-      <router-link to="/app/admin" class="btn btn-secondary">Volver</router-link>
+      <router-link to="/app/admin" class="dt-btn-secondary">Volver</router-link>
     </div>
   </div>
 </template>

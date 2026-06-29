@@ -1,14 +1,14 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+  <div class="dt-card">
     <!-- Toolbar -->
-    <div v-if="$slots.toolbar || title || searchable" class="p-4 border-b border-gray-200 dark:border-gray-700">
+    <div v-if="$slots.toolbar || title || searchable" class="p-4" style="border-bottom: 1px solid #e2d6c8;">
       <div class="flex flex-wrap items-center justify-between gap-4">
-        <h3 v-if="title" class="text-lg font-semibold text-gray-900 dark:text-white">{{ title }}</h3>
+        <h3 v-if="title" class="dt-headline-sm" style="margin-bottom: 0;">{{ title }}</h3>
         <div class="flex items-center gap-2 ml-auto">
           <div v-if="searchable" class="relative">
             <span class="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
             <input v-model="searchQuery" type="text" placeholder="Buscar..."
-                   class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                   class="dt-input pl-10">
           </div>
           <slot name="toolbar" />
         </div>
@@ -19,9 +19,9 @@
     <div class="overflow-x-auto">
       <table class="w-full">
         <thead>
-          <tr class="bg-gray-50 dark:bg-gray-700/50">
+          <tr class="dt-table-header-row">
             <th v-for="col in columns" :key="col.key"
-                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                class="dt-table-th"
                 :class="{ 'cursor-pointer select-none': col.sortable }"
                 @click="col.sortable && toggleSort(col.key)">
               <div class="flex items-center gap-1">
@@ -31,12 +31,12 @@
                 </span>
               </div>
             </th>
-            <th v-if="$slots.actions" class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <th v-if="$slots.actions" class="dt-table-th text-right">
               Acciones
             </th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody class="dt-table-tbody">
           <tr v-for="(row, rowIdx) in filteredData" :key="row.id || rowIdx"
               class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer"
               @click="$emit('rowClick', row)">

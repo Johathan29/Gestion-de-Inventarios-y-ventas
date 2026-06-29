@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { login, register, refreshToken, logout, requestPasswordReset, resetPassword, getCurrentUser } = require('../controllers/auth.controller');
-const { authenticate } = require('../../../../shared/middleware/auth');
+const { authenticate, validate, loginSchema, registerSchema } = require('@inventory/shared');
 
 // POST /api/auth/login - Inicio de sesión
-router.post('/login', login);
+router.post('/login', validate(loginSchema), login);
 
 // POST /api/auth/register - Registro de usuario
-router.post('/register', register);
+router.post('/register', validate(registerSchema), register);
 
 // POST /api/auth/refresh - Renovar token
 router.post('/refresh', refreshToken);

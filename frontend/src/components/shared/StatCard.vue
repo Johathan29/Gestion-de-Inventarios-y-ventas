@@ -1,13 +1,16 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
+  <div class="dt-card p-5" style="transition: box-shadow 0.2s ease, transform 0.2s ease; cursor: default;"
+    @mouseenter="e => { e.currentTarget.style.boxShadow = '0px 8px 30px rgba(98,66,0,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)'; }"
+    @mouseleave="e => { e.currentTarget.style.boxShadow = ''; e.currentTarget.style.transform = ''; }">
     <div class="flex items-start justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ label }}</p>
-        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ formattedValue }}</p>
-        <p v-if="subtext" class="text-xs text-gray-500 mt-1">{{ subtext }}</p>
+      <div style="flex: 1; min-width: 0;">
+        <p class="dt-body-sm" style="color: #4f4539; margin-bottom: 0.25rem;">{{ label }}</p>
+        <p class="dt-stat-value" style="margin-bottom: 0.125rem;">{{ formattedValue }}</p>
+        <p v-if="subtext" class="dt-caption" style="color: #817567;">{{ subtext }}</p>
       </div>
-      <div class="w-12 h-12 rounded-lg flex items-center justify-center" :class="iconBg">
-        <span class="material-icons-outlined text-2xl" :class="iconColor">{{ icon }}</span>
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ml-3"
+        :style="{ background: iconBg || '#f5f0eb' }">
+        <span class="material-icons-outlined text-2xl" :style="{ color: iconColor || '#624200' }">{{ icon }}</span>
       </div>
     </div>
   </div>
@@ -23,8 +26,8 @@ const props = defineProps({
   suffix: { type: String, default: '' },
   type: { type: String, default: 'number' }, // number, currency
   icon: { type: String, default: 'analytics' },
-  iconBg: { type: String, default: 'bg-primary-100 dark:bg-primary-900/30' },
-  iconColor: { type: String, default: 'text-primary-600 dark:text-primary-400' },
+  iconBg: { type: String, default: '#f5f0eb' },
+  iconColor: { type: String, default: '#624200' },
   subtext: { type: String, default: '' }
 });
 

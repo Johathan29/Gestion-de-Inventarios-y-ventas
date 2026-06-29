@@ -1,28 +1,51 @@
 <template>
   <section id="reviews" class="py-8 px-4 overflow-hidden">
-    <div class="max-w-7xl mx-auto text-center mb-24 entrance-reveal">
+    <div class="max-w-7xl mx-auto text-center mb-24" data-gsap="section-title">
       <h2 class="font-display-xl text-display-xl text-on-surface mb-6">
         Shared Experiences
       </h2>
       <div class="h-1 w-24 bg-primary mx-auto rounded-full"></div>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <span
-        class="material-symbols-outlined animate-spin text-primary text-4xl"
-        data-icon="refresh"
-        >refresh</span
-      >
+    <!-- Loading Skeleton -->
+    <div v-if="loading" class="max-w-7xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter gap-4">
+        <div
+          v-for="n in 3"
+          :key="'skeleton-review-' + n"
+          class="glass-card p-10 border border-white/5 rounded-3xl h-full flex flex-col text-left animate-pulse"
+          :class="n === 2 ? 'translate-y-0 md:-translate-y-24' : ''"
+        >
+          <!-- Stars skeleton -->
+          <div class="flex gap-1 mb-8">
+            <div v-for="s in 5" :key="s" class="w-4 h-4 rounded bg-white/10"></div>
+          </div>
+          <!-- Comment skeleton -->
+          <div class="space-y-3 mb-10">
+            <div class="h-4 bg-white/10 rounded w-full"></div>
+            <div class="h-4 bg-white/10 rounded w-5/6"></div>
+            <div class="h-4 bg-white/10 rounded w-4/6"></div>
+            <div class="h-4 bg-white/10 rounded w-3/4"></div>
+          </div>
+          <!-- Author skeleton -->
+          <div class="flex items-center gap-4 mt-auto">
+            <div class="w-12 h-12 rounded-full bg-white/10 flex-shrink-0"></div>
+            <div class="space-y-2 flex-1">
+              <div class="h-4 bg-white/10 rounded w-1/2"></div>
+              <div class="h-3 bg-white/10 rounded w-1/3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Reviews -->
     <div v-else class="max-w-7xl mx-auto">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter gap-4">
+      <div data-gsap="stagger" class="grid grid-cols-1 md:grid-cols-3 gap-gutter gap-4">
         <div
           v-for="(review, index) in reviews"
           :key="review.id"
-          class="entrance-reveal"
+          data-gsap="item"
           :style="{ transitionDelay: `${100 + index * 100}ms` }"
         >
           <div

@@ -1,110 +1,128 @@
-const { createClient } = require('@supabase/supabase-js');
+const { getSupabaseClient, BadRequestError, validate, checkoutSchema } = require('@inventory/shared');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-const TAX_RATE = 0.19;
+const supabase = getSupabaseClient();
 
 /**
  * Procesar checkout completo
  */
-const processCheckout = async (req, res, next) => {
-  try {
-    const { shipping_address, payment_method, notes } = req.body;
+const processCheckout = [
+  validate(checkoutSchema),
+  async (req, res, next) => {
+    try {
+      const { shipping_address, payment_method, notes } = req.validatedBody;
 
-    // Obtener carrito del usuario
-    const { data: cart } = await supabase
-      .from('carts')
-      .select('*, cart_items(*, products(id, name, price, stock, status))')
-      .eq('user_id', req.user.id)
-      .single();
+      // Obtener carrito del usuario
+      const { data: cart, error: cartError } = await supabase
+        .from('carts')
+        .select('*, cart_items(*, products!inner(id, name, price, stock, status))')
+        .eq('user_id', req.user.id)
+        .single();
 
-    if (!cart || !cart.cart_items?.length) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'EMPTY_CART', message: 'El carrito está vacío' }
-      });
-    }
+      if (cartError) throw cartError;
 
-    // Validar stock y calcular totales
-    let subtotal = 0;
-    const items = [];
+      if (!cart || !cart.cart_items?.length) {
+        throw new BadRequestError('El carrito está vacío');
+      }
 
-    for (const item of cart.cart_items) {
-      const product = item.products;
+      // Validar stock y calcular totales
+      let subtotal = 0;
+      const items = [];
 
-      if (!product || product.status !== 'active') {
-        return res.status(400).json({
-          success: false,
-          error: { code: 'PRODUCT_UNAVAILABLE', message: `${product?.name || 'Producto'} no disponible` }
+      for (const item of cart.cart_items) {
+        const product = item.products;
+
+        if (!product || product.status !== 'active') {
+          throw new BadRequestError(`${product?.name || 'Producto'} no disponible`);
+        }
+
+        if (product.stock < item.quantity) {
+          throw new BadRequestError(
+            `Stock insuficiente para ${product.name}. Disponible: ${product.stock}`
+          );
+        }
+
+        const itemTotal = Number((item.unit_price * item.quantity).toFixed(2));
+        subtotal += itemTotal;
+
+        items.push({
+          product_id: product.id,
+          product_name: product.name,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total: itemTotal
         });
       }
 
-      if (product.stock < item.quantity) {
-        return res.status(400).json({
-          success: false,
-          error: { code: 'INSUFFICIENT_STOCK', message: `Stock insuficiente para ${product.name}. Disponible: ${product.stock}` }
+      // Obtener IVA desde configuración del sistema
+      const { data: config } = await supabase
+        .from('system_config')
+        .select('iva_rate')
+        .single();
+      const taxRate = config?.iva_rate ? parseFloat(config.iva_rate) / 100 : 0.19;
+
+      const tax = Number((subtotal * taxRate).toFixed(2));
+      const total = Number((subtotal + tax).toFixed(2));
+
+      // Crear la venta
+      const { data: sale, error: saleError } = await supabase
+        .from('sales')
+        .insert({
+          client_id: req.user.id,
+          subtotal,
+          tax,
+          total,
+          payment_method: payment_method || 'cash',
+          status: 'completed',
+          notes,
+          shipping_address: shipping_address || null,
+          created_by: req.user.id,
+          sale_date: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (saleError) throw saleError;
+
+      // Insertar items de venta
+      const saleItems = items.map(item => ({ ...item, sale_id: sale.id }));
+      const { error: itemsError } = await supabase.from('sale_items').insert(saleItems);
+      if (itemsError) throw itemsError;
+
+      // Actualizar stock y registrar movimientos (usando UPDATE directo, no RPC)
+      for (const item of items) {
+        // Leer stock actual antes de actualizar (transaccional)
+        const { data: currentProduct, error: fetchError } = await supabase
+          .from('products')
+          .select('stock')
+          .eq('id', item.product_id)
+          .single();
+
+        if (fetchError) throw fetchError;
+        if (!currentProduct || currentProduct.stock < item.quantity) {
+          throw new BadRequestError(
+            `Stock insuficiente para el producto ${item.product_name}`
+          );
+        }
+
+        const newStock = currentProduct.stock - item.quantity;
+        const { error: stockError } = await supabase
+          .from('products')
+          .update({ stock: newStock })
+          .eq('id', item.product_id);
+
+        if (stockError) throw stockError;
+
+        const { error: movError } = await supabase.from('inventory_movements').insert({
+          product_id: item.product_id,
+          type: 'sale_exit',
+          quantity: item.quantity,
+          notes: `Venta #${sale.id} - Checkout`,
+          reference: `SALE-${sale.id}`,
+          created_by: req.user.id
         });
+
+        if (movError) throw movError;
       }
-
-      const itemTotal = item.unit_price * item.quantity;
-      subtotal += itemTotal;
-
-      items.push({
-        product_id: product.id,
-        product_name: product.name,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total: itemTotal
-      });
-    }
-
-    const tax = subtotal * TAX_RATE;
-    const total = subtotal + tax;
-
-    // Crear la venta
-    const { data: sale, error: saleError } = await supabase
-      .from('sales')
-      .insert({
-        client_id: req.user.id,
-        subtotal,
-        tax,
-        total,
-        payment_method: payment_method || 'cash',
-        status: 'completed',
-        notes,
-        shipping_address: shipping_address || null,
-        created_by: req.user.id,
-        sale_date: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (saleError) throw saleError;
-
-    // Insertar items de venta
-    const saleItems = items.map(item => ({ ...item, sale_id: sale.id }));
-    const { error: itemsError } = await supabase.from('sale_items').insert(saleItems);
-    if (itemsError) throw itemsError;
-
-    // Actualizar stock y registrar movimientos
-    for (const item of items) {
-      await supabase
-        .from('products')
-        .update({ stock: supabase.rpc('decrement', { x: item.quantity }) })
-        .eq('id', item.product_id);
-
-      await supabase.from('inventory_movements').insert({
-        product_id: item.product_id,
-        type: 'sale_exit',
-        quantity: item.quantity,
-        notes: `Venta #${sale.id} - Checkout`,
-        reference: `SALE-${sale.id}`,
-        created_by: req.user.id
-      });
-    }
 
     // Generar factura automáticamente
     const invoiceNumber = `INV-${String(Date.now()).slice(-8)}`;
@@ -136,7 +154,7 @@ const processCheckout = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+}];
 
 /**
  * Obtener métodos de pago disponibles

@@ -410,7 +410,16 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
+  scrollBehavior(to) {
+    if (to.hash) {
+      const el = document.querySelector(to.hash);
+      if (el) {
+        return { el, behavior: 'smooth' };
+      }
+    }
+    return { top: 0, behavior: 'smooth' };
+  }
 });
 
 // Navigation guard

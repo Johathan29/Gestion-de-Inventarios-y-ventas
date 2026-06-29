@@ -1,36 +1,36 @@
 <template>
-  <div class="card p-6">
+  <div class="dt-card p-6">
     <div class="flex flex-wrap items-center gap-4 mb-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Ventas</h3>
+      <h3 class="dt-headline-sm" style="margin-bottom: 0;">Ventas</h3>
       <select v-model="period" @change="fetchData" class="form-input w-40">
         <option value="daily">Diario</option>
         <option value="weekly">Semanal</option>
         <option value="monthly">Mensual</option>
         <option value="yearly">Anual</option>
       </select>
-      <span class="text-lg font-bold text-primary-600">{{ formatCurrency(totalSales) }}</span>
+      <span class="text-lg font-bold" style="color: #624200;">{{ formatCurrency(totalSales) }}</span>
       <div class="flex-1"></div>
-      <button @click="downloadPDF" class="btn btn-sm btn-secondary flex items-center gap-1">
+      <button @click="downloadPDF" class="dt-btn-secondary" style="display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.375rem 0.75rem; font-size: 0.875rem;">
         <span class="material-icons-outlined text-lg">picture_as_pdf</span> PDF
       </button>
-      <button @click="downloadExcel" class="btn btn-sm btn-secondary flex items-center gap-1">
+      <button @click="downloadExcel" class="dt-btn-secondary" style="display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.375rem 0.75rem; font-size: 0.875rem;">
         <span class="material-icons-outlined text-lg">table_chart</span> Excel
       </button>
     </div>
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-3 gap-4 mb-6">
-      <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 text-center">
-        <p class="text-xs text-gray-500 uppercase">Total Ventas</p>
-        <p class="text-xl font-bold text-gray-900 dark:text-white">{{ summary.totalSales || 0 }}</p>
+      <div class="rounded-xl p-4 text-center" style="background: rgba(98,66,0,0.03);">
+        <p class="dt-caption" style="text-transform: uppercase;">Total Ventas</p>
+        <p class="dt-stat-value" style="color: #0b1c30;">{{ summary.totalSales || 0 }}</p>
       </div>
-      <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 text-center">
-        <p class="text-xs text-gray-500 uppercase">Total Ingresos</p>
-        <p class="text-xl font-bold text-primary-600">{{ formatCurrency(summary.totalAmount || 0) }}</p>
+      <div class="rounded-xl p-4 text-center" style="background: rgba(98,66,0,0.03);">
+        <p class="dt-caption" style="text-transform: uppercase;">Total Ingresos</p>
+        <p class="dt-stat-value" style="color: #624200;">{{ formatCurrency(summary.totalAmount || 0) }}</p>
       </div>
-      <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 text-center">
-        <p class="text-xs text-gray-500 uppercase">IVA Total</p>
-        <p class="text-xl font-bold text-orange-600">{{ formatCurrency(summary.totalTax || 0) }}</p>
+      <div class="rounded-xl p-4 text-center" style="background: rgba(98,66,0,0.03);">
+        <p class="dt-caption" style="text-transform: uppercase;">IVA Total</p>
+        <p class="dt-stat-value" style="color: #795900;">{{ formatCurrency(summary.totalTax || 0) }}</p>
       </div>
     </div>
 

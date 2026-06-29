@@ -1,14 +1,14 @@
 <template>
-  <div class="card p-6 max-w-4xl mx-auto">
+  <div class="dt-card p-6 max-w-4xl mx-auto">
     <!-- Encabezado con número de orden -->
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Nueva Compra</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          N° de orden: <strong class="text-primary-600 dark:text-primary-400 font-mono">{{ purchaseNumberPreview || 'Generado automáticamente' }}</strong>
+        <h2 class="dt-headline" style="margin-bottom: 0;">Nueva Compra</h2>
+        <p class="dt-body-sm" style="color: #4f4539;">
+          N° de orden: <strong class="dt-financial">{{ purchaseNumberPreview || 'Generado automáticamente' }}</strong>
         </p>
       </div>
-      <span v-if="purchaseNumberPreview" class="px-3 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 text-xs font-mono rounded-full border border-primary-200 dark:border-primary-800">
+      <span v-if="purchaseNumberPreview" class="dt-sku">
         {{ purchaseNumberPreview }}
       </span>
     </div>
@@ -19,8 +19,8 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Proveedor (select) -->
         <div>
-          <label class="form-label">Proveedor *</label>
-          <select v-model="form.supplier_id" class="form-input" required>
+          <label class="dt-label">Proveedor *</label>
+          <select v-model="form.supplier_id" class="dt-input" required>
             <option value="" disabled>Seleccionar proveedor</option>
             <option v-for="s in suppliers" :key="s.id" :value="s.id">
               {{ s.name }}<template v-if="s.tax_id"> - {{ s.tax_id }}</template>
@@ -29,21 +29,21 @@
         </div>
         <!-- Notas -->
         <div>
-          <label class="form-label">Notas (opcional)</label>
-          <input v-model="form.notes" class="form-input" placeholder="Observaciones de la compra" />
+          <label class="dt-label">Notas (opcional)</label>
+          <input v-model="form.notes" class="dt-input" placeholder="Observaciones de la compra" />
         </div>
       </div>
 
       <!-- Productos -->
       <div>
         <div class="flex items-center justify-between mb-3">
-          <label class="form-label mb-0 font-bold">Productos</label>
-          <button type="button" @click="addItem" class="btn btn-sm btn-secondary flex items-center gap-1">
+          <label class="dt-label" style="font-weight: 700;">Productos</label>
+          <button type="button" @click="addItem" class="dt-btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;">
             <span class="material-icons-outlined text-lg">add</span> Agregar
           </button>
         </div>
 
-        <div v-for="(item, idx) in form.items" :key="idx" class="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-3 mb-3">
+        <div v-for="(item, idx) in form.items" :key="idx" class="dt-card p-3 mb-3" style="border-width: 1px; border-style: solid; border-color: #e2d6c8;">
           <div class="flex flex-wrap gap-2 items-start">
             <!-- Selector producto con búsqueda -->
             <div class="relative flex-1 min-w-[220px]">
@@ -52,19 +52,19 @@
                 @input="onSearchProduct(idx)"
                 @focus="onSearchProduct(idx)"
                 @blur="onBlurProduct(idx)"
-                class="form-input w-full"
+                class="dt-input"
                 :placeholder="item.product_id ? item.product_name : 'Buscar producto...'"
                 autocomplete="off"
               />
-              <div v-if="item.showResults && item.results.length" class="absolute z-50 top-full left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto mt-1">
+              <div v-if="item.showResults && item.results.length" class="absolute z-50 top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto mt-1" style="box-shadow: 0px 8px 32px rgba(98, 66, 0, 0.12);">
                 <div
                   v-for="prod in item.results"
                   :key="prod.id"
                   @mousedown.prevent="selectProduct(idx, prod)"
-                  class="px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center gap-3"
+                  class="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer flex items-center gap-3"
                 >
                   <img v-if="prod.images && prod.images.length" :src="getImageUrl(prod.images)" class="w-8 h-8 rounded object-cover bg-gray-100" alt="" />
-                  <span v-else class="w-8 h-8 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                  <span v-else class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center">
                     <span class="material-icons-outlined text-gray-400 text-sm">inventory_2</span>
                   </span>
                   <div class="flex-1 min-w-0">
@@ -80,18 +80,18 @@
             <!-- Cantidad -->
             <div class="w-20">
               <label class="text-xs text-gray-400 block mb-0.5">Cant.</label>
-              <input v-model.number="item.quantity" type="number" min="1" class="form-input w-full text-center" required />
+              <input v-model.number="item.quantity" type="number" min="1" class="dt-input" style="text-align: center;" required />
             </div>
 
             <!-- Costo unitario -->
             <div class="w-28">
               <label class="text-xs text-gray-400 block mb-0.5">Costo U.</label>
-              <input v-model.number="item.unit_cost" type="number" step="0.01" min="0" class="form-input w-full" required />
+              <input v-model.number="item.unit_cost" type="number" step="0.01" min="0" class="dt-input" required />
             </div>
 
             <!-- Total x item -->
             <div class="w-28 pt-5">
-              <span class="text-sm font-bold text-primary-600 dark:text-primary-400">
+              <span class="text-sm font-bold dt-financial">
                 {{ formatCurrency((item.quantity || 0) * (item.unit_cost || 0)) }}
               </span>
             </div>
@@ -102,8 +102,8 @@
           </div>
 
           <!-- Thumbnail + Barcode del producto seleccionado -->
-          <div v-if="item.product_id" class="flex items-center gap-3 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-            <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0">
+          <div v-if="item.product_id" class="flex items-center gap-3 mt-2 pt-2 border-t" style="border-color: #d2c4b4;">
+            <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0">
               <img v-if="item.product_image" :src="item.product_image" class="w-full h-full object-cover" alt="" />
               <span v-else class="flex items-center justify-center h-full text-gray-400">
                 <span class="material-icons-outlined text-lg">image</span>
@@ -123,7 +123,7 @@
       </div>
 
       <!-- Totales -->
-      <div class="flex flex-col items-end pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex flex-col items-end pt-4 border-t" style="border-color: #d2c4b4;">
         <div class="text-right space-y-1 w-64">
           <div class="flex justify-between text-sm text-gray-500">
             <span>Subtotal</span>
@@ -133,17 +133,17 @@
             <span>IVA (19%)</span>
             <span>{{ formatCurrency(taxAmount) }}</span>
           </div>
-          <div class="flex justify-between text-lg font-bold text-gray-900 dark:text-white pt-1 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex justify-between text-lg font-bold" style="color: #0b1c30; padding-top: 0.25rem; border-top: 1px solid #d2c4b4;">
             <span>Total</span>
-            <span class="text-primary-600 dark:text-primary-400">{{ formatCurrency(total) }}</span>
+            <span class="dt-financial" style="font-size: 1.125rem;">{{ formatCurrency(total) }}</span>
           </div>
         </div>
       </div>
 
       <!-- Acciones -->
       <div class="flex justify-between items-center">
-        <router-link to="/app/purchases" class="btn btn-secondary">Cancelar</router-link>
-        <button type="submit" :disabled="loading || !form.supplier_id || !form.items.length" class="btn btn-primary">
+        <router-link to="/app/purchases" class="dt-btn-secondary">Cancelar</router-link>
+        <button type="submit" :disabled="loading || !form.supplier_id || !form.items.length" class="dt-btn-primary">
           {{ loading ? 'Creando...' : 'Crear Compra' }}
         </button>
       </div>

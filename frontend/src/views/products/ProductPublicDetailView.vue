@@ -7,7 +7,7 @@
 
     <!-- Navbar -->
     <AppNavBar />
-
+<FloatingBanner />
     <main class="relative z-10 pt-28 pb-20 px-4">
       <div class="max-w-6xl mx-auto">
         <!-- Loading -->
@@ -172,6 +172,18 @@
             </div>
           </div>
         </template>
+
+        <!-- Offers Section at bottom of detail -->
+        <div class="mt-16">
+          <OfferShowcase
+            title="También en Oferta"
+            subtitle="Descubre otros productos con descuentos exclusivos por tiempo limitado."
+            :limit="3"
+            :show-view-all="true"
+            @view-all="router.push({ name: 'ProductsCatalog' })"
+            @error="(msg) => console.warn('Offers error:', msg)"
+          />
+        </div>
       </div>
     </main>
 
@@ -183,7 +195,9 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { productsAPI, cartAPI } from '../../api/index.js';
+import OfferShowcase from '../../components/shared/OfferShowcase.vue';
 import AppNavBar from '../../components/layout/AppNavBar.vue';
+import FloatingBanner from '../../components/shared/FloatingBanner.vue';
 import AppFooter from '../../components/layout/AppFooter.vue';
 
 const route = useRoute();

@@ -70,7 +70,14 @@ const config = {
 
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 900000,
-    maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100
+    maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
+    redis: {
+      enabled: process.env.REDIS_ENABLED === 'true' || false,
+      url: process.env.REDIS_URL || 'redis://redis:6379',
+      host: process.env.REDIS_HOST || 'redis',
+      port: parseInt(process.env.REDIS_PORT, 10) || 6379,
+      password: process.env.REDIS_PASSWORD || ''
+    }
   },
 
   cors: {

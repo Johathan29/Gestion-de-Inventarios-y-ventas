@@ -1,45 +1,84 @@
 <template>
-  <div class="max-w-4xl mx-auto">
-    <!-- Header -->
-    <div class="flex items-center gap-4 mb-6">
-      <button @click="$router.push('/app/products')"
-        class="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
-        <span class="material-icons-outlined text-gray-600 dark:text-gray-400">arrow_back</span>
-      </button>
-      <div>
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ isEdit ? 'Editar Producto' : 'Nuevo Producto' }}</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-          {{ isEdit ? 'Modifica los datos del producto' : 'Completa los campos para registrar un nuevo producto' }}
-        </p>
+  <div class="max-w-5xl mx-auto">
+    <!-- Form Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div class="flex items-start gap-3">
+        <button @click="$router.push('/app/products')"
+          class="p-2 rounded-xl transition-all duration-200 active:scale-95" style="color: #624200;"
+          @mouseenter="e => e.currentTarget.style.background = 'rgba(98,66,0,0.05)'"
+          @mouseleave="e => e.currentTarget.style.background = 'transparent'">
+          <span class="material-icons-outlined">arrow_back</span>
+        </button>
+        <div>
+          <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: clamp(1.25rem, 3vw, 1.5rem); line-height: 1.3; font-weight: 700; color: #0b1c30;">{{ isEdit ? 'Editar Producto' : 'Nuevo Producto' }}</h2>
+          <p style="font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5; color: #4f4539; margin-top: 0.25rem;">
+            {{ isEdit ? 'Modifica los datos del producto' : 'Completa la información para registrar un nuevo artículo en el inventario.' }}
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <router-link to="/app/products"
+          class="px-4 py-2 rounded-lg border-2 font-semibold transition-colors"
+          style="border-color: #d2c4b4; color: #624200; font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5;"
+          @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
+          @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
+          Cancelar
+        </router-link>
+        <button type="submit" form="product-form" :disabled="saving"
+          class="flex items-center gap-2 font-semibold px-5 py-2 rounded-lg shadow-md hover:shadow-lg transition-all active:scale-95"
+          style="background: #624200; color: white; font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5;">
+          <span class="material-icons-outlined" style="font-size: 1.125rem;">{{ isEdit ? 'save' : 'add' }}</span>
+          {{ saving ? 'Guardando...' : (isEdit ? 'Actualizar Producto' : 'Guardar') }}
+        </button>
       </div>
     </div>
 
     <Alert v-if="errorMsg" type="error" :message="errorMsg" :show="!!errorMsg" dismissible @close="errorMsg = ''" class="mb-4" />
 
-    <form @submit.prevent="handleSubmit" class="space-y-6">
+    <form id="product-form" @submit.prevent="handleSubmit" class="flex flex-col gap-5">
       <!-- Información Básica -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <span class="material-icons-outlined text-primary-500">info</span>
+      <div class="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/30 p-5 md:p-6">
+        <h3 class="font-semibold pb-2 mb-4 flex items-center gap-2" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; color: #0b1c30; border-bottom: 1px solid #d2c4b4;">
+          <span class="material-icons-outlined" style="color: #624200;">info</span>
           Información Básica
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="md:col-span-2">
-            <label class="form-label">Nombre del Producto <span class="text-red-500">*</span></label>
-            <input v-model="form.name" class="form-input" required placeholder="Ej: Smartphone Galaxy X" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Nombre del Producto <span style="color: #ba1a1a;">*</span></label>
+            <input v-model="form.name" required placeholder="Ej. Alimento Premium Gatos 2kg"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
           <div>
-            <label class="form-label">SKU <span class="text-red-500">*</span></label>
-            <input v-model="form.sku" class="form-input" required placeholder="Ej: SAMS-GX-001" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">SKU (Código Interno) <span style="color: #ba1a1a;">*</span></label>
+            <input v-model="form.sku" required placeholder="PROD-001"
+              class="w-full rounded-lg px-3 py-2.5 uppercase transition-all"
+              style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <p style="font-size: 0.75rem; color: #4f4539; margin-top: 0.25rem; font-family: 'Inter', sans-serif;">Identificador único del inventario.</p>
           </div>
           <div>
-            <label class="form-label">Código de Barras</label>
-            <input v-model="form.barcode" class="form-input" placeholder="Ej: 1234567890123" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Código de Barras</label>
+            <div class="relative">
+              <input v-model="form.barcode" placeholder="0000000000000"
+                class="w-full rounded-lg px-3 py-2.5 transition-all"
+                style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+                @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+                @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+              <span class="material-icons-outlined absolute right-3 top-2.5" style="color: #d2c4b4; font-size: 1.25rem;">barcode_scanner</span>
+            </div>
           </div>
           <div>
-            <label class="form-label">Categoría <span class="text-red-500">*</span></label>
-            <select v-model="form.category_id" class="form-input" required>
-              <option value="">Seleccionar categoría...</option>
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Categoría</label>
+            <select v-model="form.category_id" required
+              class="w-full rounded-lg px-3 py-2.5 appearance-none transition-all"
+              :style="{ fontFamily: 'Inter, sans-serif', fontSize: '0.875rem', color: '#0b1c30', background: `#ffffff url(${selectBgSvg}) no-repeat right 0.75rem center`, border: '1.5px solid #E5E7EB', paddingRight: '2.5rem' }"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }">
+              <option value="">Selecciona una categoría</option>
               <option v-for="cat in flatCategories" :key="cat.id" :value="cat.id"
                 :style="{ paddingLeft: (cat.level * 16 + 8) + 'px' }">
                 {{ '—'.repeat(cat.level) + ' ' + cat.name }}
@@ -47,57 +86,104 @@
             </select>
           </div>
           <div>
-            <label class="form-label">Marca</label>
-            <input v-model="form.brand" class="form-input" placeholder="Ej: Samsung, Nike, etc." />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Marca</label>
+            <input v-model="form.brand" placeholder="Ej. Royal Canin"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
         </div>
       </div>
 
       <!-- Precios y Stock -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <span class="material-icons-outlined text-primary-500">payments</span>
-          Precios y Stock
+      <div class="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/30 p-5 md:p-6">
+        <h3 class="font-semibold pb-2 mb-4 flex items-center gap-2" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; color: #0b1c30; border-bottom: 1px solid #d2c4b4;">
+          <span class="material-icons-outlined" style="color: #624200;">payments</span>
+          Precio y Existencias
         </h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+          <!-- Costo -->
           <div>
-            <label class="form-label">Precio de Venta <span class="text-red-500">*</span></label>
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Costo (COP)</label>
             <div class="relative">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-              <input v-model.number="form.price" type="number" step="0.01" min="0" class="form-input pl-8" required />
+              <span class="absolute left-3 top-2.5 font-medium" style="font-family: 'JetBrains Mono', monospace; color: #4f4539;">$</span>
+              <input v-model.number="form.cost_price" type="number" step="0.01" min="0" placeholder="0.00"
+                class="w-full rounded-lg pl-8 pr-3 py-2.5 transition-all text-right"
+                style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+                @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+                @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
             </div>
           </div>
+          <!-- Precio Venta -->
           <div>
-            <label class="form-label">Precio de Costo</label>
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Precio de Venta (COP) <span style="color: #ba1a1a;">*</span></label>
             <div class="relative">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-              <input v-model.number="form.cost_price" type="number" step="0.01" min="0" class="form-input pl-8" />
+              <span class="absolute left-3 top-2.5 font-medium" style="font-family: 'JetBrains Mono', monospace; color: #4f4539;">$</span>
+              <input v-model.number="form.price" type="number" step="0.01" min="0" placeholder="0.00" required
+                class="w-full rounded-lg pl-8 pr-3 py-2.5 transition-all text-right font-bold"
+                style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #624200; background: #ffffff; border: 1.5px solid #E5E7EB;"
+                @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+                @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
             </div>
           </div>
+          <!-- Precio Comparativa -->
           <div>
-            <label class="form-label">Precio Comparativa</label>
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Precio Comparativa</label>
             <div class="relative">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-              <input v-model.number="form.compare_price" type="number" step="0.01" min="0" class="form-input pl-8" />
+              <span class="absolute left-3 top-2.5 font-medium" style="font-family: 'JetBrains Mono', monospace; color: #4f4539;">$</span>
+              <input v-model.number="form.compare_price" type="number" step="0.01" min="0" placeholder="0.00"
+                class="w-full rounded-lg pl-8 pr-3 py-2.5 transition-all text-right"
+                style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+                @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+                @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
             </div>
           </div>
-          <div>
-            <label class="form-label">Stock Inicial</label>
-            <input v-model.number="form.stock" type="number" min="0" class="form-input" :disabled="isEdit" placeholder="0" />
-            <p v-if="!isEdit" class="text-xs text-gray-400 mt-1">Se creará un movimiento de inventario inicial</p>
+          <!-- Estimated Gain (Read Only) -->
+          <div class="sm:col-span-2 lg:col-span-1 rounded-lg p-3 flex justify-between items-center border" style="background: #eff4ff; border-color: rgba(210,196,180,0.3);">
+            <div>
+              <span class="block mb-1" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539;">Ganancia Estimada</span>
+              <span class="font-semibold" style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #795900;" id="ganancia-calc">{{ formatCurrency(Math.max(0, form.price - form.cost_price)) }} ({{ marginPercent }}%)</span>
+            </div>
+            <span class="material-icons-outlined opacity-50" style="font-size: 2rem; color: #795900;">trending_up</span>
           </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+          <!-- Stock Inicial -->
           <div>
-            <label class="form-label">Stock Mínimo</label>
-            <input v-model.number="form.min_stock" type="number" min="0" class="form-input" placeholder="5" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Stock Inicial</label>
+            <input v-model.number="form.stock" type="number" min="0" placeholder="0" :disabled="isEdit"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <p v-if="!isEdit" style="font-size: 0.75rem; color: #4f4539; margin-top: 0.25rem; font-family: 'Inter', sans-serif;">Se creará un movimiento de inventario inicial</p>
           </div>
+          <!-- Stock Mínimo -->
           <div>
-            <label class="form-label">Unidad</label>
-            <select v-model="form.unit" class="form-input">
-              <option value="unidad">Unidad</option>
-              <option value="kilogramo">Kilogramo</option>
-              <option value="litro">Litro</option>
-              <option value="metro">Metro</option>
-              <option value="caja">Caja</option>
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Stock Mínimo (Alerta)</label>
+            <div class="relative">
+              <input v-model.number="form.min_stock" type="number" min="0" placeholder="5"
+                class="w-full rounded-lg px-3 py-2.5 transition-all"
+                style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB; border-left: 4px solid #ba1a1a;"
+                @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+                @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+              <span class="material-icons-outlined absolute right-3 top-2.5" style="color: #ba1a1a; font-size: 1rem;">warning</span>
+            </div>
+          </div>
+          <!-- Unidad -->
+          <div>
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Unidad</label>
+            <select v-model="form.unit"
+              class="w-full rounded-lg px-3 py-2.5 appearance-none transition-all"
+              :style="{ fontFamily: 'Inter, sans-serif', fontSize: '0.875rem', color: '#0b1c30', background: `#ffffff url(${selectBgSvg}) no-repeat right 0.75rem center`, border: '1.5px solid #E5E7EB', paddingRight: '2.5rem' }"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }">
+              <option value="unidad">Unidad (Ud)</option>
+              <option value="kilogramo">Kilogramo (Kg)</option>
+              <option value="litro">Litro (L)</option>
+              <option value="metro">Metro (m)</option>
+              <option value="caja">Caja (Cja)</option>
               <option value="par">Par</option>
               <option value="pack">Pack</option>
             </select>
@@ -106,81 +192,81 @@
       </div>
 
       <!-- Descripción -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <span class="material-icons-outlined text-primary-500">description</span>
+      <div class="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/30 p-5 md:p-6">
+        <h3 class="font-semibold pb-2 mb-4 flex items-center gap-2" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; color: #0b1c30; border-bottom: 1px solid #d2c4b4;">
+          <span class="material-icons-outlined" style="color: #624200;">description</span>
           Descripción
         </h3>
-        <textarea v-model="form.description" rows="4" class="form-input"
-          placeholder="Descripción del producto, características, especificaciones..."></textarea>
+        <textarea v-model="form.description" rows="4"
+          placeholder="Descripción del producto, características, especificaciones..."
+          class="w-full rounded-lg px-3 py-2.5 transition-all resize-y"
+          style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB; min-height: 100px;"
+          @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+          @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }"></textarea>
         <div class="flex items-center gap-6 mt-4">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.featured" class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500" />
-            <span class="text-sm text-gray-700 dark:text-gray-300">Producto Destacado</span>
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" v-model="form.featured"
+              class="w-4 h-4 rounded transition-all"
+              style="color: #624200; border-color: #d2c4b4; accent-color: #624200;" />
+            <span style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Producto Destacado</span>
           </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.is_active" class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500" />
-            <span class="text-sm text-gray-700 dark:text-gray-300">Producto Activo</span>
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" v-model="form.is_active"
+              class="w-4 h-4 rounded transition-all"
+              style="color: #624200; border-color: #d2c4b4; accent-color: #624200;" />
+            <span style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Producto Activo</span>
           </label>
         </div>
       </div>
 
       <!-- Imágenes -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <span class="material-icons-outlined text-primary-500">image</span>
+      <div class="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/30 p-5 md:p-6">
+        <h3 class="font-semibold pb-2 mb-4 flex items-center gap-2" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; color: #0b1c30; border-bottom: 1px solid #d2c4b4;">
+          <span class="material-icons-outlined" style="color: #624200;">image</span>
           Imágenes del Producto
         </h3>
-
-        <!-- Image Upload Area -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
-          <!-- Existing Images -->
           <div v-for="(img, idx) in form.images" :key="idx"
-            class="relative group aspect-square rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+            class="relative group aspect-square rounded-xl overflow-hidden border-2 transition-all"
+            style="border-color: #d2c4b4; background: #eff4ff;">
             <img :src="img" class="w-full h-full object-cover" @error="$event.target.style.display='none'" />
-            <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
               <button type="button" @click="removeImage(idx)"
-                class="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all">
-                <span class="material-icons-outlined text-lg">delete</span>
+                class="p-2 rounded-full transition-all hover:scale-110 active:scale-95"
+                style="background: #ba1a1a; color: white;">
+                <span class="material-icons-outlined" style="font-size: 1.125rem;">delete</span>
               </button>
             </div>
           </div>
-
           <!-- Upload Button -->
           <div @click="triggerUpload"
-            class="aspect-square rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500 bg-gray-50 dark:bg-gray-700/50 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-gray-100 dark:hover:bg-gray-700">
-            <span v-if="uploading" class="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></span>
+            class="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all"
+            style="border-color: #d2c4b4; background: #eff4ff;"
+            @mouseenter="e => { e.currentTarget.style.background = '#e5eeff'; e.currentTarget.style.borderColor = '#624200'; }"
+            @mouseleave="e => { e.currentTarget.style.background = '#eff4ff'; e.currentTarget.style.borderColor = '#d2c4b4'; }">
+            <span v-if="uploading" class="w-8 h-8 border-2 rounded-full animate-spin" style="border-color: #624200; border-top-color: transparent;"></span>
             <template v-else>
-              <span class="material-icons-outlined text-3xl text-gray-400">add_photo_alternate</span>
-              <span class="text-xs text-gray-500 mt-1">Agregar imagen</span>
+              <span class="material-icons-outlined" style="font-size: 2rem; color: #d2c4b4;">add_photo_alternate</span>
+              <span style="font-size: 0.75rem; color: #4f4539; margin-top: 0.25rem; font-family: 'Inter', sans-serif;">Agregar imagen</span>
             </template>
           </div>
           <input ref="fileInput" type="file" accept="image/*" multiple class="hidden" @change="handleUpload" />
         </div>
-
-        <!-- URL Manual -->
         <div class="flex items-center gap-2">
           <input v-model="imageUrlInput" type="url"
-            class="form-input flex-1" placeholder="O pega una URL de imagen aquí..." />
+            class="flex-1 rounded-lg px-3 py-2.5 transition-all"
+            placeholder="O pega una URL de imagen aquí..."
+            style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           <button type="button" @click="addImageUrl"
-            class="px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all">
+            class="px-4 py-2.5 rounded-lg font-medium transition-all border"
+            style="background: #ffffff; color: #4f4539; border-color: #d2c4b4; font-family: 'Inter', sans-serif; font-size: 0.875rem;"
+            @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.color = '#624200'; }"
+            @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.color = '#4f4539'; }">
             Agregar URL
           </button>
         </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="flex justify-end gap-3 pt-2 pb-8">
-        <router-link to="/app/products"
-          class="px-6 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
-          Cancelar
-        </router-link>
-        <button type="submit" :disabled="saving"
-          class="btn-primary px-8 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-primary-600 text-white font-medium text-sm hover:from-purple-700 hover:to-primary-700 disabled:opacity-50 transition-all duration-300 shadow-lg shadow-purple-600/20 flex items-center gap-2">
-          <span v-if="saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-          <span v-else class="material-icons-outlined text-lg">{{ isEdit ? 'save' : 'add' }}</span>
-          {{ saving ? 'Guardando...' : (isEdit ? 'Actualizar Producto' : 'Crear Producto') }}
-        </button>
       </div>
     </form>
   </div>
@@ -191,7 +277,10 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { productsAPI, categoriesAPI } from '../../api';
 import { supabase } from '../../api/supabase';
+import { formatCurrency } from '../../utils';
 import Alert from '../../components/shared/Alert.vue';
+
+const selectBgSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234f4539' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E";
 
 const route = useRoute();
 const router = useRouter();
@@ -234,6 +323,12 @@ const flatCategories = computed(() => {
     return result;
   };
   return flatten(categories.value);
+});
+
+// Margen de ganancia estimado
+const marginPercent = computed(() => {
+  if (form.cost_price <= 0) return 0;
+  return Math.round(((form.price - form.cost_price) / form.cost_price) * 100);
 });
 
 onMounted(async () => {

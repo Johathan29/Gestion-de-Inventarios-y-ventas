@@ -1,18 +1,22 @@
 <template>
-  <nav class="fixed top-0 w-full z-50 bg-white/5 backdrop-blur-xl border-b border-white/20 flex justify-between items-center !px-4 !py-5">
+  <nav class="fixed w-full z-50 bg-white/5 backdrop-blur-xl border-b border-white/20 flex justify-between items-center !px-4 !py-5"
+    :style="{ top: 'var(--banner-height, 0px)' }">
     <div class="max-w-7xl mx-auto flex items-center justify-between w-full">
-      <router-link to="/" class="font-headline-md text-headline-md font-bold text-primary">Animal Store</router-link>
+      <router-link to="/" class="font-headline-md text-headline-md font-bold text-primary flex items-center gap-2">
+        <img v-if="settings?.logo_url" :src="settings.logo_url" :alt="storeName" class="h-8 w-auto object-contain" />
+        {{ storeName }}
+      </router-link>
       <div class="hidden md:flex gap-4 items-center">
         <a
           v-for="link in anchorLinks"
           :key="link.id"
-          :href="`/#${link.id}`"
           :class="navLinkClass(link.id)"
-        >{{ link.label }}</a>
-        <router-link
-          :to="{ name: 'ProductsCatalog' }"
-          :class="navLinkClass('products')"
-        >Productos</router-link>
+          :href="isOnHome ? '#' : `/#${link.id}`"
+          @click.prevent="scrollToSection(link.id)"
+        >
+          <span class="material-symbols-outlined text-lg mr-1 align-text-bottom">{{ link.icon }}</span>
+          {{ link.label }}
+        </a>
       </div>
 
       <div class="flex items-center gap-6">
@@ -131,10 +135,14 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 import { cartAPI, notificationsAPI } from '../../api';
 import { formatRelativeTime } from '../../utils';
+import { useEcommerceSettings } from '../../composables/useEcommerceSettings';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const { settings, fetchSettings } = useEcommerceSettings();
+
+const storeName = computed(() => settings.value?.store_name || 'Animal Store');
 
 const showUserMenu = ref(false);
 const showNotifications = ref(false);
@@ -145,11 +153,11 @@ const notifUnread = ref(0);
 let notifInterval = null;
 
 const anchorLinks = [
-  { id: 'hero', label: 'Inicio' },
-  { id: 'products', label: 'Productos' },
-  { id: 'reviews', label: 'Reseñas' },
-  { id: 'newsletter', label: 'Newsletter' },
-  { id: 'contact', label: 'Contacto' },
+  { id: 'hero', label: 'Inicio', icon: 'home' },
+  { id: 'products', label: 'Productos', icon: 'inventory_2' },
+  { id: 'reviews', label: 'Reseñas', icon: 'rate_review' },
+  { id: 'offers', label: 'Ofertas', icon: 'local_offer' },
+  { id: 'contact', label: 'Contacto', icon: 'contact_mail' },
 ];
 
 const activeSection = ref('hero');
@@ -175,10 +183,24 @@ const isProductRoute = computed(() =>
   ['ProductsCatalog', 'ProductPublicDetail'].includes(route.name)
 );
 
+const isOnHome = computed(() => route.name === 'Home');
+
+function scrollToSection(sectionId) {
+  if (isOnHome.value) {
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  } else {
+    router.push({ path: '/', hash: `#${sectionId}` });
+  }
+}
+
 function navLinkClass(sectionId) {
+  // Only highlight anchor sections when on the LandingView (Home)
   const isActive = sectionId === 'products' && isProductRoute.value
     ? true
-    : activeSection.value === sectionId;
+    : isOnHome.value && activeSection.value === sectionId;
 
   return [
     'font-body-md text-body-md transition-all duration-300',
@@ -265,6 +287,7 @@ onBeforeMount(() => {
 });
 
 onMounted(() => {
+  fetchSettings();
   const allIds = [...anchorLinks.map(l => l.id), 'products'];
 
   observer = new IntersectionObserver((entries) => {

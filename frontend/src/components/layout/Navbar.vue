@@ -1,17 +1,21 @@
 <template>
-  <header class="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 sticky top-0 z-20">
+  <header class="dt-navbar h-20 flex items-center justify-between px-6 sticky top-0 z-20">
     <!-- Left side -->
     <div class="flex items-center gap-4">
-      <button @click="appStore.toggleSidebarMobile" class="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
+      <button @click="appStore.toggleSidebarMobile" class="dt-mobile-menu-btn lg:hidden">
         <span class="material-icons-outlined">menu</span>
       </button>
-      <button @click="appStore.toggleSidebar" class="hidden lg:flex p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
+      <button @click="appStore.toggleSidebar" class="hidden lg:flex dt-mobile-menu-btn">
         <span class="material-icons-outlined">menu</span>
       </button>
-      <div class="relative" v-if="false">
-        <span class="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
+      <!-- Search (hidden by default) -->
+      <div class="relative hidden sm:block" v-if="showSearch">
+        <span class="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2" style="color: #817567;">search</span>
         <input type="text" placeholder="Buscar..."
-               class="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 w-64" />
+               class="pl-10 pr-4 py-2 rounded-full border outline-none transition-all"
+               style="border-color: rgba(210,196,180,0.5); background: rgba(255,255,255,0.5); font-family: 'Inter', sans-serif; font-size: 14px; width: 16rem;"
+               @focus="e => e.target.style.borderColor = '#a17808'"
+               @blur="e => e.target.style.borderColor = 'rgba(210,196,180,0.5)'" />
       </div>
     </div>
 
@@ -20,38 +24,48 @@
       <!-- Notifications -->
       <div class="relative">
         <button @click="showNotifications = !showNotifications"
-                class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 relative">
+                class="p-2 rounded-xl transition-all duration-200"
+                style="color: #4f4539; background: transparent; border: none; cursor: pointer;"
+                @mouseenter="e => e.target.style.background = 'rgba(98,66,0,0.05)'"
+                @mouseleave="e => e.target.style.background = 'transparent'">
           <span class="material-icons-outlined">notifications</span>
           <span v-if="unreadCount > 0"
-                class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                class="absolute -top-1 -right-1 w-5 h-5 text-white text-xs rounded-full flex items-center justify-center"
+                style="background: #dc2626;">
             {{ unreadCount > 9 ? '9+' : unreadCount }}
           </span>
         </button>
 
         <!-- Notifications dropdown -->
         <div v-if="showNotifications"
-             class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-          <div class="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <h3 class="font-semibold text-sm text-gray-900 dark:text-white">Notificaciones</h3>
-            <button v-if="unreadCount > 0" @click="markAllAsRead" class="text-xs text-primary-600 hover:underline">
+             class="absolute right-0 mt-2 w-80 dt-card z-50 overflow-hidden">
+          <div class="p-3 border-b flex justify-between items-center" style="border-color: rgba(210,196,180,0.3);">
+            <h3 class="font-semibold text-sm" style="font-family: 'Plus Jakarta Sans', sans-serif; color: #452d00;">Notificaciones</h3>
+            <button v-if="unreadCount > 0" @click="markAllAsRead" class="text-xs" style="color: #624200;">
               Marcar todas leídas
             </button>
           </div>
           <div class="max-h-72 overflow-y-auto">
-            <div v-if="notifications.length === 0" class="p-4 text-center text-gray-500 text-sm">
+            <div v-if="notifications.length === 0" class="p-4 text-center text-sm" style="color: #4f4539;">
               No hay notificaciones
             </div>
             <div v-for="notif in notifications" :key="notif.id"
-                 class="p-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                 @click="markAsRead(notif.id)">
-              <p class="text-sm font-medium text-gray-900 dark:text-white">{{ notif.title }}</p>
-              <p class="text-xs text-gray-500 mt-1">{{ notif.message }}</p>
-              <p class="text-xs text-gray-400 mt-1">{{ formatRelativeTime(notif.created_at) }}</p>
+                 class="p-3 border-b cursor-pointer transition-colors"
+                 style="border-color: rgba(210,196,180,0.15);"
+                 @click="markAsRead(notif.id)"
+                 @mouseenter="e => e.currentTarget.style.background = 'rgba(98,66,0,0.03)'"
+                 @mouseleave="e => e.currentTarget.style.background = 'transparent'">
+              <p class="text-sm font-medium" style="color: #0b1c30; font-family: 'Inter', sans-serif;">{{ notif.title }}</p>
+              <p class="text-xs mt-1" style="color: #4f4539;">{{ notif.message }}</p>
+              <p class="text-xs mt-1" style="color: #817567;">{{ formatRelativeTime(notif.created_at) }}</p>
             </div>
           </div>
-          <div class="p-2 border-t border-gray-100 dark:border-gray-700">
+          <div class="p-2 border-t" style="border-color: rgba(210,196,180,0.3);">
             <router-link to="/app/notifications" @click="showNotifications = false"
-              class="block text-center text-xs text-primary-600 hover:text-primary-700 font-medium py-1.5 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors">
+              class="block text-center text-xs font-medium py-1.5 rounded-lg transition-colors"
+              style="color: #624200; text-decoration: none;"
+              @mouseenter="e => e.currentTarget.style.background = 'rgba(98,66,0,0.05)'"
+              @mouseleave="e => e.currentTarget.style.background = 'transparent'">
               Ver todas las notificaciones
             </router-link>
           </div>
@@ -61,53 +75,71 @@
       <!-- User Menu -->
       <div class="relative">
         <button @click="showUserMenu = !showUserMenu"
-                class="flex items-center gap-2 p-1.5 pr-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-primary-600 flex items-center justify-center text-white text-sm font-medium shadow-md shadow-purple-600/20 transition-transform duration-200 hover:scale-105">
+                class="flex items-center gap-2 p-1.5 pr-3 rounded-xl transition-all duration-200 border"
+                style="background: transparent; border-color: transparent; cursor: pointer;"
+                @mouseenter="e => { e.currentTarget.style.background = 'rgba(98,66,0,0.05)'; e.currentTarget.style.borderColor = 'rgba(210,196,180,0.3)'; }"
+                @mouseleave="e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-medium shadow-sm transition-transform duration-200"
+               style="background: #624200;"
+               @mouseenter="e => e.currentTarget.style.transform = 'scale(1.05)'"
+               @mouseleave="e => e.currentTarget.style.transform = 'scale(1)'">
             {{ userInitials }}
           </div>
           <div class="text-left hidden sm:block">
-            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ user?.name }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>
+            <p class="text-sm font-semibold" style="color: #0b1c30; font-family: 'Inter', sans-serif;">{{ user?.name }}</p>
+            <p class="text-xs flex items-center gap-1" style="color: #4f4539;">
+              <span class="w-1.5 h-1.5 rounded-full inline-block" style="background: #059669;"></span>
               {{ userRole }}
             </p>
           </div>
-          <span class="material-icons-outlined text-gray-400 text-lg transition-transform duration-200" :class="{ 'rotate-180': showUserMenu }">expand_more</span>
+          <span class="material-icons-outlined text-lg transition-transform duration-200" style="color: #817567;" :class="{ 'rotate-180': showUserMenu }">expand_more</span>
         </button>
 
         <div v-if="showUserMenu"
-             class="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
-          <div class="p-4 bg-gradient-to-r from-purple-600/10 to-primary-600/10 border-b border-gray-200 dark:border-gray-700">
+             class="absolute right-0 mt-2 w-64 dt-card z-50 overflow-hidden" style="border-radius: 16px;">
+          <div class="p-4 border-b" style="background: rgba(98,66,0,0.03); border-color: rgba(210,196,180,0.3);">
             <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-primary-600 flex items-center justify-center text-white text-lg font-bold shadow-md">
+              <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-md" style="background: #624200;">
                 {{ userInitials }}
               </div>
               <div>
-                <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ user?.name }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ user?.email }}</p>
+                <p class="text-sm font-semibold" style="color: #0b1c30;">{{ user?.name }}</p>
+                <p class="text-xs" style="color: #4f4539;">{{ user?.email }}</p>
               </div>
             </div>
           </div>
           <div class="py-2">
             <router-link to="/app/profile" @click="showUserMenu = false"
-              class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-              <span class="material-icons-outlined text-lg text-primary-500">person</span>
+              class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+              style="color: #4f4539; text-decoration: none;"
+              @mouseenter="e => e.currentTarget.style.background = 'rgba(98,66,0,0.05)'"
+              @mouseleave="e => e.currentTarget.style.background = 'transparent'">
+              <span class="material-icons-outlined text-lg" style="color: #624200;">person</span>
               Mi Perfil
             </router-link>
             <router-link to="/app/notifications" @click="showUserMenu = false"
-              class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-              <span class="material-icons-outlined text-lg text-amber-500">notifications</span>
+              class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+              style="color: #4f4539; text-decoration: none;"
+              @mouseenter="e => e.currentTarget.style.background = 'rgba(98,66,0,0.05)'"
+              @mouseleave="e => e.currentTarget.style.background = 'transparent'">
+              <span class="material-icons-outlined text-lg" style="color: #d97706;">notifications</span>
               Notificaciones
-              <span v-if="unreadCount > 0" class="ml-auto bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
+              <span v-if="unreadCount > 0" class="ml-auto text-white text-xs w-5 h-5 rounded-full flex items-center justify-center" style="background: #dc2626;">{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
             </router-link>
             <router-link to="/app/admin/config" @click="showUserMenu = false"
-              class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-              <span class="material-icons-outlined text-lg text-gray-400">settings</span>
+              class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+              style="color: #4f4539; text-decoration: none;"
+              @mouseenter="e => e.currentTarget.style.background = 'rgba(98,66,0,0.05)'"
+              @mouseleave="e => e.currentTarget.style.background = 'transparent'">
+              <span class="material-icons-outlined text-lg" style="color: #817567;">settings</span>
               Configuración
             </router-link>
-            <hr class="my-1 border-gray-200 dark:border-gray-700 mx-3">
+            <hr class="my-1 mx-3" style="border-color: rgba(210,196,180,0.3);">
             <button @click="handleLogout"
-              class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+              class="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+              style="color: #dc2626; background: transparent; border: none; cursor: pointer;"
+              @mouseenter="e => e.currentTarget.style.background = 'rgba(220,38,38,0.05)'"
+              @mouseleave="e => e.currentTarget.style.background = 'transparent'">
               <span class="material-icons-outlined text-lg">logout</span>
               Cerrar Sesión
             </button>
@@ -133,6 +165,7 @@ const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotificatio
 
 const showNotifications = ref(false);
 const showUserMenu = ref(false);
+const showSearch = ref(false);
 const user = computed(() => authStore.user);
 const userRole = computed(() => authStore.user?.role_name || 'Usuario');
 
