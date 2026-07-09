@@ -1,0 +1,19 @@
+{
+  "name": "@erp/event-bus",
+  "version": "1.0.0",
+  "description": "ERP Event Bus — RabbitMQ/NATS abstraction with publish/subscribe interfaces",
+  "main": "src/index.js",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/.bin/jest"
+  },
+  "peerDependencies": {
+    "amqplib": "^0.10.0"
+  }
+}

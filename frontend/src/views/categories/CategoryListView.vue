@@ -20,118 +20,69 @@
 
     <!-- DataTable Card -->
     <div class="bg-white rounded-2xl overflow-hidden border" style="border-color: rgba(210,196,180,0.2); box-shadow: 0px 4px 20px rgba(98,66,0,0.05);">
-      <!-- Table Controls -->
-      <div class="p-4 border-b flex flex-col sm:flex-row justify-between gap-4" style="border-color: rgba(210,196,180,0.2); background: rgba(253,251,247,0.5);">
-        <div class="relative max-w-sm w-full">
-          <span class="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2" style="color: #4f4539; font-size: 16px;">search</span>
-          <input v-model="searchQuery" @input="onSearchInput" type="text" placeholder="Filtrar categorías..."
-            class="w-full bg-white border rounded-lg py-2 pl-9 pr-4 text-sm transition-all"
-            style="font-family: 'Inter', sans-serif; color: #0b1c30; border-color: #E5E7EB; border-width: 1.5px;"
-            @focus="e => { e.currentTarget.style.borderColor = '#a17808'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(161,120,8,0.2)'; }"
-            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
-        </div>
+      <!-- Filter/Sort Bar -->
+      <div class="filter-bar-container p-4 border-b border-[#d2c4b4]/30 flex justify-between items-center" style="background: #ffffff; border-color: rgba(210,196,180,0.2);">
         <div class="flex gap-2">
-          <button class="inline-flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-sm transition-colors"
-            style="font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539; border-color: #E5E7EB; border-width: 1.5px;"
-            @mouseenter="e => e.currentTarget.style.background = '#eff4ff'"
-            @mouseleave="e => e.currentTarget.style.background = ''">
-            <span class="material-icons-outlined" style="font-size: 16px;">filter_list</span>
-            Filtros
+          <button @click="showFilters = !showFilters"
+            class="px-3 py-1.5 text-sm font-medium border border-[#d2c4b4] rounded-md flex items-center gap-1 hover:bg-[#eff4ff] transition-colors bg-white relative"
+            :class="{ 'ring-2 ring-[rgba(98,66,0,0.2)] border-[#624200]': showFilters }"
+            style="font-family: 'Inter', sans-serif; color: #4f4539; border-color: #E5E7EB;">
+            <span class="material-icons-outlined" style="font-size: 1rem;">filter_list</span>
+            Filtrar
           </button>
-          <button class="inline-flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-sm transition-colors"
-            style="font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539; border-color: #E5E7EB; border-width: 1.5px;"
-            @mouseenter="e => e.currentTarget.style.background = '#eff4ff'"
-            @mouseleave="e => e.currentTarget.style.background = ''">
-            <span class="material-icons-outlined" style="font-size: 16px;">download</span>
-            Exportar
-          </button>
+        </div>
+        <div class="relative">
+          <div class="flex items-center bg-white border border-[#d2c4b4] rounded-full px-4 py-1.5 focus-within:border-[#624200] focus-within:ring-2 focus-within:ring-[rgba(98,66,0,0.2)] transition-all" style="border-color: #E5E7EB;">
+            <span class="material-icons-outlined" style="color: #d2c4b4; margin-right: 0.5rem; font-size: 1rem;">search</span>
+            <input v-model="searchQuery" @input="onSearchInput" type="text" placeholder="Filtrar categorías..."
+              class="bg-transparent border-none focus:ring-0 outline-none text-sm"
+              style="font-family: 'Inter', sans-serif; color: #0b1c30;" />
+          </div>
         </div>
       </div>
 
       <Loading v-if="loading" />
       <template v-else>
-        <!-- Desktop Table -->
-        <div class="hidden md:block overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr style="background: #F9F7F2; border-bottom: 1px solid rgba(210,196,180,0.2);">
-                <th class="py-3 px-4 font-semibold uppercase tracking-wider" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539;">Nombre</th>
-                <th class="py-3 px-4 font-semibold uppercase tracking-wider" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539;">Slug</th>
-                <th class="py-3 px-4 font-semibold uppercase tracking-wider" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539;">Descripción</th>
-                <th class="py-3 px-4 font-semibold uppercase tracking-wider text-center" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539;">Estado</th>
-                <th class="py-3 px-4 font-semibold uppercase tracking-wider text-right" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539;">Acciones</th>
-              </tr>
-            </thead>
-            <tbody style="font-size: 0.875rem; line-height: 1.5; color: #0b1c30; font-family: 'Inter', sans-serif;">
-              <template v-for="cat in flatCategories" :key="cat.id">
-                <tr class="transition-colors group" style="border-bottom: 1px solid rgba(210,196,180,0.15);"
-                  :style="cat.level > 0 ? { background: 'rgba(239,244,255,0.3)' } : {}">
-                  <td class="py-4 px-4">
-                    <div class="flex items-center gap-3">
-                      <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                        :style="cat.status === 'active'
-                          ? { background: 'rgba(253,202,92,0.3)', color: '#624200' }
-                          : { background: '#d3e4fe', color: '#4f4539' }">
-                        <span v-if="cat.level > 0" class="material-icons-outlined" style="font-size: 18px;">subdirectory_arrow_right</span>
-                        <span v-else class="material-icons-outlined" style="font-size: 20px; font-variation-settings: 'FILL' 1;">category</span>
-                      </div>
-                      <div>
-                        <p class="font-semibold" style="color: #452d00;">{{ cat.name }}</p>
-                        <p v-if="cat.slug" class="text-xs mt-0.5" style="font-family: 'JetBrains Mono', monospace; color: #4f4539;">{{ cat.slug }}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="py-4 px-4">
-                    <span v-if="cat.slug" class="font-mono text-xs px-2 py-1 rounded-md border" style="font-family: 'JetBrains Mono', monospace; color: #4f4539; background: #eff4ff; border-color: rgba(210,196,180,0.3);">/{{ cat.slug }}</span>
-                    <span v-else style="color: #d2c4b4;">—</span>
-                  </td>
-                  <td class="py-4 px-4 max-w-[220px] truncate" style="color: #4f4539;" :title="cat.description || ''">
-                    {{ cat.description || '—' }}
-                  </td>
-                  <td class="py-4 px-4 text-center">
-                    <span v-if="cat.status === 'active'" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border" style="background: #dcfce7; color: #166534; border-color: #bbf7d0; font-family: 'Inter', sans-serif;">
-                      <span class="w-1.5 h-1.5 rounded-full" style="background: #16a34a;"></span>
-                      Activo
-                    </span>
-                    <span v-else class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border" style="background: #f3f4f6; color: #4b5563; border-color: #e5e7eb; font-family: 'Inter', sans-serif;">
-                      <span class="w-1.5 h-1.5 rounded-full" style="background: #9ca3af;"></span>
-                      Inactivo
-                    </span>
-                  </td>
-                  <td class="py-4 px-4 text-right">
-                    <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button @click="openModal(cat)"
-                        class="p-1.5 rounded-md transition-colors" style="color: #4f4539;"
-                        @mouseenter="e => { e.currentTarget.style.color = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.05)'; }"
-                        @mouseleave="e => { e.currentTarget.style.color = '#4f4539'; e.currentTarget.style.background = ''; }"
-                        title="Editar">
-                        <span class="material-icons-outlined" style="font-size: 1.25rem;">edit</span>
-                      </button>
-                      <button @click="confirmDelete(cat)"
-                        class="p-1.5 rounded-md transition-colors" style="color: #4f4539;"
-                        @mouseenter="e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.05)'; }"
-                        @mouseleave="e => { e.currentTarget.style.color = '#4f4539'; e.currentTarget.style.background = ''; }"
-                        title="Eliminar">
-                        <span class="material-icons-outlined" style="font-size: 1.25rem;">delete</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </template>
-              <tr v-if="flatCategories.length === 0">
-                <td colspan="5" class="px-5 py-16 text-center">
-                  <span class="material-icons-outlined" style="font-size: 3rem; color: #d2c4b4; display: block; margin-bottom: 0.75rem;">category</span>
-                  <p style="color: #4f4539; margin-bottom: 0.25rem; font-family: 'Inter', sans-serif;">No hay categorías registradas</p>
-                  <p style="font-size: 0.75rem; color: #4f4539; margin-bottom: 1rem; font-family: 'Inter', sans-serif;">Crea tu primera categoría para organizar los productos</p>
-                  <button @click="openModal(null)"
-                    style="font-size: 0.875rem; color: #624200; font-weight: 500; font-family: 'Inter', sans-serif;">
-                    + Crear categoría
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <!-- Desktop Table (DataTable) -->
+        <DataTable :columns="categoryColumns" :data="flatCategories" :per-page="15" empty-message="No hay categorías registradas" @row-click="">
+          <template #cell-name="{ row }">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                :style="row.status === 'active'
+                  ? { background: 'rgba(253,202,92,0.3)', color: '#624200' }
+                  : { background: '#d3e4fe', color: '#4f4539' }">
+                <span v-if="row.level > 0" class="material-icons-outlined" style="font-size: 18px;">subdirectory_arrow_right</span>
+                <span v-else class="material-icons-outlined" style="font-size: 20px; font-variation-settings: 'FILL' 1;">category</span>
+              </div>
+              <div>
+                <p class="font-semibold" style="color: #452d00;">{{ row.name }}</p>
+                <p v-if="row.slug" class="text-xs mt-0.5" style="font-family: 'JetBrains Mono', monospace; color: #4f4539;">{{ row.slug }}</p>
+              </div>
+            </div>
+          </template>
+          <template #cell-slug="{ row }">
+            <span v-if="row.slug" class="font-mono text-xs px-2 py-1 rounded-md border" style="font-family: 'JetBrains Mono', monospace; color: #4f4539; background: #eff4ff; border-color: rgba(210,196,180,0.3);">/{{ row.slug }}</span>
+            <span v-else style="color: #d2c4b4;">—</span>
+          </template>
+          <template #cell-status="{ row }">
+            <span v-if="row.status === 'active'" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border" style="background: #dcfce7; color: #166534; border-color: #bbf7d0; font-family: 'Inter', sans-serif;">
+              <span class="w-1.5 h-1.5 rounded-full" style="background: #16a34a;"></span>
+              Activo
+            </span>
+            <span v-else class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border" style="background: #f3f4f6; color: #4b5563; border-color: #e5e7eb; font-family: 'Inter', sans-serif;">
+              <span class="w-1.5 h-1.5 rounded-full" style="background: #9ca3af;"></span>
+              Inactivo
+            </span>
+          </template>
+          <template #actions="{ row }">
+            <button @click="openModal(row)" class="inline-flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200" title="Editar" style="color: #4f4539; background: transparent; border: none; cursor: pointer;" @mouseenter="e => { e.currentTarget.style.background = 'rgba(98,66,0,0.05)'; e.currentTarget.style.color = '#624200'; }" @mouseleave="e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#4f4539'; }">
+              <span class="material-icons-outlined" style="font-size: 1.25rem;">edit</span>
+            </button>
+            <button @click="confirmDelete(row)" class="inline-flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200" title="Eliminar" style="color: #ba1a1a; background: transparent; border: none; cursor: pointer;" @mouseenter="e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#ba1a1a'; }" @mouseleave="e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ba1a1a'; }">
+              <span class="material-icons-outlined" style="font-size: 1.25rem;">delete</span>
+            </button>
+          </template>
+        </DataTable>
 
         <!-- Mobile Cards -->
         <div class="md:hidden p-4 space-y-3">
@@ -254,6 +205,7 @@ import { useAuth } from '../../composables/useAuth';
 import Modal from '../../components/shared/Modal.vue';
 import Loading from '../../components/shared/Loading.vue';
 import ConfirmDialog from '../../components/shared/ConfirmDialog.vue';
+import DataTable from '../../components/shared/DataTable.vue';
 
 const { can } = useAuth();
 const categories = ref([]);
@@ -265,6 +217,14 @@ const deleting = ref(null);
 const saving = ref(false);
 const form = ref({ name: '', description: '', parent_id: null });
 const searchQuery = ref('');
+const showFilters = ref(false);
+
+const categoryColumns = [
+  { key: 'name', label: 'Nombre' },
+  { key: 'slug', label: 'Slug' },
+  { key: 'description', label: 'Descripción' },
+  { key: 'status', label: 'Estado' }
+];
 
 // Debounce timer for search
 let searchTimer = null;

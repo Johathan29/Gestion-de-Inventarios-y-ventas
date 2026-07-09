@@ -18,15 +18,15 @@
       </div>
       <div class="flex items-center gap-3">
         <router-link to="/app/products"
-          class="px-4 py-2 rounded-lg border-2 font-semibold transition-colors"
-          style="border-color: #d2c4b4; color: #624200; font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5;"
+          class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+          style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
           @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
           @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
           Cancelar
         </router-link>
         <button type="submit" form="product-form" :disabled="saving"
-          class="flex items-center gap-2 font-semibold px-5 py-2 rounded-lg shadow-md hover:shadow-lg transition-all active:scale-95"
-          style="background: #624200; color: white; font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5;">
+          class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
+          style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
           <span class="material-icons-outlined" style="font-size: 1.125rem;">{{ isEdit ? 'save' : 'add' }}</span>
           {{ saving ? 'Guardando...' : (isEdit ? 'Actualizar Producto' : 'Guardar') }}
         </button>
@@ -143,7 +143,7 @@
           <div class="sm:col-span-2 lg:col-span-1 rounded-lg p-3 flex justify-between items-center border" style="background: #eff4ff; border-color: rgba(210,196,180,0.3);">
             <div>
               <span class="block mb-1" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539;">Ganancia Estimada</span>
-              <span class="font-semibold" style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #795900;" id="ganancia-calc">{{ formatCurrency(Math.max(0, form.price - form.cost_price)) }} ({{ marginPercent }}%)</span>
+              <span class="font-semibold" style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #795900;" id="ganancia-calc">{{ formatTable(Math.max(0, form.price - form.cost_price)) }} ({{ marginPercent }}%)</span>
             </div>
             <span class="material-icons-outlined opacity-50" style="font-size: 2rem; color: #795900;">trending_up</span>
           </div>
@@ -277,8 +277,10 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { productsAPI, categoriesAPI } from '../../api';
 import { supabase } from '../../api/supabase';
-import { formatCurrency } from '../../utils';
+import { useCurrency } from '../../composables/useCurrency';
 import Alert from '../../components/shared/Alert.vue';
+
+const { formatTable } = useCurrency();
 
 const selectBgSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234f4539' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E";
 

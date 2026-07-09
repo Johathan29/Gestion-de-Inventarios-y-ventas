@@ -228,10 +228,23 @@ const getHomeSettings = async (req, res, next) => {
 
 const updateHomeSettings = async (req, res, next) => {
   try {
-    const payload = {
-      ...req.body,
-      updated_at: new Date().toISOString()
-    };
+    // Whitelist de columnas conocidas en ecommerce_settings
+    const allowedColumns = [
+      'store_name', 'description', 'logo_url', 'favicon_url',
+      'contact_email', 'contact_phone', 'phone', 'whatsapp_number', 'whatsapp_message',
+      'address', 'currency_code', 'currency_symbol', 'currency_name',
+      'country_code', 'country', 'locale', 'default_tax_rate_id', 'tax_included',
+      'banner_default_url', 'banner_mobile_url',
+      'social_networks', 'seo_settings', 'shipping_settings', 'payment_settings',
+      'is_active'
+    ];
+
+    const payload = { updated_at: new Date().toISOString() };
+    for (const key of allowedColumns) {
+      if (key in req.body) {
+        payload[key] = req.body[key];
+      }
+    }
 
     const { data, error } = await supabase
       .from('ecommerce_settings')

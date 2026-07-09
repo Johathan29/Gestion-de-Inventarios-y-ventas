@@ -2,6 +2,7 @@
   "name": "@inventory/config-service",
   "version": "1.0.0",
   "description": "Servicio de Configuración del Sistema",
+  "type": "module",
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",

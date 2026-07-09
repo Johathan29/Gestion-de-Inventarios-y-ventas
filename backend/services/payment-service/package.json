@@ -1,0 +1,22 @@
+{
+  "name": "@erp/payment-service",
+  "version": "1.0.0",
+  "description": "Payments Service — Payment Processing, Cash Registers (Hexagonal)",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "@erp/shared-kernel": "file:../../../packages/shared-kernel",
+    "@erp/event-bus": "file:../../../packages/event-bus",
+    "@erp/common": "file:../../../packages/common",
+    "express": "^4.18.2",
+    "dotenv": "^16.3.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

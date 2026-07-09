@@ -1,0 +1,25 @@
+{
+  "name": "@erp/common",
+  "version": "1.0.0",
+  "description": "ERP Common utilities — middleware, config, logger, validation, errors, types",
+  "main": "src/index.js",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./middleware": "./src/middleware/index.js",
+    "./utils": "./src/utils/index.js",
+    "./validation": "./src/validation/index.js",
+    "./errors": "./src/errors/index.js",
+    "./types": "./src/types/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "winston": "^3.11.0",
+    "zod": "^3.22.0",
+    "jsonwebtoken": "^9.0.0",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5"
+  }
+}

@@ -1,17 +1,18 @@
 {
-  "name": "@inventory/report-service",
+  "name": "@erp/report-service",
   "version": "1.0.0",
-  "description": "Servicio de Reportes",
+  "description": "Reporting Service — Dashboard, Sales, Inventory, Top Products, Client Reports (Hexagonal)",
+  "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon src/server.js",
+    "dev": "node --watch src/server.js",
     "start": "node src/server.js"
   },
   "dependencies": {
-    "@inventory/shared": "file:../../shared",
+    "@erp/shared-kernel": "file:../../../packages/shared-kernel",
+    "@erp/common": "file:../../../packages/common",
     "express": "^4.18.2",
-    "dotenv": "^16.3.1",
-    "@supabase/supabase-js": "^2.39.0"
+    "dotenv": "^16.3.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

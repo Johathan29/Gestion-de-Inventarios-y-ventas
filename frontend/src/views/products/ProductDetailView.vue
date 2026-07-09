@@ -80,12 +80,12 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="bg-white rounded-xl p-4 shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/20">
             <p style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539; margin-bottom: 0.25rem;">Precio de Venta</p>
-            <p style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.5rem; line-height: 1.3; font-weight: 700; color: #624200;">{{ formatCurrency(product.price) }}</p>
+            <p style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.5rem; line-height: 1.3; font-weight: 700; color: #624200;">{{ formatTable(product.price) }}</p>
             <p style="font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5; color: #4f4539; margin-top: 0.25rem;">COP</p>
           </div>
           <div class="bg-white rounded-xl p-4 shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/20">
             <p style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539; margin-bottom: 0.25rem;">Costo</p>
-            <p style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.25rem; line-height: 1.4; font-weight: 600; color: #0b1c30;">{{ formatCurrency(product.cost_price || 0) }}</p>
+            <p style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.25rem; line-height: 1.4; font-weight: 600; color: #0b1c30;">{{ formatTable(product.cost_price || 0) }}</p>
             <p style="font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5; color: #4f4539; margin-top: 0.25rem;">COP</p>
           </div>
           <div class="bg-white rounded-xl p-4 shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/20" :style="{ borderLeft: `4px solid ${stockColorHex(product.stock ?? 0, product.min_stock ?? 5)}` }">
@@ -148,7 +148,10 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { productsAPI } from '../../api';
 import Loading from '../../components/shared/Loading.vue';
-import { formatCurrency, formatDate } from '../../utils';
+import { useCurrency } from '../../composables/useCurrency';
+import { formatDate } from '../../utils';
+
+const { formatTable } = useCurrency();
 
 const route = useRoute();
 const product = ref({});

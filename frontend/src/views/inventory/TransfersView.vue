@@ -2,8 +2,10 @@
   <div>
     <InventoryTabs />
     <div class="flex justify-between items-center mb-4">
-      <h3 class="dt-headline-sm" style="margin-bottom: 0;">Transferencias</h3>
-      <button @click="showForm = true" class="dt-btn-primary">Nueva Transferencia</button>
+      <h2 class="font-headline-lg-mobile md:font-headline-lg" style="font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.25; font-weight: 700; color: #0b1c30; letter-spacing: -0.02em; font-family: 'Plus Jakarta Sans', sans-serif;">Transferencias</h2>
+      <button @click="showForm = true"
+        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
+        style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">Nueva Transferencia</button>
     </div>
 
     <DataTable :columns="columns" :data="transfers" searchable />
@@ -11,27 +13,52 @@
     <Modal :show="showForm" title="Nueva Transferencia" @close="showForm = false">
       <form @submit.prevent="handleSubmit" class="space-y-4">
         <div>
-          <label class="dt-label">Producto</label>
-          <select v-model="form.product_id" class="dt-input" required>
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Producto <span style="color: #ba1a1a;">*</span></label>
+          <select v-model="form.product_id" required
+            class="w-full rounded-lg px-3 py-2.5 appearance-none transition-all"
+            :style="{ fontFamily: 'Inter, sans-serif', fontSize: '0.875rem', color: '#0b1c30', background: '#ffffff', border: '1.5px solid #E5E7EB' }"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }">
             <option value="">Seleccionar...</option>
             <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</option>
           </select>
         </div>
         <div>
-          <label class="dt-label">Ubicación Origen</label>
-          <input v-model="form.from_location" class="dt-input" required />
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Ubicación Origen <span style="color: #ba1a1a;">*</span></label>
+          <input v-model="form.from_location" required
+            class="w-full rounded-lg px-3 py-2.5 transition-all"
+            style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
         </div>
         <div>
-          <label class="dt-label">Ubicación Destino</label>
-          <input v-model="form.to_location" class="dt-input" required />
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Ubicación Destino <span style="color: #ba1a1a;">*</span></label>
+          <input v-model="form.to_location" required
+            class="w-full rounded-lg px-3 py-2.5 transition-all"
+            style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
         </div>
         <div>
-          <label class="dt-label">Cantidad</label>
-          <input v-model.number="form.quantity" type="number" min="1" class="dt-input" required />
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Cantidad <span style="color: #ba1a1a;">*</span></label>
+          <input v-model.number="form.quantity" type="number" min="1" required
+            class="w-full rounded-lg px-3 py-2.5 transition-all"
+            style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
         </div>
         <div class="flex justify-end gap-3 pt-3">
-          <button type="button" @click="showForm = false" class="dt-btn-secondary">Cancelar</button>
-          <button type="submit" :disabled="saving" class="dt-btn-primary">Transferir</button>
+          <button type="button" @click="showForm = false"
+            class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+            style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
+            @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
+            @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">Cancelar</button>
+          <button type="submit" :disabled="saving"
+            class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
+            style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
+            <span class="material-icons-outlined" style="font-size: 1.125rem;">swap_horiz</span>
+            {{ saving ? 'Transfiriendo...' : 'Transferir' }}
+          </button>
         </div>
       </form>
     </Modal>

@@ -1,9 +1,14 @@
 <template>
   <div>
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="dt-headline-sm" style="margin-bottom: 0;">Slides del Carrusel (Hero)</h3>
-      <button @click="openModal(null)" class="dt-btn-primary">
-        <span class="material-symbols-outlined text-sm mr-1" data-icon="add">add</span>
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+      <div>
+        <h2 class="font-headline-lg-mobile md:font-headline-lg" style="font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.25; font-weight: 700; color: #0b1c30; letter-spacing: -0.02em; font-family: 'Plus Jakarta Sans', sans-serif;">Slides del Carrusel</h2>
+        <p style="color: #4f4539; font-family: 'Inter', sans-serif; font-size: 1rem; line-height: 1.5; margin-top: 0.25rem;">
+          Slides del carrusel principal (Hero)
+        </p>
+      </div>
+      <button @click="openModal(null)" class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border" style="background: #624200; color: white; border-color: rgba(139,94,0,0.2); font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5;">
+        <span class="material-icons-outlined" style="font-size: 1.25rem;">add</span>
         Nuevo Slide
       </button>
     </div>
@@ -39,8 +44,16 @@
 
         <!-- Actions -->
         <div class="flex gap-2 flex-shrink-0">
-          <button @click="openModal(slide)" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Editar</button>
-          <button @click="confirmDelete(slide)" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem; border-color: #ef4444; color: #ef4444;">Eliminar</button>
+          <button @click="openModal(slide)"
+            class="shrink-0 flex items-center gap-1 font-semibold px-3 py-1.5 rounded-lg transition-all duration-200 border-2"
+            style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.8rem;"
+            @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
+            @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">Editar</button>
+          <button @click="confirmDelete(slide)"
+            class="shrink-0 flex items-center gap-1 font-semibold px-3 py-1.5 rounded-lg transition-all duration-200 border-2"
+            style="border-color: #ef4444; color: #ef4444; font-family: Inter, sans-serif; font-size: 0.8rem;"
+            @mouseenter="e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#dc2626'; }"
+            @mouseleave="e => { e.currentTarget.style.background = ''; e.currentTarget.style.borderColor = '#ef4444'; }">Eliminar</button>
         </div>
       </div>
     </div>
@@ -50,57 +63,104 @@
       <form @submit.prevent="handleSave" class="space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="form-label">Badge (etiqueta)</label>
-            <input v-model="form.badge" class="form-input" placeholder="Elite Animal Companionship" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Badge (etiqueta)</label>
+            <input v-model="form.badge"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              placeholder="Elite Animal Companionship"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
           <div>
-            <label class="form-label">Orden</label>
-            <input v-model.number="form.sort_order" type="number" min="0" class="form-input" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Orden</label>
+            <input v-model.number="form.sort_order" type="number" min="0"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="form-label">Título Línea 1</label>
-            <input v-model="form.title_line1" class="form-input" placeholder="The Luxury" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Título Línea 1</label>
+            <input v-model="form.title_line1"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              placeholder="The Luxury"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
           <div>
-            <label class="form-label">Título Línea 2</label>
-            <input v-model="form.title_line2" class="form-input" placeholder="Pet Atelier." />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Título Línea 2</label>
+            <input v-model="form.title_line2"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              placeholder="Pet Atelier."
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
         </div>
         <div>
-          <label class="form-label">Estilo Línea 2</label>
-          <select v-model="form.title_line2_style" class="form-input">
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Estilo Línea 2</label>
+          <select v-model="form.title_line2_style"
+            class="w-full rounded-lg px-3 py-2.5 appearance-none transition-all"
+            :style="{ fontFamily: 'Inter, sans-serif', fontSize: '0.875rem', color: '#0b1c30', background: '#ffffff', border: '1.5px solid #E5E7EB' }"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }">
             <option value="italic">Cursiva (italic)</option>
             <option value="normal">Normal</option>
           </select>
         </div>
         <div>
-          <label class="form-label">Descripción</label>
-          <textarea v-model="form.description" class="form-input" rows="2" placeholder="Descripción del slide"></textarea>
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Descripción</label>
+          <textarea v-model="form.description" class="w-full rounded-lg px-3 py-2.5 transition-all resize-none" rows="2"
+            style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+            placeholder="Descripción del slide"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }"></textarea>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="form-label">Texto Botón 1</label>
-            <input v-model="form.button1_text" class="form-input" placeholder="Explore Collection" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Texto Botón 1</label>
+            <input v-model="form.button1_text"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              placeholder="Explore Collection"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
           <div>
-            <label class="form-label">URL Botón 1</label>
-            <input v-model="form.button1_url" class="form-input" placeholder="#products" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">URL Botón 1</label>
+            <input v-model="form.button1_url"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              placeholder="#products"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
           <div>
-            <label class="form-label">Texto Botón 2</label>
-            <input v-model="form.button2_text" class="form-input" placeholder="Our Story" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Texto Botón 2</label>
+            <input v-model="form.button2_text"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              placeholder="Our Story"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
           <div>
-            <label class="form-label">URL Botón 2</label>
-            <input v-model="form.button2_url" class="form-input" placeholder="#story" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">URL Botón 2</label>
+            <input v-model="form.button2_url"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              placeholder="#story"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
         </div>
 
         <!-- Imagen: Upload a Storage -->
-        <div class="border-t border-white/10 pt-4">
-          <label class="form-label">Imagen del Slide</label>
+        <div class="border-t border-[#d2c4b4]/30 pt-4">
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Imagen del Slide</label>
           <div class="mt-2 flex flex-col md:flex-row gap-4 items-start">
             <!-- Upload area -->
             <div
@@ -141,7 +201,10 @@
               <div v-if="form.image_url" class="mb-2">
                 <label class="text-xs text-gray-400 mb-1 block">URL actual:</label>
                 <div class="flex gap-2">
-                  <input :value="form.image_url" class="form-input text-xs flex-1" readonly @focus="$event.target.select()" />
+                  <input :value="form.image_url"
+                    class="w-full rounded-lg px-3 py-2 transition-all text-xs flex-1"
+                    style="font-family: 'JetBrains Mono', monospace; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+                    readonly @focus="$event.target.select()" />
                   <button type="button" @click="clearImage" class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-red-400/10 flex items-center gap-1">
                     <span class="material-symbols-outlined text-sm" data-icon="delete">delete</span>
                     Quitar
@@ -150,7 +213,12 @@
               </div>
               <div class="flex gap-2 items-center">
                 <span class="text-xs text-gray-500">O ingresa una URL manualmente:</span>
-                <input v-model="form.image_url" class="form-input flex-1 text-xs" placeholder="https://ejemplo.com/imagen.jpg" />
+                <input v-model="form.image_url"
+                  class="w-full rounded-lg px-3 py-2 transition-all flex-1 text-xs"
+                  style="font-family: 'Inter', sans-serif; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                  @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+                  @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
               </div>
               <p class="text-xs text-amber-400/80 mt-2 flex items-center gap-1">
                 <span class="material-symbols-outlined text-sm" data-icon="info">info</span>
@@ -161,14 +229,21 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <input type="checkbox" v-model="form.is_active" id="slide_active" class="w-4 h-4 rounded border-white/20" />
-          <label for="slide_active" class="text-sm" style="color: #4f4539;">Slide activo</label>
+          <input type="checkbox" v-model="form.is_active" id="slide_active" class="w-4 h-4 rounded" style="accent-color: #624200;" />
+          <label for="slide_active" style="font-family: 'Inter', sans-serif; color: #0b1c30; font-size: 0.875rem;">Slide activo</label>
         </div>
 
-        <div class="flex justify-end gap-3 pt-4 border-t border-white/10">
-          <button type="button" @click="closeModal" class="dt-btn-secondary">Cancelar</button>
-          <button type="submit" :disabled="saving || uploading" class="dt-btn-primary">
-            <span v-if="saving" class="material-symbols-outlined animate-spin inline-block mr-2" data-icon="refresh">refresh</span>
+        <div class="flex justify-end gap-3 pt-4 border-t border-[#d2c4b4]/30">
+          <button type="button" @click="closeModal"
+            class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+            style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
+            @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
+            @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">Cancelar</button>
+          <button type="submit" :disabled="saving || uploading"
+            class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
+            style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
+            <span v-if="saving" class="material-symbols-outlined animate-spin" data-icon="refresh">refresh</span>
+            <span v-else class="material-icons-outlined" style="font-size: 1.125rem;">slideshow</span>
             {{ editing ? 'Actualizar Slide' : 'Crear Slide' }}
           </button>
         </div>

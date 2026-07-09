@@ -115,7 +115,7 @@
               <p class="text-sm font-medium truncate" style="color: #0b1c30;">{{ product.name }}</p>
               <p class="text-xs" style="color: #4f4539;">{{ product.totalQuantity || product.quantity || 0 }} vendidos</p>
             </div>
-            <span class="text-sm font-semibold flex-shrink-0 dt-mono" style="color: #452d00;">{{ formatCurrency(product.totalRevenue || product.total || 0) }}</span>
+            <span class="text-sm font-semibold flex-shrink-0 dt-mono" style="color: #452d00;">{{ formatTable(product.totalRevenue || product.total || 0) }}</span>
           </div>
           <div v-if="topProducts.length === 0" class="text-center py-8" style="color: #4f4539;">
             <span class="material-icons-outlined text-3xl mb-2 block" style="color: #d2c4b4;">inventory_2</span>
@@ -141,7 +141,7 @@
               <p class="text-xs" style="color: #4f4539;">{{ sale.clients?.name || sale.client_name || 'Cliente General' }}</p>
             </div>
             <div class="text-right">
-              <p class="text-sm font-semibold dt-mono" style="color: #452d00;">{{ formatCurrency(sale.total) }}</p>
+              <p class="text-sm font-semibold dt-mono" style="color: #452d00;">{{ formatTable(sale.total) }}</p>
               <p class="text-xs" style="color: #817567;">{{ formatRelativeTime(sale.created_at) }}</p>
             </div>
           </div>
@@ -178,7 +178,10 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { Chart, registerables } from 'chart.js';
 import { reportsAPI, salesAPI, inventoryAPI, productsAPI, categoriesAPI, auditAPI } from '../api';
 import StatCard from '../components/shared/StatCard.vue';
-import { formatCurrency, formatRelativeTime } from '../utils';
+import { useCurrency } from '../composables/useCurrency';
+import { formatRelativeTime } from '../utils';
+
+const { formatTable } = useCurrency();
 import { useLandingAnimations } from '../composables/useGsapAnimations';
 import { useStaggerEntrance, useIconPulse, useAnimeCounter } from '../composables/useAnimeEffects';
 

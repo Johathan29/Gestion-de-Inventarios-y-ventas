@@ -184,6 +184,178 @@
             @error="(msg) => console.warn('Offers error:', msg)"
           />
         </div>
+
+        <!-- ========== REVIEWS SECTION ========== -->
+        <div class="mt-20">
+          <div class="glass-card rounded-[32px] p-8 md:p-10">
+            <!-- Section Header -->
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="font-headline-lg text-headline-lg text-on-surface">Reseñas de Clientes</h2>
+              <span class="text-on-surface-variant/60 font-body-md text-body-md">
+                {{ reviews.length }} {{ reviews.length === 1 ? 'opinión' : 'opiniones' }}
+              </span>
+            </div>
+
+            <!-- Average Rating Bar -->
+            <div v-if="reviews.length > 0" class="flex items-center gap-4 mb-8 p-4 rounded-2xl bg-white/5">
+              <div class="text-center">
+                <p class="font-headline-2xl text-headline-2xl text-secondary">{{ averageRating.toFixed(1) }}</p>
+                <div class="flex items-center justify-center gap-0.5 mt-1">
+                  <span v-for="i in 5" :key="'avg-'+i" class="material-symbols-outlined text-sm"
+                    :class="i <= Math.round(averageRating) ? 'text-secondary' : 'text-on-surface-variant/20'">
+                    {{ i <= Math.round(averageRating) ? 'star' : 'star' }}
+                  </span>
+                </div>
+                <p class="text-xs text-on-surface-variant/60 mt-1">Promedio</p>
+              </div>
+              <div class="flex-1 space-y-1">
+                <div v-for="star in [5,4,3,2,1]" :key="'bar-'+star" class="flex items-center gap-2 text-xs">
+                  <span class="text-on-surface-variant/60 w-3 text-right">{{ star }}</span>
+                  <span class="material-symbols-outlined text-xs text-secondary">star</span>
+                  <div class="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                    <div class="h-full rounded-full bg-secondary transition-all duration-500"
+                      :style="{ width: ratingBarPercent(star) + '%' }"></div>
+                  </div>
+                  <span class="text-on-surface-variant/60 w-6 text-right">{{ ratingCount(star) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Review Form -->
+            <div class="mb-10 p-6 rounded-2xl bg-white/5 border border-white/10">
+              <h3 class="font-label-lg text-label-lg text-on-surface mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-secondary">rate_review</span>
+                Escribe una reseña
+              </h3>
+              <form @submit.prevent="submitReview" class="space-y-4">
+                <!-- Star Rating Selector -->
+                <div>
+                  <p class="text-xs text-on-surface-variant/60 uppercase tracking-wider mb-2">Tu calificación</p>
+                  <div class="flex items-center gap-1">
+                    <button v-for="i in 5" :key="'sel-'+i" type="button" @click="newReview.rating = i"
+                      class="!cursor-pointer transition-all duration-150 !p-1 !rounded-lg hover:scale-110"
+                      :class="i <= newReview.rating ? 'text-secondary' : 'text-on-surface-variant/20'"
+                      @mouseenter="$event.currentTarget.style.transform = 'scale(1.2)'"
+                      @mouseleave="$event.currentTarget.style.transform = 'scale(1)'">
+                      <span class="material-symbols-outlined text-2xl"
+                        :class="i <= newReview.rating ? 'text-secondary' : ''">
+                        {{ i <= newReview.rating ? 'star' : 'star' }}
+                      </span>
+                    </button>
+                    <span v-if="newReview.rating > 0" class="ml-2 text-sm text-on-surface-variant">
+                      {{ ['', 'Pésimo', 'Malo', 'Regular', 'Bueno', 'Excelente'][newReview.rating] }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs text-on-surface-variant/60 uppercase tracking-wider mb-1.5">Tu nombre</label>
+                    <input v-model="newReview.client_name" type="text" required
+                      placeholder="Ej: María García"
+                      class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-on-surface placeholder:text-on-surface-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-body-md" />
+                  </div>
+                  <div>
+                    <label class="block text-xs text-on-surface-variant/60 uppercase tracking-wider mb-1.5">Título (opcional)</label>
+                    <input v-model="newReview.title" type="text"
+                      placeholder="Ej: Excelente calidad"
+                      class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-on-surface placeholder:text-on-surface-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-body-md" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs text-on-surface-variant/60 uppercase tracking-wider mb-1.5">Tu comentario</label>
+                  <textarea v-model="newReview.comment" required rows="4"
+                    placeholder="Comparte tu experiencia con este producto..."
+                    class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-on-surface placeholder:text-on-surface-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-body-md resize-none"></textarea>
+                </div>
+
+                <div class="flex items-center justify-between">
+                  <p class="text-xs text-on-surface-variant/40">
+                    <span class="material-symbols-outlined text-xs align-text-bottom">info</span>
+                    Tu reseña será publicada después de ser aprobada por un administrador.
+                  </p>
+                  <button type="submit" :disabled="submittingReview || !newReview.rating || !newReview.comment.trim()"
+                    class="px-6 py-3 rounded-xl bg-primary text-on-primary font-label-sm text-label-sm hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2 !cursor-pointer">
+                    <template v-if="submittingReview">
+                      <span class="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                      Enviando...
+                    </template>
+                    <template v-else>
+                      <span class="material-symbols-outlined text-sm">send</span>
+                      Enviar reseña
+                    </template>
+                  </button>
+                </div>
+
+                <!-- Success message -->
+                <div v-if="reviewSubmitted"
+                  class="p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm flex items-center gap-2">
+                  <span class="material-symbols-outlined text-sm">check_circle</span>
+                  ¡Gracias! Tu reseña ha sido enviada y será publicada tras la aprobación de un administrador.
+                </div>
+              </form>
+            </div>
+
+            <!-- Reviews List -->
+            <div v-if="reviews.length > 0" class="space-y-5">
+              <div v-for="review in reviews" :key="review.id"
+                class="p-5 rounded-2xl bg-white/5 border border-white/5 transition-all duration-300 hover:border-white/10 hover:bg-white/[0.07]">
+                <div class="flex items-start gap-4">
+                  <!-- Avatar -->
+                  <div class="w-10 h-10 rounded-full shrink-0 flex items-center justify-center bg-primary/20 text-primary font-label-sm text-label-sm">
+                    {{ (review.client_name || 'A')[0].toUpperCase() }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between gap-3 mb-1">
+                      <div>
+                        <p class="font-label-md text-label-md text-on-surface">{{ review.client_name }}</p>
+                        <p v-if="review.client_title" class="text-xs text-on-surface-variant/50">{{ review.client_title }}</p>
+                      </div>
+                      <div class="flex items-center gap-0.5 shrink-0">
+                        <span v-for="i in 5" :key="'r-'+review.id+'-'+i"
+                          class="material-symbols-outlined text-sm"
+                          :class="i <= review.rating ? 'text-secondary' : 'text-on-surface-variant/20'">
+                          star
+                        </span>
+                      </div>
+                    </div>
+                    <!-- Title -->
+                    <p v-if="review.title" class="font-label-md text-label-md text-on-surface/80 mt-1">{{ review.title }}</p>
+                    <!-- Comment -->
+                    <p class="font-body-md text-body-md text-on-surface-variant mt-1.5 leading-relaxed">{{ review.comment }}</p>
+                    <!-- Date -->
+                    <p class="text-xs text-on-surface-variant/40 mt-2">{{ formatReviewDate(review.created_at) }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty state -->
+            <div v-else-if="!loadingReviews" class="text-center py-12">
+              <span class="material-symbols-outlined text-5xl text-on-surface-variant/20 block mb-3">reviews</span>
+              <p class="font-body-md text-body-md text-on-surface-variant/60">No hay reseñas aún. ¡Sé el primero en opinar!</p>
+            </div>
+
+            <!-- Loading skeleton -->
+            <div v-if="loadingReviews" class="space-y-4">
+              <div v-for="n in 3" :key="'skeleton-review-'+n" class="p-5 rounded-2xl bg-white/5 animate-pulse">
+                <div class="flex items-center gap-4">
+                  <div class="w-10 h-10 rounded-full bg-white/5"></div>
+                  <div class="flex-1 space-y-2">
+                    <div class="h-4 bg-white/5 rounded w-1/3"></div>
+                    <div class="h-3 bg-white/5 rounded w-1/4"></div>
+                    <div class="h-3 bg-white/5 rounded w-full"></div>
+                    <div class="h-3 bg-white/5 rounded w-2/3"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- ========== END REVIEWS SECTION ========== -->
+
       </div>
     </main>
 
@@ -194,7 +366,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { productsAPI, cartAPI } from '../../api/index.js';
+import { productsAPI, cartAPI, ecommerceAPI } from '../../api/index.js';
 import OfferShowcase from '../../components/shared/OfferShowcase.vue';
 import AppNavBar from '../../components/layout/AppNavBar.vue';
 import FloatingBanner from '../../components/shared/FloatingBanner.vue';
@@ -209,6 +381,87 @@ const error = ref(null);
 const addingToCart = ref(false);
 const currentImageIndex = ref(0);
 const imageErrors = reactive({});
+
+// ========== REVIEWS STATE ==========
+const reviews = ref([]);
+const loadingReviews = ref(true);
+const submittingReview = ref(false);
+const reviewSubmitted = ref(false);
+
+const newReview = reactive({
+  client_name: '',
+  title: '',
+  comment: '',
+  rating: 0
+});
+
+// Average rating computed
+const averageRating = computed(() => {
+  if (reviews.value.length === 0) return 0;
+  const sum = reviews.value.reduce((acc, r) => acc + r.rating, 0);
+  return sum / reviews.value.length;
+});
+
+// Rating bar helper: % of reviews with this star
+function ratingBarPercent(star) {
+  if (reviews.value.length === 0) return 0;
+  const count = reviews.value.filter(r => r.rating === star).length;
+  return (count / reviews.value.length) * 100;
+}
+
+// Count of reviews with specific star rating
+function ratingCount(star) {
+  return reviews.value.filter(r => r.rating === star).length;
+}
+
+// Format review date
+function formatReviewDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+// Fetch approved reviews for this product
+async function fetchReviews() {
+  loadingReviews.value = true;
+  try {
+    const res = await ecommerceAPI.getProductReviews(route.params.id, { approved: true });
+    reviews.value = res.data || [];
+  } catch (e) {
+    console.warn('[Reviews] Error fetching reviews:', e);
+    reviews.value = [];
+  } finally {
+    loadingReviews.value = false;
+  }
+}
+
+// Submit a new review
+async function submitReview() {
+  if (!newReview.rating || !newReview.comment.trim()) return;
+  submittingReview.value = true;
+  reviewSubmitted.value = false;
+  try {
+    await ecommerceAPI.createReview({
+      product_id: route.params.id,
+      client_name: newReview.client_name.trim(),
+      title: newReview.title.trim(),
+      comment: newReview.comment.trim(),
+      rating: newReview.rating
+    });
+    reviewSubmitted.value = true;
+    // Reset form
+    newReview.client_name = '';
+    newReview.title = '';
+    newReview.comment = '';
+    newReview.rating = 0;
+  } catch (e) {
+    console.error('[Reviews] Error submitting review:', e);
+    // Show error feedback
+    reviewSubmitted.value = false;
+  } finally {
+    submittingReview.value = false;
+  }
+}
 
 const currentImage = computed(() => {
   const images = product.value?.images;
@@ -328,6 +581,7 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+  fetchReviews();
 });
 
 onUnmounted(() => {

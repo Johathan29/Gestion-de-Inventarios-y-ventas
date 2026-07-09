@@ -516,26 +516,6 @@
 .dt-btn-sm { padding: 0.375rem 0.75rem; font-size: 13px; }
 .dt-btn-lg { padding: 0.75rem 1.5rem; font-size: 16px; }
 
-.dt-btn-icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  color: #4f4539;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.dt-btn-icon:hover {
-  background: rgba(98, 66, 0, 0.05);
-  color: #624200;
-}
-
 /* ---- Tables ---- */
 .dt-table {
   width: 100%;

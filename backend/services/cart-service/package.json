@@ -1,19 +1,24 @@
 {
-  "name": "@inventory/cart-service",
+  "name": "@erp/cart-service",
   "version": "1.0.0",
-  "description": "Servicio de Carrito de Compras",
-  "main": "src/server.js",
+  "private": true,
+  "type": "module",
+  "description": "Cart Service",
   "scripts": {
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
   },
   "dependencies": {
-    "@inventory/shared": "file:../../shared",
+    "@erp/common": "file:../../../packages/common",
+    "@erp/shared-kernel": "file:../../../packages/shared-kernel",
+    "@erp/event-bus": "file:../../../packages/event-bus",
     "express": "^4.18.2",
+    "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "helmet": "^7.1.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.0.0"
   }
 }

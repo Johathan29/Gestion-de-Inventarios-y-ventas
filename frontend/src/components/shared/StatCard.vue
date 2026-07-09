@@ -18,6 +18,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useCurrency } from '../../composables/useCurrency';
 
 const props = defineProps({
   label: { type: String, required: true },
@@ -31,10 +32,10 @@ const props = defineProps({
   subtext: { type: String, default: '' }
 });
 
-const formattedValue = computed(() => {
-  if (props.type === 'currency') return formatCurrency(props.value);
-  return `${props.prefix}${props.value?.toLocaleString('es-CO') || 0}${props.suffix}`;
-});
+const { format, currencyLocale } = useCurrency();
 
-import { formatCurrency } from '../../utils';
+const formattedValue = computed(() => {
+  if (props.type === 'currency') return format(props.value);
+  return `${props.prefix}${props.value?.toLocaleString(currencyLocale.value) || 0}${props.suffix}`;
+});
 </script>

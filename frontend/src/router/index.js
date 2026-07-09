@@ -17,6 +17,12 @@ const routes = [
     meta: { layout: 'blank', title: 'Catálogo de Productos' }
   },
   {
+    path: '/offers',
+    name: 'OffersProducts',
+    component: () => import('../views/products/OffersProductsView.vue'),
+    meta: { layout: 'blank', title: 'Ofertas Especiales' }
+  },
+  {
     path: '/products/:id',
     name: 'ProductPublicDetail',
     component: () => import('../views/products/ProductPublicDetailView.vue'),

@@ -115,16 +115,16 @@
                 </div>
               </td>
               <td class="px-4 py-3 text-right font-medium">{{ item.quantity }}</td>
-              <td class="px-4 py-3 text-right">{{ formatCurrency(item.unit_price) }}</td>
+              <td class="px-4 py-3 text-right">{{ formatTable(item.unit_price) }}</td>
               <td class="px-4 py-3 text-right font-medium dt-financial">
-                {{ formatCurrency((item.quantity || 0) * (item.unit_price || 0)) }}
+                {{ formatTable((item.quantity || 0) * (item.unit_price || 0)) }}
               </td>
               <td class="px-4 py-3 text-right">
                 <div class="flex items-center gap-1 justify-end">
-                  <button @click="openEditItem(item)" class="dt-btn-icon" title="Editar">
+                  <button @click="openEditItem(item)" class="inline-flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200" title="Editar" style="color: #4f4539; background: transparent; border: none; cursor: pointer;" @mouseenter="e => { e.currentTarget.style.background = 'rgba(98,66,0,0.05)'; e.currentTarget.style.color = '#624200'; }" @mouseleave="e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#4f4539'; }">
                     <span class="material-icons-outlined text-lg">edit</span>
                   </button>
-                  <button @click="deleteItem(item)" class="dt-btn-icon" style="color: #dc2626;" title="Eliminar">
+                  <button @click="deleteItem(item)" class="inline-flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200" title="Eliminar" style="color: #dc2626; background: transparent; border: none; cursor: pointer;" @mouseenter="e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626'; }" @mouseleave="e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#dc2626'; }">
                     <span class="material-icons-outlined text-lg">delete</span>
                   </button>
                 </div>
@@ -155,9 +155,9 @@
                 </span>
               </div>
               <div class="flex justify-between items-center mt-2 text-sm">
-                <span>{{ item.quantity }} x {{ formatCurrency(item.unit_price) }}</span>
+                <span>{{ item.quantity }} x {{ formatTable(item.unit_price) }}</span>
                 <span class="font-bold dt-financial">
-                  {{ formatCurrency((item.quantity || 0) * (item.unit_price || 0)) }}
+                  {{ formatTable((item.quantity || 0) * (item.unit_price || 0)) }}
                 </span>
               </div>
               <div class="flex gap-2 mt-2 pt-2" style="border-top: 1px solid #e2d6c8;">
@@ -178,41 +178,49 @@
         <div class="text-right space-y-1 w-64">
           <div class="flex justify-between text-sm" style="color: #4f4539;">
             <span>Subtotal</span>
-            <span>{{ formatCurrency(purchase.subtotal) }}</span>
+            <span>{{ format(purchase.subtotal) }}</span>
           </div>
           <div class="flex justify-between text-sm" style="color: #4f4539;">
             <span>IVA (19%)</span>
-            <span>{{ formatCurrency(purchase.tax) }}</span>
+            <span>{{ format(purchase.tax) }}</span>
           </div>
           <div v-if="purchase.discount" class="flex justify-between text-sm" style="color: #ef4444;">
             <span>Descuento</span>
-            <span>-{{ formatCurrency(purchase.discount) }}</span>
+            <span>-{{ format(purchase.discount) }}</span>
           </div>
           <div class="flex justify-between text-lg font-bold pt-1" style="color: #0b1c30; border-top: 1px solid #e2d6c8;">
             <span>Total</span>
-            <span style="color: #624200;">{{ formatCurrency(purchase.total) }}</span>
+            <span style="color: #624200;">{{ format(purchase.total) }}</span>
           </div>
         </div>
       </div>
 
       <!-- Acciones -->
       <div class="flex flex-wrap gap-3 mt-6 pt-4" style="border-top: 1px solid #e2d6c8;">
-        <router-link to="/app/purchases" class="dt-btn-secondary" style="display: inline-flex; align-items: center; gap: 0.25rem;">
-          <span class="material-icons-outlined text-lg">arrow_back</span> Volver
+        <router-link to="/app/purchases"
+          class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+          style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
+          @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
+          @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
+          <span class="material-icons-outlined" style="font-size: 1.125rem;">arrow_back</span> Volver
         </router-link>
 
         <button v-if="purchase.status === 'pending' || purchase.status === 'approved'"
                 @click="handleSendToInventory"
                 :disabled="sendingToInventory"
-                class="dt-btn-primary" style="display: inline-flex; align-items: center; gap: 0.25rem;">
-          <span class="material-icons-outlined text-lg">inventory</span>
+                class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
+                style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
+          <span class="material-icons-outlined" style="font-size: 1.125rem;">inventory</span>
           {{ sendingToInventory ? 'Enviando...' : 'Enviar a Inventario' }}
         </button>
 
         <button v-if="purchase.status !== 'cancelled' && purchase.status !== 'received'"
                 @click="handleCancel"
-                class="dt-btn-secondary" style="display: inline-flex; align-items: center; gap: 0.25rem; border-color: #ef4444; color: #ef4444;">
-          <span class="material-icons-outlined text-lg">cancel</span> Cancelar Compra
+                class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+                style="border-color: #ef4444; color: #ef4444; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
+                @mouseenter="e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#dc2626'; }"
+                @mouseleave="e => { e.currentTarget.style.background = ''; e.currentTarget.style.borderColor = '#ef4444'; }">
+          <span class="material-icons-outlined" style="font-size: 1.125rem;">cancel</span> Cancelar Compra
         </button>
       </div>
     </div>
@@ -243,8 +251,14 @@
             </div>
           </div>
           <div class="flex justify-end gap-3 mt-6 pt-4" style="border-top: 1px solid #e2d6c8;">
-            <button @click="closeItemModal" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Cancelar</button>
-            <button @click="saveItem" :disabled="savingItem" class="dt-btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">
+            <button @click="closeItemModal"
+              class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+              style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
+              @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
+              @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">Cancelar</button>
+            <button @click="saveItem" :disabled="savingItem"
+              class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
+              style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
               {{ savingItem ? 'Guardando...' : 'Guardar' }}
             </button>
           </div>
@@ -259,7 +273,10 @@ import { ref, reactive, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { purchasesAPI } from '../../api';
 import Loading from '../../components/shared/Loading.vue';
-import { formatCurrency, formatDateTime } from '../../utils';
+import { useCurrency } from '../../composables/useCurrency';
+import { formatDateTime } from '../../utils';
+
+const { format, formatTable } = useCurrency();
 import Swal from 'sweetalert2';
 
 const route = useRoute();

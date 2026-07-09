@@ -3,60 +3,62 @@
     <!-- Toolbar -->
     <div v-if="$slots.toolbar || title || searchable" class="p-4" style="border-bottom: 1px solid #e2d6c8;">
       <div class="flex flex-wrap items-center justify-between gap-4">
-        <h3 v-if="title" class="dt-headline-sm" style="margin-bottom: 0;">{{ title }}</h3>
+        <h3 v-if="title" class="text-[32px] font-bold tracking-tight" style="font-family: 'Plus Jakarta Sans', sans-serif; color: #452d00; line-height: 1.25; margin-bottom: 0;">{{ title }}</h3>
         <div class="flex items-center gap-2 ml-auto">
           <div v-if="searchable" class="relative">
-            <span class="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
-            <input v-model="searchQuery" type="text" placeholder="Buscar..."
-                   class="dt-input pl-10">
+            <div class="flex items-center bg-white border border-[#d2c4b4] rounded-full px-4 py-1.5 focus-within:border-[#624200] focus-within:ring-2 focus-within:ring-[rgba(98,66,0,0.2)] transition-all">
+              <span class="material-icons-outlined" style="color: #d2c4b4; margin-right: 0.5rem; font-size: 1rem;">search</span>
+              <input v-model="searchQuery" type="text" placeholder="Buscar..."
+                     class="bg-transparent border-none focus:ring-0 outline-none text-sm"
+                     style="font-family: 'Inter', sans-serif; color: #0b1c30;" />
+            </div>
           </div>
           <slot name="toolbar" />
         </div>
       </div>
     </div>
 
-    <!-- Table -->
-    <div class="overflow-x-auto">
-      <table class="w-full">
+    <!-- ============================================ -->
+    <!-- DESKTOP TABLE (hidden on mobile) -->
+    <!-- ============================================ -->
+    <div class="overflow-x-auto dt-hide-mobile">
+      <table class="dt-table">
         <thead>
-          <tr class="dt-table-header-row">
+          <tr>
             <th v-for="col in columns" :key="col.key"
-                class="dt-table-th"
-                :class="{ 'cursor-pointer select-none': col.sortable }"
+                :class="{ 'cursor-pointer select-none': col.sortable, 'text-right': col.type === 'number' || col.type === 'currency' }"
                 @click="col.sortable && toggleSort(col.key)">
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-1" :class="{ 'justify-end': col.type === 'number' || col.type === 'currency' }">
                 {{ col.label }}
                 <span v-if="col.sortable && sortKey === col.key" class="material-icons-outlined text-sm">
                   {{ sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward' }}
                 </span>
               </div>
             </th>
-            <th v-if="$slots.actions" class="dt-table-th text-right">
-              Acciones
-            </th>
+            <th v-if="$slots.actions" class="text-right">Acciones</th>
           </tr>
         </thead>
-        <tbody class="dt-table-tbody">
+        <tbody>
           <tr v-for="(row, rowIdx) in filteredData" :key="row.id || rowIdx"
-              class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer"
+              class="cursor-pointer group"
               @click="$emit('rowClick', row)">
-            <td v-for="col in columns" :key="col.key" class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+            <td v-for="col in columns" :key="col.key">
               <!-- Status badge -->
               <span v-if="col.type === 'status'"
-                    class="inline-flex px-2 py-1 text-xs font-medium rounded-full"
+                    class="dt-badge"
                     :class="statusClass(row[col.key])">
                 {{ getStatusLabel(row[col.key]) }}
               </span>
               <!-- Currency -->
-              <span v-else-if="col.type === 'currency'" class="font-medium">
-                {{ formatCurrency(row[col.key]) }}
+              <span v-else-if="col.type === 'currency'" class="dt-financial">
+                {{ formatTable(row[col.key]) }}
               </span>
               <!-- Date -->
               <span v-else-if="col.type === 'date'">{{ formatDate(row[col.key]) }}</span>
               <!-- DateTime -->
               <span v-else-if="col.type === 'datetime'">{{ formatDateTime(row[col.key]) }}</span>
               <!-- Number -->
-              <span v-else-if="col.type === 'number'" class="text-right font-medium">{{ row[col.key] }}</span>
+              <span v-else-if="col.type === 'number'" class="dt-financial">{{ row[col.key] }}</span>
               <!-- Boolean -->
               <span v-else-if="col.type === 'boolean'">
                 <span class="material-icons-outlined" :class="row[col.key] ? 'text-green-500' : 'text-red-400'">
@@ -72,44 +74,45 @@
                 </slot>
               </span>
               <!-- Default text -->
-              <span v-else>{{ row[col.key] || '-' }}</span>
+              <span v-else class="font-medium" style="color: #0b1c30;">{{ row[col.key] || '-' }}</span>
             </td>
-            <td v-if="$slots.actions" class="px-4 py-3 text-right">
-              <slot name="actions" :row="row" />
+            <td v-if="$slots.actions" class="text-right">
+              <div class="flex items-center justify-end gap-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                <slot name="actions" :row="row" />
+              </div>
             </td>
           </tr>
           <tr v-if="filteredData.length === 0">
-            <td :colspan="columns.length + ($slots.actions ? 1 : 0)"
-                class="px-4 py-12 text-center text-gray-500">
-              <span class="material-icons-outlined text-4xl block mb-2">inbox</span>
-              {{ emptyMessage || 'No hay datos disponibles' }}
+            <td :colspan="columns.length + ($slots.actions ? 1 : 0)" class="dt-empty-state">
+              <span class="dt-empty-icon material-symbols-outlined">inbox</span>
+              <p>{{ emptyMessage || 'No hay datos disponibles' }}</p>
             </td>
-          </tr>
+          </tr>/
         </tbody>
       </table>
     </div>
 
-    <!-- Pagination -->
-    <div v-if="totalPages > 1" class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-      <p class="text-sm text-gray-500">
-        Mostrando {{ ((currentPage - 1) * perPage) + 1 }} - {{ Math.min(currentPage * perPage, total) }} de {{ total }}
-      </p>
-      <div class="flex items-center gap-1">
-        <button @click="prevPage" :disabled="currentPage <= 1"
-                class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50">
-          <span class="material-icons-outlined">chevron_left</span>
+    <!-- ============================================ -->
+    <!-- Pagination (dt-pagination per DESIGN.md) -->
+    <!-- ============================================ -->
+    <div v-if="totalPages > 1" class="dt-pagination">
+      <span class="dt-pagination-info">
+        Mostrando <strong>{{ ((currentPage - 1) * perPage) + 1 }}</strong> a <strong>{{ Math.min(currentPage * perPage, total) }}</strong> de <strong>{{ total }}</strong> resultados
+      </span>
+      <div class="dt-pagination-buttons">
+        <button @click="prevPage" :disabled="currentPage <= 1" class="dt-pagination-btn">
+          <span class="material-symbols-outlined">chevron_left</span>
         </button>
         <span v-for="p in visiblePages" :key="p">
-          <button v-if="p === '...'" disabled class="px-2 text-gray-400">...</button>
+          <span v-if="p === '...'" class="dt-pagination-ellipsis">...</span>
           <button v-else @click="goToPage(p)"
-                  class="px-3 py-1 rounded text-sm font-medium"
-                  :class="p === currentPage ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'">
+                  class="dt-pagination-btn"
+                  :class="p === currentPage ? 'dt-pagination-active' : ''">
             {{ p }}
           </button>
         </span>
-        <button @click="nextPage" :disabled="currentPage >= totalPages"
-                class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50">
-          <span class="material-icons-outlined">chevron_right</span>
+        <button @click="nextPage" :disabled="currentPage >= totalPages" class="dt-pagination-btn">
+          <span class="material-symbols-outlined">chevron_right</span>
         </button>
       </div>
     </div>
@@ -118,7 +121,10 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { formatCurrency, formatDate, formatDateTime, getStatusLabel, statusClass } from '../../utils';
+import { useCurrency } from '../../composables/useCurrency';
+import { formatDate, formatDateTime, getStatusLabel, statusClass } from '../../utils';
+
+const { formatTable } = useCurrency();
 
 const props = defineProps({
   columns: { type: Array, required: true },

@@ -1,32 +1,75 @@
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
-const express = require('express');
-const { invoiceRouter } = require('./routes/invoice.routes');
+// ============================================================
+// Billing Service — Server Entry Point (Hexagonal)
+// ============================================================
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+
+import express from 'express';
+import { createLogger, errorHandler } from '@erp/common';
+import { createSupabaseClient } from '@erp/shared-kernel';
+import { InMemoryEventBus } from '@erp/event-bus';
+import { RabbitMQEventBus } from '@erp/event-bus';
+import { SupabaseInvoiceRepository, SupabaseNcfRepository } from './repository/index.js';
+import { InvoicePdfService } from './services/pdf.service.js';
+import { BillingApplicationService } from './application/index.js';
+import { createBillingRouter } from './controller.js';
+import { registerBillingSubscribers } from './subscribers/index.js';
+
+const logger = createLogger('BillingService');
 const app = express();
 const PORT = process.env.INVOICE_SERVICE_PORT || 3009;
 
-app.use(express.json());
+async function main() {
+  // Middleware
+  app.use(express.json({ limit: '10mb' }));
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'invoice-service' });
-});
-
-app.use('/api/invoices', invoiceRouter);
-
-app.use((err, req, res, next) => {
-  console.error('[InvoiceService] Error:', err);
-  res.status(err.statusCode || 500).json({
-    success: false,
-    error: {
-      code: err.errorCode || 'INTERNAL_ERROR',
-      message: err.message || 'Error interno del servicio de facturación'
-    }
+  // Health check
+  app.get('/health', (req, res) => {
+    res.json({ status: 'ok', service: 'invoice-service', timestamp: new Date().toISOString() });
   });
+
+  // Supabase client
+  const supabase = createSupabaseClient();
+
+  // Repositories
+  const invoiceRepository = new SupabaseInvoiceRepository(supabase);
+  const ncfRepository = new SupabaseNcfRepository(supabase);
+
+  // Services
+  const pdfService = new InvoicePdfService();
+
+  // Event Bus
+  const eventBus = process.env.RABBITMQ_URL
+    ? new RabbitMQEventBus(process.env.RABBITMQ_URL, 'invoice-service')
+    : new InMemoryEventBus();
+
+  await eventBus.connect();
+
+  // Subscribers
+  registerBillingSubscribers(eventBus);
+
+  // Application Service
+  const appService = new BillingApplicationService({ invoiceRepository, ncfRepository, pdfService, eventBus });
+
+  // Routes
+  app.use('/api/invoices', createBillingRouter(appService));
+
+  // Error handler
+  app.use(errorHandler);
+
+  app.listen(PORT, () => {
+    logger.info(`📄 Billing Service running on port ${PORT}`);
+  });
+}
+
+main().catch((err) => {
+  logger.error(`Failed to start: ${err.message}`);
+  process.exit(1);
 });
 
-app.listen(PORT, () => {
-  console.log(`📄 Invoice Service corriendo en puerto ${PORT}`);
-});
-
-module.exports = app;
+export default app;

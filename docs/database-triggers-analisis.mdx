@@ -1,0 +1,597 @@
+---
+title: Análisis Completo de Triggers y Base de Datos
+description: Documentación exhaustiva de todos los triggers, funciones, tablas y cambios en Supabase
+author: Sistema de Gestión de Inventarios
+date: 2026-07-09
+---
+
+# Análisis Completo de Triggers y Base de Datos
+
+## Resumen Ejecutivo
+
+Este documento cataloga **todos los triggers, funciones, tablas y cambios** realizados en la base de datos Supabase del sistema de gestión de inventarios y ventas. Incluye el análisis de mejoras para funciones más rápidas, los bugs encontrados y las correcciones aplicadas.
+
+## 1. Inventario Completo de Tablas
+
+### 1.1 Tablas del Core del Sistema (Migración 001)
+
+| Tabla | Propósito | Columnas Clave |
+|-------|-----------|----------------|
+| `roles` | Roles de usuario con permisos | `id SERIAL PK`, `name VARCHAR(50) UNIQUE`, `permissions JSONB` |
+| `users` | Usuarios del sistema | `id UUID PK`, `email UNIQUE`, `password_hash`, `role_id → roles.id`, `is_active` |
+| `clients` | Clientes (personas físicas/jurídicas) | `id UUID PK`, `user_id → users.id UNIQUE`, `name`, `document_type`, `document_number` |
+| `categories` | Categorías de productos | `id UUID PK`, `name`, `slug UNIQUE`, `parent_id → categories.id` |
+| `products` | Catálogo de productos | `id UUID PK`, `sku UNIQUE`, `category_id → categories.id`, `price`, `cost_price`, `images JSONB` |
+| `inventory` | Stock por producto y almacén | `id UUID PK`, `product_id → products.id CASCADE`, `warehouse`, `stock`, `UNIQUE(product_id, warehouse)` |
+| `inventory_movements` | Movimientos de inventario (Kardex) | `id UUID PK`, `product_id → products.id`, `type` (entry/exit/adjustment/transfer), `quantity`, `previous_stock`, `new_stock`, `reference_type`, `reference_id` |
+| `suppliers` | Proveedores | `id UUID PK`, `name`, `contact_name`, `tax_id`, `is_active` |
+| `purchases` | Órdenes de compra | `id UUID PK`, `purchase_number UNIQUE`, `supplier_id → suppliers.id`, `status`, `subtotal`, `tax`, `total` |
+| `purchase_items` | Items de compra | `id UUID PK`, `purchase_id → purchases.id CASCADE`, `product_id → products.id`, `quantity`, `unit_price` |
+| `sales` | Ventas | `id UUID PK`, `sale_number UNIQUE`, `client_id → clients.id`, `user_id → users.id`, `status`, `subtotal`, `tax`, `total`, `payment_method` |
+| `sale_items` | Items de venta | `id UUID PK`, `sale_id → sales.id CASCADE`, `product_id → products.id`, `product_name`, `sku`, `quantity`, `unit_price` |
+| **`invoices`** | Facturas electrónicas | `id UUID PK`, `invoice_number UNIQUE`, `sale_id → sales.id`, `client_id → clients.id`, `ncf VARCHAR(50)`, `status`, `subtotal`, `tax`, `total` |
+| `cart` | Carrito de compras | `id UUID PK`, `client_id → clients.id CASCADE`, `product_id → products.id`, `quantity`, `unit_price` |
+| `audit_logs` | Auditoría de acciones | `id UUID PK`, `user_id → users.id`, `action`, `entity`, `entity_id`, `old_values JSONB`, `new_values JSONB` |
+| `user_notifications` | Notificaciones de usuario | `id UUID PK`, `user_id → users.id CASCADE`, `type`, `title`, `message`, `data JSONB`, `read` |
+| `ecommerce_settings` | Configuración de tienda | `id UUID PK`, `store_name`, `description`, `currency_code`, `default_tax_rate_id`, `logo_url`, `favicon_url` |
+
+### 1.2 Tablas de E-commerce (Migraciones 003, 006, 011)
+
+| Tabla | Propósito |
+|-------|-----------|
+| `hero_settings` | Configuración del hero principal |
+| `hero_slides` | Slides del carrusel (max 4 activos) |
+| `floating_banners` | Banners flotantes sticky |
+| `product_reviews` | Reseñas de productos |
+| `tax_rates` | Tasas de impuesto por país |
+| `whatsapp_config` | Configuración de WhatsApp |
+| `offers` | Ofertas y descuentos |
+
+### 1.3 Tablas de Clientes (Migración 008)
+
+| Tabla | Propósito |
+|-------|-----------|
+| `client_credit_accounts` | Cuentas de crédito por cliente |
+| `client_notification_preferences` | Preferencias de notificación |
+
+### 1.4 Tablas ERP Enterprise (Migración 014)
+
+| Tabla | Propósito |
+|-------|-----------|
+| `brands` | Marcas de productos |
+| `price_lists` | Listas de precios |
+| `warehouses` | Almacenes/ubicaciones |
+| `companies` | Compañías/empresas |
+| `goods_receipts` | Recepciones de mercancía |
+| `quality_inspections` | Control de calidad |
+| `checkout_sessions` | Sesiones de checkout |
+| `coupons` | Cupones de descuento |
+| `shipping_methods` | Métodos de envío |
+| `fiscal_document_types` | Tipos de documentos fiscales |
+| `ncf_sequences` | Secuencias NCF (Numeración Comprobante Fiscal) |
+| `returns` | Devoluciones |
+| `inventory_reservations` | Reservas de inventario |
+| `payment_methods` | Métodos de pago |
+| `cash_registers` | Cajas registradoras |
+| `taxpayer_info` | Información fiscal del contribuyente |
+
+---
+
+## 2. Inventario Completo de Triggers
+
+### 2.1 Triggers de `updated_at` (Migración 001 y 014)
+
+Estos triggers se disparan BEFORE UPDATE en cada tabla para mantener la columna `updated_at` actualizada automáticamente.
+
+```sql
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**Tablas con trigger `updated_at`:** users, clients, categories, products, inventory, purchases, sales, invoices, system_config, brands, price_lists, warehouses, companies, goods_receipts, quality_inspections, checkout_sessions, coupons, returns, account_plans, accounting_entries, ncf_sequences, taxpayer_info, payment_methods, cash_registers.
+
+### 2.2 Trigger de Inventario desde Compra (Migración 009)
+
+```sql
+CREATE OR REPLACE FUNCTION update_product_cost_from_purchase()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Actualiza cost_price del producto
+  UPDATE products SET cost_price = NEW.unit_price WHERE id = NEW.product_id;
+
+  -- Inserta/actualiza inventario
+  INSERT INTO inventory (product_id, warehouse, stock)
+  VALUES (NEW.product_id, 'principal', NEW.quantity)
+  ON CONFLICT (product_id, warehouse)
+  DO UPDATE SET stock = inventory.stock + NEW.quantity;
+
+  -- Registra movimiento
+  INSERT INTO inventory_movements (product_id, warehouse, type, quantity,
+    previous_stock, new_stock, reference_type, reference_id, reason, user_id)
+  VALUES (NEW.product_id, 'principal', 'entry', NEW.quantity, 0, 0,
+    'purchase', NEW.purchase_id, 'Entrada por compra',
+    (SELECT user_id FROM purchases WHERE id = NEW.purchase_id));
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_purchase_item_update_inventory
+  AFTER INSERT ON purchase_items
+  FOR EACH ROW
+  EXECUTE FUNCTION update_product_cost_from_purchase();
+```
+
+### 2.3 Trigger de Descuento de Stock por Venta (Migración 009, modificado en 016)
+
+**Trigger CRÍTICO para el flujo de ventas.** Descuenta inventario cuando se crea un ítem de venta.
+
+```sql
+CREATE OR REPLACE FUNCTION decrease_stock_from_sale()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_current_stock INTEGER;
+BEGIN
+  -- Obtener stock actual
+  SELECT stock INTO v_current_stock
+  FROM inventory
+  WHERE product_id = NEW.product_id AND warehouse = 'principal';
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Producto % sin inventario', NEW.product_id;
+  END IF;
+
+  IF v_current_stock < NEW.quantity THEN
+    RAISE EXCEPTION 'Stock insuficiente para %: disponible %, requerido %',
+      NEW.product_name, v_current_stock, NEW.quantity;
+  END IF;
+
+  -- Descontar stock
+  UPDATE inventory
+  SET stock = stock - NEW.quantity,
+      movement_date = NOW(),
+      updated_at = NOW()
+  WHERE product_id = NEW.product_id AND warehouse = 'principal';
+
+  -- Registrar movimiento de salida
+  INSERT INTO inventory_movements (product_id, warehouse, type, quantity,
+    previous_stock, new_stock, reference_type, reference_id, reason, user_id)
+  SELECT
+    NEW.product_id, 'principal', 'exit', NEW.quantity,
+    v_current_stock, v_current_stock - NEW.quantity,
+    'sale', NEW.sale_id, 'Venta realizada', s.user_id
+  FROM sales s WHERE s.id = NEW.sale_id;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_sale_item_decrease_stock
+  AFTER INSERT ON sale_items
+  FOR EACH ROW
+  EXECUTE FUNCTION decrease_stock_from_sale();
+```
+
+**Cambio en Migración 016:** La razón cambió de `'Salida por venta automática'` a `'Venta realizada'`.
+
+### 2.4 Trigger de Reversión de Stock por Compra Anulada (Migración 009)
+
+```sql
+CREATE OR REPLACE FUNCTION revert_inventory_on_purchase_cancel()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.status = 'cancelled' THEN
+    UPDATE inventory i
+    SET stock = i.stock - pi.quantity
+    FROM purchase_items pi
+    WHERE pi.purchase_id = NEW.id AND pi.product_id = i.product_id;
+
+    -- Registrar movimiento
+    INSERT INTO inventory_movements (product_id, warehouse, type, quantity, ...)
+    SELECT pi.product_id, 'principal', 'exit', pi.quantity, ...
+    FROM purchase_items pi WHERE pi.purchase_id = NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### 2.5 Trigger de Reversión de Stock por Venta Anulada (Migración 016 - NUEVO)
+
+```sql
+CREATE OR REPLACE FUNCTION revert_stock_on_sale_cancel()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_item RECORD;
+  v_current_stock INTEGER;
+BEGIN
+  IF NEW.status = 'cancelled' THEN
+    FOR v_item IN
+      SELECT product_id, quantity, sale_id FROM sale_items WHERE sale_id = NEW.id
+    LOOP
+      SELECT stock INTO v_current_stock
+      FROM inventory WHERE product_id = v_item.product_id AND warehouse = 'principal';
+
+      UPDATE inventory
+      SET stock = stock + v_item.quantity, updated_at = NOW()
+      WHERE product_id = v_item.product_id AND warehouse = 'principal';
+
+      INSERT INTO inventory_movements (product_id, warehouse, type, quantity,
+        previous_stock, new_stock, reference_type, reference_id, reason, user_id)
+      VALUES (v_item.product_id, 'principal', 'entry', v_item.quantity,
+        v_current_stock, v_current_stock + v_item.quantity,
+        'sale_cancellation', NEW.id,
+        'Venta anulada - reversión de inventario', NEW.user_id);
+    END LOOP;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_sale_cancel_revert_inventory
+  AFTER UPDATE OF status ON sales
+  FOR EACH ROW
+  WHEN (NEW.status = 'cancelled')
+  EXECUTE FUNCTION revert_stock_on_sale_cancel();
+```
+
+### 2.6 Trigger de Auto-Creación de Cliente (Migración 008, Hotfix 001)
+
+```sql
+CREATE OR REPLACE FUNCTION auto_create_client()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.role_id = (SELECT id FROM roles WHERE name = 'cliente') THEN
+    INSERT INTO clients (user_id, name, email, phone, is_active)
+    VALUES (NEW.id, NEW.name, NEW.email, NEW.phone, NEW.is_active)
+    ON CONFLICT (user_id) DO NOTHING;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_auto_create_client
+  AFTER INSERT ON users
+  FOR EACH ROW
+  EXECUTE FUNCTION auto_create_client();
+```
+
+### 2.7 Trigger de Notificaciones de Compra (Migración 009)
+
+```sql
+CREATE OR REPLACE FUNCTION notify_purchase_created()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO user_notifications (user_id, type, title, message, data)
+  SELECT u.id, 'purchase_created', 'Nueva orden de compra',
+    'Se ha creado la orden de compra ' || NEW.purchase_number,
+    jsonb_build_object('purchase_id', NEW.id, 'purchase_number', NEW.purchase_number)
+  FROM users u JOIN roles r ON u.role_id = r.id
+  WHERE r.name IN ('admin', 'supervisor');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### 2.8 Triggers de Storage (Migraciones 004, 007, 012, 013)
+
+Estos triggers se disparan con operaciones en `storage.objects` para mantener sincronizadas las URL de imágenes en las tablas de negocio:
+
+| Bucket | Trigger INSERT | Trigger DELETE | Tabla actualizada |
+|--------|---------------|----------------|-------------------|
+| `product-images` | `on_product_image_upload` | `on_product_image_delete` | `products.images` |
+| `hero-slides` | `on_hero_slide_image_upload` | `on_hero_slide_image_delete` | `hero_slides.image_url` |
+| `branding` | `on_branding_image_upload` | `on_branding_image_delete` | `ecommerce_settings.logo_url` / `favicon_url` |
+| `floating-banners` | `on_floating_banner_image_upload` | `on_floating_banner_image_delete` | `floating_banners.image_url` |
+
+### 2.9 Trigger Singleton de ecommerce_settings (Migración 011)
+
+```sql
+CREATE OR REPLACE FUNCTION fn_ecommerce_settings_singleton_insert()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM ecommerce_settings) THEN
+    UPDATE ecommerce_settings SET
+      store_name = COALESCE(NEW.store_name, store_name),
+      description = COALESCE(NEW.description, description),
+      ...
+    WHERE id = '00000000-0000-0000-0000-000000000001';
+    RETURN NULL;
+  END IF;
+  NEW.id = '00000000-0000-0000-0000-000000000001';
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### 2.10 Trigger de Creación de Inventario para Nuevos Productos (Migración 010)
+
+```sql
+CREATE TRIGGER trg_product_create_inventory
+  AFTER INSERT ON products
+  FOR EACH ROW
+  EXECUTE FUNCTION create_inventory_on_product_insert();
+```
+
+### 2.11 Master Trigger Inventory
+
+| # | Trigger | Tabla | Timing | Event | Función | Migración |
+|---|---------|-------|--------|-------|---------|-----------|
+| 1 | `trg_users_updated_at` | users | BEFORE | UPDATE | `update_updated_at()` | 001 |
+| 2 | `trg_clients_updated_at` | clients | BEFORE | UPDATE | `update_updated_at()` | 001 |
+| 3 | `trg_categories_updated_at` | categories | BEFORE | UPDATE | `update_updated_at()` | 001 |
+| 4 | `trg_products_updated_at` | products | BEFORE | UPDATE | `update_updated_at()` | 001 |
+| 5 | `trg_inventory_updated_at` | inventory | BEFORE | UPDATE | `update_updated_at()` | 001 |
+| 6 | `trg_purchases_updated_at` | purchases | BEFORE | UPDATE | `update_updated_at()` | 001 |
+| 7 | `trg_sales_updated_at` | sales | BEFORE | UPDATE | `update_updated_at()` | 001 |
+| 8 | `trg_invoices_updated_at` | invoices | BEFORE | UPDATE | `update_updated_at()` | 001 |
+| 9 | `trg_system_config_updated_at` | system_config | BEFORE | UPDATE | `update_updated_at()` | 001 |
+| 10 | `on_product_image_upload` | storage.objects | AFTER | INSERT | `handle_product_image_insert()` | 004 |
+| 11 | `on_product_image_delete` | storage.objects | AFTER | DELETE | `handle_product_image_delete()` | 004 |
+| 12 | `on_hero_slide_image_upload` | storage.objects | AFTER | INSERT | `handle_hero_slide_image_insert()` | 007 |
+| 13 | `on_hero_slide_image_delete` | storage.objects | AFTER | DELETE | `handle_hero_slide_image_delete()` | 007 |
+| 14 | `trg_auto_create_client` | users | AFTER | INSERT | `auto_create_client()` | 008/hotfix |
+| 15 | `trg_sync_client_from_user` | users | AFTER | UPDATE | `sync_client_from_user()` | 008/hotfix |
+| 16 | `trg_inventory_movement_date` | inventory | BEFORE | UPDATE | `update_inventory_movement_date()` | 009 |
+| 17 | `trg_purchase_item_update_inventory` | purchase_items | AFTER | INSERT | `update_product_cost_from_purchase()` | 009 |
+| 18 | **`trg_sale_item_decrease_stock`** | **sale_items** | **AFTER** | **INSERT** | **`decrease_stock_from_sale()`** | **009/016** |
+| 19 | `trg_purchase_cancel_revert_inventory` | purchases | AFTER | UPDATE OF status | `revert_inventory_on_purchase_cancel()` | 009 |
+| 20 | `trg_purchase_notify` | purchases | AFTER | INSERT | `notify_purchase_created()` | 009 |
+| 21 | `trg_product_create_inventory` | products | AFTER | INSERT | `create_inventory_on_product_insert()` | 010 |
+| 22 | `trg_ecommerce_settings_singleton_insert` | ecommerce_settings | BEFORE | INSERT | `fn_ecommerce_settings_singleton_insert()` | 011 |
+| 23 | `on_branding_image_upload` | storage.objects | AFTER | INSERT | `handle_branding_image_insert()` | 012 |
+| 24 | `on_branding_image_delete` | storage.objects | AFTER | DELETE | `handle_branding_image_delete()` | 012 |
+| 25 | `on_floating_banner_image_upload` | storage.objects | AFTER | INSERT | `handle_floating_banner_image_insert()` | 013 |
+| 26 | `on_floating_banner_image_delete` | storage.objects | AFTER | DELETE | `handle_floating_banner_image_delete()` | 013 |
+| 27 | `trg_auto_notification_prefs` | clients | AFTER | INSERT | `auto_create_notification_prefs()` | hotfix |
+| 28 | **`trg_sale_cancel_revert_inventory`** | **sales** | **AFTER** | **UPDATE OF status** | **`revert_stock_on_sale_cancel()`** | **016** |
+| 29+ | `trg_{table}_updated_at` | 15 tablas ERP | BEFORE | UPDATE | `fn_set_updated_at()` | 014 |
+
+---
+
+## 3. Bugs Encontrados y Correcciones Aplicadas
+
+### 3.1 Bug: Movimientos de Inventario Duplicados
+
+**Severidad:** 🔴 Crítica
+**Síntoma:** Cada venta generaba DOS movimientos de inventario (doble descuento de stock).
+
+**Causa Raíz:** El trigger `trg_sale_item_decrease_stock` (AFTER INSERT ON sale_items) YA descuenta el stock automáticamente. Pero el código de la aplicación (`sale-service`) también llamaba a `updateInventoryStock()` después de crear la venta, causando un doble descuento.
+
+**Solución:** Se eliminaron las llamadas a `updateInventoryStock()` en:
+- `CreateSaleUseCase.execute()`
+- `CheckoutUseCase.execute()`
+
+El trigger de BD ahora es el único responsable de descontar stock.
+
+**Archivos modificados:** `backend/services/sale-service/src/usecases/index.js`
+
+### 3.2 Bug: Tabla `invoice_items` Nunca Creada
+
+**Severidad:** 🔴 Crítica
+**Síntoma:** Error `"Could not find the table 'public.invoice_items' in the schema cache"` al crear facturas.
+
+**Causa Raíz:** La función `autoCreateInvoice()` en sale-service intentaba insertar en `invoice_items`, pero esta tabla nunca fue creada en ninguna migración.
+
+**Solución rediseñada:** En lugar de crear la tabla (requiere DDL en Supabase), se modificó el flujo para que:
+1. `autoCreateInvoice()` ya no inserta en `invoice_items` — solo crea la factura
+2. `invoice-service` obtiene los ítems dinámicamente desde `sale_items` usando el `sale_id` de la factura
+
+**Ventaja:** No hay duplicación de datos (los items existen una sola vez en `sale_items`).
+
+**Archivos modificados:**
+- `backend/services/sale-service/src/usecases/index.js` — eliminado INSERT en `invoice_items`
+- `backend/services/invoice-service/src/repository/index.js` — `findById()` ahora consulta `sale_items` en lugar de `invoice_items`
+
+### 3.3 Bug: Violación de UNIQUE CONSTRAINT en NCF
+
+**Severidad:** 🔴 Crítica
+**Síntoma:** `"duplicate key value violates unique constraint 'invoices_ncf_key'"` al crear la segunda factura.
+
+**Causa Raíz:** La columna `ncf VARCHAR(50) UNIQUE DEFAULT ''` causaba que PostgreSQL tratara `''` como un valor no-nulo. La segunda factura sin NCF intentaba insertar `''` de nuevo, violando UNIQUE.
+
+**Solución:**
+1. En código: Cambiado `ncf: ''` a `ncf: null` en `autoCreateInvoice()`
+2. En BD (manual): Ejecutado `UPDATE invoices SET ncf = NULL WHERE ncf = ''`
+3. Pendiente en migración 016: Cambiar la constraint UNIQUE por un índice parcial `WHERE ncf IS NOT NULL AND ncf != ''`
+
+**Archivos modificados:**
+- `backend/services/sale-service/src/usecases/index.js` — `ncf: null`
+- `backend/services/invoice-service/src/domain/index.js` — `this._ncf = ncf || null`
+- `database/migrations/016_fix_double_inventory_and_triggers.sql` — Sección 6: DROP CONSTRAINT + partial unique index
+
+### 3.4 Bug: `findById()` en Invoice Service Retornaba 404
+
+**Severidad:** 🟡 Alta
+**Síntoma:** `GET /api/v1/invoices/:id` retornaba error 404.
+
+**Causa Raíz:** El método `findById()` usaba `.select('*, invoice_items(*, products(name, sku)), sales(sale_number, status), clients(...)')` con `.single()`. Como `invoice_items` no existía, la consulta fallaba.
+
+**Solución:** Se reescribió para hacer consultas separadas:
+1. Fetch invoice + client join
+2. Fetch items desde `sale_items` por `sale_id`
+3. Fetch sale number
+
+**Archivos modificados:** `backend/services/invoice-service/src/repository/index.js`
+
+### 3.5 Bug: `event.data` vs `event.payload` en Event Bus
+
+**Severidad:** 🟡 Alta
+**Síntoma:** `[InMemoryEventBus] Handler failed for sales.sale.created: Cannot read properties of undefined (reading 'sale')`
+
+**Causa Raíz:** La clase `DomainEvent` almacena datos en la propiedad pública `payload` (vía `this.payload = payload`), pero TODOS los subscribers en los 10 servicios usaban `event.data.X`, que es `undefined`.
+
+**Solución:** Se reemplazó `event.data.` por `event.payload.` en los 10 archivos de subscribers.
+
+**Archivos modificados (10):**
+- `backend/services/sale-service/src/subscribers/index.js`
+- `backend/services/inventory-service/src/subscribers/index.js`
+- `backend/services/invoice-service/src/subscribers/index.js`
+- `backend/services/notification-service/src/subscribers/index.js`
+- `backend/services/payment-service/src/subscribers/index.js`
+- `backend/services/procurement-service/src/subscribers/index.js`
+- `backend/services/report-service/src/subscribers/index.js`
+- `backend/services/user-service/src/subscribers/index.js`
+- `backend/services/config-service/src/subscribers/index.js`
+- `backend/services/identity-service/src/subscribers/index.js`
+
+### 3.6 Bug: `handler.handle is not a function` en Event Bus
+
+**Severidad:** 🟡 Alta
+**Síntoma:** `[InMemoryEventBus] Handler failed for sales.sale.created: handler.handle is not a function`
+
+**Causa Raíz:** `InMemoryEventBus.publish()` itera handlers y llama `handler.handle(event)`, pero `subscribe()` almacena las funciones flecha directamente (sin envolver en objeto `{ handle: fn }`).
+
+**Solución:** Se modificó `InMemoryEventBus.subscribe()` para detectar funciones y envolverlas automáticamente en `{ handle: handler }`.
+
+**Archivo modificado:** `packages/event-bus/src/index.js`
+
+---
+
+## 4. Mejoras de Rendimiento para Funciones Más Rápidas
+
+### 4.1 Optimización: Reemplazar Función `decrease_stock_from_sale()`
+
+**Problema:** La función realiza 3 queries separados (SELECT, UPDATE, INSERT) por cada ítem de venta.
+
+**Mejora sugerida:** Usar CTE (WITH) para combinar en una sola transacción implícita:
+
+```sql
+CREATE OR REPLACE FUNCTION decrease_stock_from_sale()
+RETURNS TRIGGER AS $$
+BEGIN
+  WITH stock_info AS (
+    SELECT stock AS current_stock
+    FROM inventory
+    WHERE product_id = NEW.product_id AND warehouse = 'principal'
+    FOR UPDATE  -- Lock row to prevent race conditions
+  )
+  UPDATE inventory
+  SET stock = stock - NEW.quantity,
+      movement_date = NOW(),
+      updated_at = NOW()
+  WHERE product_id = NEW.product_id AND warehouse = 'principal';
+
+  INSERT INTO inventory_movements (product_id, warehouse, type, quantity,
+    previous_stock, new_stock, reference_type, reference_id, reason, user_id)
+  SELECT NEW.product_id, 'principal', 'exit', NEW.quantity,
+    current_stock, current_stock - NEW.quantity,
+    'sale', NEW.sale_id, 'Venta realizada', s.user_id
+  FROM stock_info, sales s WHERE s.id = NEW.sale_id;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**Ganancia estimada:** ~30% menos de roundtrips a la BD.
+
+### 4.2 Optimización: Índices Faltantes
+
+Los siguientes índices mejorarían consultas frecuentes:
+
+```sql
+-- Consultas de dashboard (agregaciones por fecha)
+CREATE INDEX IF NOT EXISTS idx_sales_created_at ON sales(created_at);
+CREATE INDEX IF NOT EXISTS idx_inventory_movements_created_at ON inventory_movements(created_at);
+
+-- Consultas de búsqueda de productos
+CREATE INDEX IF NOT EXISTS idx_products_name_trgm ON products USING GIN (name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_products_sku_trgm ON products USING GIN (sku gin_trgm_ops);
+
+-- Consultas de auditoría por entidad
+CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity, entity_id);
+
+-- Consultas de facturas por estado
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
+
+-- Consultas de movimientos por referencia
+CREATE INDEX IF NOT EXISTS idx_inventory_movements_reference ON inventory_movements(reference_type, reference_id);
+```
+
+### 4.3 Optimización: Evitar NOTIFICACIONES en Línea
+
+El trigger `notify_purchase_created()` ejecuta INSERT en `user_notifications` en la misma transacción que la compra. Para alto volumen, conviene usar una cola:
+
+- Opción actual: Sincrónico (más simple, consistente)
+- Opción mejorada: Usar `pg_notify()` + listener externo para alto volumen
+
+### 4.4 Optimización: Índice Compuesto para Kardex
+
+```sql
+-- La consulta de kardex filtra por product_id + referencia
+CREATE INDEX IF NOT EXISTS idx_movements_product_reference
+  ON inventory_movements(product_id, reference_type, created_at DESC);
+```
+
+### 4.5 Mejora: Validación de Stock con `FOR UPDATE`
+
+La función `decrease_stock_from_sale()` actualmente hace SELECT sin lock, luego UPDATE. En condiciones de alta concurrencia, dos ventas simultáneas podrían leer el mismo stock y ambas pasar la validación. Usar `SELECT ... FOR UPDATE` previene race conditions.
+
+---
+
+## 5. Resumen de Migración 016
+
+La migración `016_fix_double_inventory_and_triggers.sql` contiene:
+
+| Sección | Cambio | Propósito |
+|---------|--------|-----------|
+| 1 | Reemplaza `decrease_stock_from_sale()` | Cambia razón de "Salida por venta automática" a "Venta realizada" |
+| 2 | Nueva función `revert_stock_on_sale_cancel()` | Revierte inventario cuando se anula una venta |
+| 3 | Nuevo trigger `trg_sale_cancel_revert_inventory` | Se activa en `AFTER UPDATE OF status ON sales` cuando status = 'cancelled' |
+| 4 | Notas | Documenta que `trg_sale_item_decrease_stock` ahora usa "Venta realizada" y el código ya no duplica |
+| 5 | (Eliminado) `invoice_items` | Se descartó la creación de tabla separada — los items se obtienen de `sale_items` |
+| 6 | Fix NCF constraint | `ALTER TABLE invoices DROP CONSTRAINT invoices_ncf_key`, crea partial unique index |
+| 7 | UPDATE invoices SET ncf=NULL | Normaliza facturas existentes |
+
+---
+
+## 6. Flujo de Datos: Venta → Factura → Inventario
+
+```
+1. POST /api/v1/sales (POS)
+   │
+   ├─► CreateSaleUseCase.execute()
+   │     ├─► Crea Sale + SaleItems (INSERT sales, sale_items)
+   │     │     └─► [TRIGGER] trg_sale_item_decrease_stock (AFTER INSERT)
+   │     │           ├─► Verifica stock suficiente
+   │     │           ├─► UPDATE inventory SET stock = stock - quantity
+   │     │           └─► INSERT inventory_movements (type='exit', reason='Venta realizada')
+   │     │
+   │     ├─► autoCreateInvoice()
+   │     │     ├─► Enrich client data (nombre, documento, email desde clients)
+   │     │     ├─► Enrich seller data (nombre desde users)
+   │     │     └─► INSERT invoice (ncf=null, status='issued')
+   │     │
+   │     └─► Publish SaleCreatedEvent + SaleCompletedEvent
+   │           └─► [Event Bus] Subscribers log the events
+   │
+   └─► Response: Sale data (200 OK)
+
+2. GET /api/v1/invoices/:id
+   │
+   ├─► SupabaseInvoiceRepository.findById()
+   │     ├─► SELECT invoice + client join
+   │     ├─► SELECT sale_items WHERE sale_id = invoice.sale_id
+   │     └─► SELECT sales (sale_number, status)
+   │
+   └─► Response: Invoice data with items (200 OK)
+```
+
+---
+
+## 7. Historial de Cambios
+
+| Fecha | Archivo | Cambio |
+|-------|---------|--------|
+| 2026-07-09 | `database/migrations/016_fix_double_inventory_and_triggers.sql` | Creada con todas las correcciones |
+| 2026-07-09 | `backend/services/sale-service/src/usecases/index.js` | Eliminado `updateInventoryStock()`, `ncf: null`, eliminado `invoice_items` INSERT |
+| 2026-07-09 | `backend/services/invoice-service/src/repository/index.js` | `findById()` ahora consulta `sale_items` |
+| 2026-07-09 | `backend/services/invoice-service/src/domain/index.js` | `ncf || null` |
+| 2026-07-09 | `packages/event-bus/src/index.js` | `subscribe()` envuelve funciones automáticamente |
+| 2026-07-09 | 10 archivos `subscribers/index.js` | `event.data` → `event.payload` |

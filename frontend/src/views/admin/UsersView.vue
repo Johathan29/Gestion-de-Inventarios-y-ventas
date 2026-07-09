@@ -7,8 +7,16 @@
       <span class="dt-badge dt-badge-info">{{ row.role_name }}</span>
     </template>
     <template #actions="{ row }">
-      <button @click.stop="$router.push(`/app/admin/users/${row.id}`)" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Ver</button>
-      <button v-if="can('admin', 'access')" @click.stop="toggleBlock(row)" class="dt-btn-secondary" :style="{ padding: '0.25rem 0.75rem', fontSize: '0.875rem', borderColor: row.is_active ? '#ef4444' : '', color: row.is_active ? '#ef4444' : '' }">
+      <button @click.stop="$router.push(`/app/admin/users/${row.id}`)"
+        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+        style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
+        @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
+        @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">Ver</button>
+      <button v-if="can('admin', 'access')" @click.stop="toggleBlock(row)"
+        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+        :style="{ borderColor: row.is_active ? '#ef4444' : '#d2c4b4', color: row.is_active ? '#ef4444' : '#624200', fontFamily: 'Inter, sans-serif', fontSize: '0.875rem', lineHeight: '1.5' }"
+        @mouseenter="e => { if(!row.is_active) { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; } }"
+        @mouseleave="e => { if(!row.is_active) { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; } }">
         {{ row.is_active ? 'Bloquear' : 'Activar' }}
       </button>
     </template>

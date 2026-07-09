@@ -1,8 +1,21 @@
+# Stage 1: Build
+FROM node:18-alpine AS builder
+WORKDIR /app
+
+COPY package.json ./
+RUN npm ci --only=production
+
+# Stage 2: Runtime
 FROM node:18-alpine
 WORKDIR /app
-COPY shared/ ./shared/
-COPY services/report-service/package*.json ./services/report-service/
-RUN cd services/report-service && npm ci --only=production
-COPY services/report-service/ ./services/report-service/
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY package.json ./
+COPY src/ ./src/
+
+USER appuser
 EXPOSE 3008
-CMD ["node", "services/report-service/src/server.js"]
+
+CMD ["node", "src/server.js"]

@@ -1,0 +1,16 @@
+{
+  "name": "erp-enterprise",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ERP Enterprise — Monorepo with Domain-Driven Design & Hexagonal Architecture",
+  "workspaces": [
+    "packages/*",
+    "backend/services/*"
+  ],
+  "scripts": {
+    "gateway": "cd backend/api-gateway && node src/server.js"
+  },
+  "dependencies": {
+    "pg": "^8.22.0"
+  }
+}

@@ -183,6 +183,10 @@ const isProductRoute = computed(() =>
   ['ProductsCatalog', 'ProductPublicDetail'].includes(route.name)
 );
 
+const isOffersRoute = computed(() =>
+  ['OffersProducts'].includes(route.name)
+);
+
 const isOnHome = computed(() => route.name === 'Home');
 
 function scrollToSection(sectionId) {
@@ -191,6 +195,8 @@ function scrollToSection(sectionId) {
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  } else if (sectionId === 'offers') {
+    router.push({ name: 'OffersProducts' });
   } else {
     router.push({ path: '/', hash: `#${sectionId}` });
   }
@@ -199,6 +205,8 @@ function scrollToSection(sectionId) {
 function navLinkClass(sectionId) {
   // Only highlight anchor sections when on the LandingView (Home)
   const isActive = sectionId === 'products' && isProductRoute.value
+    ? true
+    : sectionId === 'offers' && isOffersRoute.value
     ? true
     : isOnHome.value && activeSection.value === sectionId;
 

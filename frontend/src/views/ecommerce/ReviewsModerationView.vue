@@ -1,19 +1,40 @@
 <template>
   <div class="dt-card p-6">
     <div class="flex justify-between items-center mb-6">
-      <h3 class="dt-headline-sm" style="margin-bottom: 0;">Moderación de Reseñas</h3>
+      <h2 class="font-headline-lg-mobile md:font-headline-lg" style="font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.25; font-weight: 700; color: #0b1c30; letter-spacing: -0.02em; font-family: 'Plus Jakarta Sans', sans-serif;">Moderación de Reseñas</h2>
 
-      <!-- Filtros -->
-      <div class="flex gap-2">
-        <select v-model="filter.status" @change="fetchReviews" class="form-input text-sm py-1.5">
-          <option value="">Todas</option>
-          <option value="false">Pendientes</option>
-          <option value="true">Aprobadas</option>
-        </select>
-        <select v-model="filter.rating" @change="fetchReviews" class="form-input text-sm py-1.5">
-          <option value="">Todas las estrellas</option>
-          <option v-for="r in 5" :key="r" :value="r">{{ r }} estrellas</option>
-        </select>
+      <!-- Filter/Sort Bar -->
+      <div class="filter-bar-container p-4 border-b border-[#d2c4b4]/30 flex justify-between items-center" style="background: #ffffff; border-radius: 12px 12px 0 0; width: 100%; margin-bottom: 0;">
+        <div class="flex gap-2">
+          <button @click="showFilters = !showFilters"
+            class="px-3 py-1.5 text-sm font-medium border border-[#d2c4b4] rounded-md flex items-center gap-1 hover:bg-[#eff4ff] transition-colors bg-white relative"
+            :class="{ 'ring-2 ring-[rgba(98,66,0,0.2)] border-[#624200]': showFilters }"
+            style="font-family: 'Inter', sans-serif; color: #4f4539;">
+            <span class="material-icons-outlined" style="font-size: 1rem;">filter_list</span>
+            Filtrar
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Panel -->
+      <div v-if="showFilters" class="filter-panel-container px-4 py-4 border-b border-[#d2c4b4]/30" style="background: #faf9f6;">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; color: #4f4539;">Estado</label>
+            <select v-model="filter.status" @change="fetchReviews" class="w-full rounded-lg px-3 py-2 text-sm appearance-none bg-white transition-all" style="font-family: 'Inter', sans-serif; color: #0b1c30; border: 1.5px solid #E5E7EB;">
+              <option value="">Todas</option>
+              <option value="false">Pendientes</option>
+              <option value="true">Aprobadas</option>
+            </select>
+          </div>
+          <div>
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; color: #4f4539;">Rating</label>
+            <select v-model="filter.rating" @change="fetchReviews" class="w-full rounded-lg px-3 py-2 text-sm appearance-none bg-white transition-all" style="font-family: 'Inter', sans-serif; color: #0b1c30; border: 1.5px solid #E5E7EB;">
+              <option value="">Todas las estrellas</option>
+              <option v-for="r in 5" :key="r" :value="r">{{ r }} estrellas</option>
+            </select>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -21,95 +42,52 @@
     <Loading v-if="loading" />
 
     <!-- Tabla -->
-    <div v-else class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="dt-table-header-row">
-            <th class="dt-table-th text-left">Cliente</th>
-            <th class="dt-table-th text-left">Producto</th>
-            <th class="dt-table-th text-left">Rating</th>
-            <th class="dt-table-th text-left">Comentario</th>
-            <th class="dt-table-th text-left">Fecha</th>
-            <th class="dt-table-th text-left">Estado</th>
-            <th class="dt-table-th text-left">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="review in reviews" :key="review.id" class="border-b hover:bg-gray-50" style="border-color: #d2c4b4;">
-            <td class="py-3">
-              <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold" style="color: #4f4539;">
-                  {{ review.client_name?.charAt(0) || '?' }}
-                </div>
-                <div>
-                  <p class="font-medium" style="color: #0b1c30;">{{ review.client_name }}</p>
-                  <p v-if="review.client_title" class="text-xs text-gray-500">{{ review.client_title }}</p>
-                </div>
-              </div>
-            </td>
-            <td class="py-3" style="color: #4f4539; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              {{ review.products?.name || '—' }}
-            </td>
-            <td class="py-3">
-              <div class="flex gap-0.5 text-amber-400">
-                <span v-for="s in 5" :key="s" class="material-symbols-outlined text-sm" :data-icon="s <= review.rating ? 'star' : 'star'"
-                  :style="getStarFill(s, review.rating)">star</span>
-              </div>
-            </td>
-            <td class="py-3 max-w-[250px]">
-              <p style="color: #4f4539; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="review.comment">{{ review.comment }}</p>
-              <p v-if="review.title" class="text-xs text-gray-500 font-medium mt-0.5">{{ review.title }}</p>
-            </td>
-            <td class="py-3 text-gray-500 text-xs">{{ formatDate(review.created_at) }}</td>
-            <td class="py-3">
-              <span v-if="review.is_approved" class="dt-badge dt-badge-success">Aprobada</span>
-              <span v-else class="dt-badge dt-badge-warning">Pendiente</span>
-            </td>
-            <td class="py-3">
-              <div class="flex gap-1.5">
-                <button
-                  v-if="!review.is_approved"
-                  @click="approveReview(review)"
-                  class="dt-btn-secondary"
-                  style="padding: 0.25rem 0.75rem; font-size: 0.875rem; border-color: #059669; color: #059669;"
-                  title="Aprobar"
-                >
-                  <span class="material-symbols-outlined text-sm" data-icon="check">check</span>
-                </button>
-                <button
-                  @click="toggleFeatured(review)"
-                  class="dt-btn-secondary"
-                  :style="{ padding: '0.25rem 0.75rem', fontSize: '0.875rem', borderColor: review.is_featured ? '#624200' : '', color: review.is_featured ? '#624200' : '' }"
-                  :title="review.is_featured ? 'Quitar destacado' : 'Destacar'"
-                >
-                  <span class="material-symbols-outlined text-sm" data-icon="star">star</span>
-                </button>
-                <button
-                  @click="confirmDelete(review)"
-                  class="dt-btn-secondary"
-                  style="padding: 0.25rem 0.75rem; font-size: 0.875rem; border-color: #ef4444; color: #ef4444;"
-                  title="Eliminar"
-                >
-                  <span class="material-symbols-outlined text-sm" data-icon="delete">delete</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Sin resultados -->
-      <div v-if="reviews.length === 0" class="text-center py-12 text-gray-500">
-        No se encontraron reseñas
-      </div>
-
-      <!-- Paginación -->
-      <div v-if="totalPages > 1" class="flex justify-center items-center gap-4 mt-6">
-        <button @click="changePage(page - 1)" :disabled="page <= 1" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Anterior</button>
-        <span class="dt-body-sm" style="color: #4f4539;">Página {{ page }} de {{ totalPages }}</span>
-        <button @click="changePage(page + 1)" :disabled="page >= totalPages" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Siguiente</button>
-      </div>
-    </div>
+    <DataTable v-else :columns="reviewColumns" :data="reviews" :server-pagination="true" :total="totalPages * 20" :current-page-prop="page" :per-page="20" empty-message="No se encontraron reseñas" @page-change="changePage">
+      <template #cell-client="{ row }">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold" style="color: #4f4539;">
+            {{ row.client_name?.charAt(0) || '?' }}
+          </div>
+          <div>
+            <p class="font-medium" style="color: #0b1c30;">{{ row.client_name }}</p>
+            <p v-if="row.client_title" class="text-xs text-gray-500">{{ row.client_title }}</p>
+          </div>
+        </div>
+      </template>
+      <template #cell-product="{ row }">
+        <span style="color: #4f4539;" class="line-clamp-1">{{ row.products?.name || '—' }}</span>
+      </template>
+      <template #cell-rating="{ row }">
+        <div class="flex gap-0.5 text-amber-400">
+          <span v-for="s in 5" :key="s" class="material-symbols-outlined text-sm"
+            :style="getStarFill(s, row.rating)">star</span>
+        </div>
+      </template>
+      <template #cell-comment="{ row }">
+        <div class="max-w-[250px]">
+          <p style="color: #4f4539; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="row.comment">{{ row.comment }}</p>
+          <p v-if="row.title" class="text-xs text-gray-500 font-medium mt-0.5">{{ row.title }}</p>
+        </div>
+      </template>
+      <template #cell-date="{ row }">
+        <span class="text-xs" style="color: #4f4539;">{{ formatDate(row.created_at) }}</span>
+      </template>
+      <template #cell-status="{ row }">
+        <span v-if="row.is_approved" class="dt-badge dt-badge-success">Aprobada</span>
+        <span v-else class="dt-badge dt-badge-warning">Pendiente</span>
+      </template>
+      <template #actions="{ row }">
+        <button v-if="!row.is_approved" @click="approveReview(row)" class="inline-flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200" title="Aprobar" style="color: #059669; background: transparent; border: none; cursor: pointer;" @mouseenter="e => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.color = '#047857'; }" @mouseleave="e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#059669'; }">
+          <span class="material-symbols-outlined" style="font-size: 1.25rem;">check</span>
+        </button>
+        <button @click="toggleFeatured(row)" class="inline-flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200" :title="row.is_featured ? 'Quitar destacado' : 'Destacar'" :style="{ color: row.is_featured ? '#624200' : '#4f4539', background: 'transparent', border: 'none', cursor: 'pointer' }" @mouseenter="e => { e.currentTarget.style.background = 'rgba(98,66,0,0.05)'; }" @mouseleave="e => { e.currentTarget.style.background = 'transparent'; }">
+          <span class="material-symbols-outlined" style="font-size: 1.25rem;">star</span>
+        </button>
+        <button @click="confirmDelete(row)" class="inline-flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200" title="Eliminar" style="color: #dc2626; background: transparent; border: none; cursor: pointer;" @mouseenter="e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626'; }" @mouseleave="e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#dc2626'; }">
+          <span class="material-symbols-outlined" style="font-size: 1.25rem;">delete</span>
+        </button>
+      </template>
+    </DataTable>
 
     <!-- Modal de confirmación -->
     <ConfirmDialog
@@ -129,6 +107,7 @@ import { ecommerceAPI } from '../../api';
 import Alert from '../../components/shared/Alert.vue';
 import Loading from '../../components/shared/Loading.vue';
 import ConfirmDialog from '../../components/shared/ConfirmDialog.vue';
+import DataTable from '../../components/shared/DataTable.vue';
 
 const loading = ref(true);
 const saving = ref(false);
@@ -137,7 +116,17 @@ const reviews = ref([]);
 const page = ref(1);
 const totalPages = ref(1);
 const showDelete = ref(false);
+const showFilters = ref(false);
 const deletingReview = ref(null);
+
+const reviewColumns = [
+  { key: 'client', label: 'Cliente' },
+  { key: 'product', label: 'Producto' },
+  { key: 'rating', label: 'Rating' },
+  { key: 'comment', label: 'Comentario' },
+  { key: 'date', label: 'Fecha' },
+  { key: 'status', label: 'Estado' }
+];
 
 const getStarFill = (starIndex, rating) => {
   if (starIndex <= rating) {

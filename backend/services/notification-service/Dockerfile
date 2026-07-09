@@ -1,8 +1,21 @@
+# Stage 1: Build
+FROM node:18-alpine AS builder
+WORKDIR /app
+
+COPY package.json ./
+RUN npm ci --only=production
+
+# Stage 2: Runtime
 FROM node:18-alpine
 WORKDIR /app
-COPY shared/ ./shared/
-COPY services/notification-service/package*.json ./services/notification-service/
-RUN cd services/notification-service && npm ci --only=production
-COPY services/notification-service/ ./services/notification-service/
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY package.json ./
+COPY src/ ./src/
+
+USER appuser
 EXPOSE 3016
-CMD ["node", "services/notification-service/src/server.js"]
+
+CMD ["node", "src/server.js"]

@@ -1,0 +1,247 @@
+// ============================================================
+// Supabase Inventory Repository Adapters
+// ============================================================
+
+import { InventoryItemMapper, MovementMapper, ReservationMapper, WarehouseMapper } from '../mappers/index.js';
+
+export class SupabaseInventoryRepository {
+  constructor(supabase) {
+    this._supabase = supabase;
+  }
+
+  async findStock({ page = 1, limit = 20, warehouse, search, categoryId } = {}) {
+    const from = (page - 1) * limit;
+    const toVal = from + limit - 1;
+
+    let query = this._supabase
+      .from('inventory')
+      .select('*, products!inner(name, sku, category_id, price, images, min_stock, max_stock)', { count: 'exact' });
+
+    if (warehouse) query = query.eq('warehouse', warehouse);
+    if (categoryId) query = query.eq('products.category_id', categoryId);
+    if (search) query = query.or(`products.name.ilike.%${search}%,products.sku.ilike.%${search}%`);
+
+    const { data, count, error } = await query
+      .range(from, toVal)
+      .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+    return { data: (data || []).map(r => InventoryItemMapper.toDomain(r)), count: count || 0 };
+  }
+
+  async findByProduct(productId) {
+    const { data, error } = await this._supabase
+      .from('inventory')
+      .select('*, products(name, sku)')
+      .eq('product_id', productId);
+
+    if (error) throw error;
+    return (data || []).map(r => InventoryItemMapper.toDomain(r));
+  }
+
+  async findOne(productId, warehouse) {
+    const { data, error } = await this._supabase
+      .from('inventory')
+      .select('*')
+      .eq('product_id', productId)
+      .eq('warehouse', warehouse)
+      .single();
+
+    if (error || !data) return null;
+    return InventoryItemMapper.toDomain(data);
+  }
+
+  async upsert(productId, warehouse, data) {
+    const existing = await this.findOne(productId, warehouse);
+    if (existing) {
+      const { error } = await this._supabase
+        .from('inventory')
+        .update({ ...data, updated_at: new Date().toISOString() })
+        .eq('id', existing.id);
+      if (error) throw error;
+      return this.findOne(productId, warehouse);
+    } else {
+      const { data: inserted, error } = await this._supabase
+        .from('inventory')
+        .insert({ product_id: productId, warehouse, ...data })
+        .select()
+        .single();
+      if (error) throw error;
+      return InventoryItemMapper.toDomain(inserted);
+    }
+  }
+
+  async getAlerts(threshold = 5) {
+    const [lowStock, outOfStock] = await Promise.all([
+      this._supabase
+        .from('inventory')
+        .select('*, products(name, sku, min_stock, max_stock)')
+        .lte('stock', threshold)
+        .gt('stock', 0),
+      this._supabase
+        .from('inventory')
+        .select('*, products(name, sku, min_stock, max_stock)')
+        .eq('stock', 0),
+    ]);
+
+    if (lowStock.error) throw lowStock.error;
+    if (outOfStock.error) throw outOfStock.error;
+
+    const all = [...(lowStock.data || []), ...(outOfStock.data || [])]
+      .map(item => ({
+        ...InventoryItemMapper.toDomain(item).toJSON(),
+        name: item.products?.name || 'Producto',
+        sku: item.products?.sku || 'N/A',
+      }));
+
+    return all;
+  }
+
+  async getSummary() {
+    const { data, error } = await this._supabase
+      .from('inventory')
+      .select('product_id, stock, products(name, sku, price, cost_price, min_stock)')
+      .order('product_id');
+
+    if (error) throw error;
+
+    const totalProducts = data.length;
+    const totalStock = data.reduce((sum, s) => sum + (s.stock || 0), 0);
+    const totalValue = data.reduce((sum, s) => sum + ((s.stock || 0) * (s.products?.cost_price || 0)), 0);
+    const totalValueRetail = data.reduce((sum, s) => sum + ((s.stock || 0) * (s.products?.price || 0)), 0);
+    const lowStock = data.filter(s => s.stock > 0 && s.stock < (s.products?.min_stock || 5)).length;
+    const outOfStock = data.filter(s => s.stock === 0).length;
+
+    return { totalProducts, totalStock, totalValue, totalValueRetail, lowStock, outOfStock, items: data };
+  }
+}
+
+export class SupabaseMovementRepository {
+  constructor(supabase) {
+    this._supabase = supabase;
+  }
+
+  async findMany({ page = 1, limit = 20, type, productId, fromDate, toDate } = {}) {
+    const from = (page - 1) * limit;
+    const toVal = from + limit - 1;
+
+    let query = this._supabase
+      .from('inventory_movements')
+      .select('*, products(name, sku), users(name)', { count: 'exact' });
+
+    if (type) query = query.eq('type', type);
+    if (productId) query = query.eq('product_id', productId);
+    if (fromDate) query = query.gte('created_at', fromDate);
+    if (toDate) query = query.lte('created_at', toDate);
+
+    const { data, count, error } = await query
+      .range(from, toVal)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return { data: (data || []).map(r => MovementMapper.toDomain(r)), count: count || 0 };
+  }
+
+  async getKardex(productId) {
+    const { data, error } = await this._supabase
+      .from('inventory_movements')
+      .select('*')
+      .eq('product_id', productId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    let balance = 0;
+    return (data || []).map(m => {
+      const domain = MovementMapper.toDomain(m);
+      balance += (m.type === 'entry' || m.type === 'transfer_in' || m.type === 'purchase_entry' || m.type === 'return_in')
+        ? m.quantity : -m.quantity;
+      return { ...domain.toJSON(), balance };
+    });
+  }
+
+  async save(movement) {
+    const persistence = MovementMapper.toPersistence(movement);
+    const { data, error } = await this._supabase
+      .from('inventory_movements')
+      .insert(persistence)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return MovementMapper.toDomain(data);
+  }
+}
+
+export class SupabaseReservationRepository {
+  constructor(supabase) {
+    this._supabase = supabase;
+  }
+
+  async findActiveByProduct(productId) {
+    const { data, error } = await this._supabase
+      .from('inventory_reservations')
+      .select('*')
+      .eq('product_id', productId)
+      .eq('status', 'active');
+
+    if (error) throw error;
+    return (data || []).map(r => ReservationMapper.toDomain(r));
+  }
+
+  async save(reservation) {
+    const { data, error } = await this._supabase
+      .from('inventory_reservations')
+      .insert({
+        product_id: reservation.productId,
+        warehouse_id: reservation.warehouseId,
+        quantity: reservation.quantity,
+        order_type: reservation.orderType,
+        order_id: reservation.orderId,
+        user_id: reservation.userId,
+        status: reservation.status,
+        expires_at: reservation.expiresAt?.toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return ReservationMapper.toDomain(data);
+  }
+
+  async updateStatus(id, status) {
+    const { error } = await this._supabase
+      .from('inventory_reservations')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+}
+
+export class SupabaseWarehouseRepository {
+  constructor(supabase) {
+    this._supabase = supabase;
+  }
+
+  async findAll() {
+    const { data, error } = await this._supabase
+      .from('warehouses')
+      .select('*')
+      .order('name');
+
+    if (error) throw error;
+    return (data || []).map(r => WarehouseMapper.toDomain(r));
+  }
+
+  async findById(id) {
+    const { data, error } = await this._supabase
+      .from('warehouses')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) return null;
+    return WarehouseMapper.toDomain(data);
+  }
+}

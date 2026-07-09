@@ -8,14 +8,14 @@
           <h2 class="font-bold text-[1.7rem] text-on-surface mb-4">{{ title }}</h2>
           <p class="font-body-md text-body-md text-on-surface-variant max-w-md">{{ subtitle }}</p>
         </div>
-        <button
+        <RouterLink to="/offers"
           v-if="showViewAll && products.length > 0"
-          @click="$emit('view-all')"
+         
           class="text-primary !cursor-pointer font-headline-md text-headline-md flex items-center gap-2 group"
         >
           View All
           <span class="material-symbols-outlined group-hover:translate-x-2 transition-transform" data-icon="chevron_right">chevron_right</span>
-        </button>
+        </RouterLink>
       </div>
 
       <!-- Loading State -->
@@ -58,7 +58,7 @@
         >
           <div
             class="glass-card rounded-[32px] p-6 h-full flex flex-col group cursor-pointer overflow-hidden product-card offer-card"
-            @click="goToDetail(product)"
+            @click="$router.push(`/products/${product.id}`)"
             @mousemove="handleMouseMove"
             @mouseleave="resetCard"
           >
@@ -75,7 +75,7 @@
                 v-if="product.discountPercent > 0"
                 class="absolute top-4 left-4 bg-secondary text-on-secondary px-5 py-2.5 rounded-full font-bold text-sm shadow-lg shadow-secondary/30 animate-pulse-discount"
               >
-                -{{ product.discountPercent }}% OFF
+                - {{product.discountPercent}}% OFF
               </div>
               <!-- Featured Badge -->
               <div
@@ -128,7 +128,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 import { ecommerceAPI, productsAPI } from '../../api/index.js';
 
 const props = defineProps({
@@ -167,6 +167,7 @@ async function fetchOffers() {
   try {
     // Try to get offers from ecommerce API which includes product data
     const { data } = await ecommerceAPI.getOffers();
+    
     const offers = Array.isArray(data) ? data : (data?.data || []);
 
     // Map offers to products with discount info
@@ -174,6 +175,7 @@ async function fetchOffers() {
       .filter(o => o.products && o.active !== false)
       .slice(0, props.limit)
       .map(o => ({
+         id: o.product_id,
         ...o.products,
         discountPercent: o.discount_percent
           ? Number(o.discount_percent)
@@ -184,6 +186,7 @@ async function fetchOffers() {
         offer_end_date: o.end_date,
         offer_id: o.id
       }));
+      console.log('[OfferShowcase] Fetched offers:', products.value);
   } catch (err) {
     // Fallback: get featured products with discount
     console.warn('[OfferShowcase] Error fetching offers, trying featured products:', err);

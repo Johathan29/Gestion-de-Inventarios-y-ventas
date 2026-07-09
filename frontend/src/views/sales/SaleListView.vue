@@ -1,5 +1,23 @@
 <template>
-  <div class="px-4 md:px-12 pb-xl max-w-7xl mx-auto space-y-12">
+  <div class="space-y-6">
+    <!-- Page Header & Toolbar -->
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+      <div>
+        <h2 class="font-headline-lg-mobile md:font-headline-lg" style="font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.25; font-weight: 700; color: #0b1c30; letter-spacing: -0.02em; font-family: 'Plus Jakarta Sans', sans-serif;">Ventas</h2>
+        <p style="color: #4f4539; font-family: 'Inter', sans-serif; font-size: 1rem; line-height: 1.5; margin-top: 0.25rem;">
+          {{ filteredSales.length }} venta{{ filteredSales.length !== 1 ? 's' : '' }} registrada{{ filteredSales.length !== 1 ? 's' : '' }}
+        </p>
+      </div>
+      <div class="flex items-center gap-3 w-full sm:w-auto">
+        <button v-if="can('sales', 'create')" @click="$router.push('/app/sales/create')"
+          class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
+          style="background: #624200; color: white; border-color: rgba(139,94,0,0.2); font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5;">
+          <span class="material-icons-outlined" style="font-size: 1.25rem;">add</span>
+          <span class="hidden sm:inline">Nueva Venta</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Financial Summary / Metrics (dt-kpi-card per DESIGN.md) -->
     <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-xl">
       <!-- Total Sales Today -->
@@ -47,44 +65,75 @@
 
     <!-- Table & Filters Container (dt-card per DESIGN.md) -->
     <div class="dt-card space-y-8 overflow-hidden">
-      <!-- Advanced Filters -->
-      <div class="p-lg border-b border-outline-variant/20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 space-y-4 gap-4 p-8" style="background: #Fff;">
-        <div class="flex flex-col gap-xs flex-1 min-w-[200px]">
-          <label class="dt-label-caps">Rango de Fecha</label>
-          <div class="flex items-center gap-sm bg-white px-4 py-4 border border-outline-variant/30 dt-focus-ring" style="border-radius: 12px;">
-            <span class="material-symbols-outlined dt-body-md" style="color: #4f4539;">calendar_today</span>
-            <input class="dt-body-sm border-none p-0 focus:ring-0 w-full outline-none bg-transparent" type="text" v-model="dateRangeText" placeholder="Seleccionar fechas" />
-          </div>
-        </div>
-        <div class="flex flex-col gap-xs">
-          <label class="dt-label-caps">Estado</label>
-          <select v-model="filterStatus" class="dt-body-sm bg-white border-outline-variant/30 px-4 py-4 dt-focus-ring min-w-[140px]" style="border-radius: 12px; border-width: 1.5px; color: #0b1c30;">
-            <option value="">Todos</option>
-            <option value="completed">Completado</option>
-            <option value="cancelled">Reembolsado</option>
-            <option value="pending">Pendiente</option>
-          </select>
-        </div>
-        <div class="flex flex-col gap-xs">
-          <label class="dt-label-caps">Método de Pago</label>
-          <select v-model="filterPayment" class="dt-body-sm bg-white border-outline-variant/30 px-4 py-4 dt-focus-ring min-w-[140px]" style="border-radius: 12px; border-width: 1.5px; color: #0b1c30;">
-            <option value="">Todos</option>
-            <option value="cash">Efectivo</option>
-            <option value="card">Tarjeta</option>
-            <option value="transfer">Transferencia</option>
-          </select>
-        </div>
-        <div class="flex items-end self-end">
-          <button @click="applyFilters" class="dt-btn dt-btn-secondary">
-            <span class="material-symbols-outlined dt-body-md">filter_list</span>
-            Aplicar Filtros
+      <!-- Filter/Sort Bar -->
+      <div class="filter-bar-container p-4 border-b border-[#d2c4b4]/30 flex justify-between items-center" style="background: #ffffff;">
+        <div class="flex gap-2">
+          <button @click="showFilters = !showFilters"
+            class="px-3 py-1.5 text-sm font-medium border border-[#d2c4b4] rounded-md flex items-center gap-1 hover:bg-[#eff4ff] transition-colors bg-white relative"
+            :class="{ 'ring-2 ring-[rgba(98,66,0,0.2)] border-[#624200]': showFilters }"
+            style="font-family: 'Inter', sans-serif; color: #4f4539;">
+            <span class="material-icons-outlined" style="font-size: 1rem;">filter_list</span>
+            Filtrar
           </button>
         </div>
-        <!-- Search -->
-        <div class="flex items-end self-end">
-          <div class="dt-search">
-            <span class="material-symbols-outlined dt-search-icon dt-body-md">search</span>
-            <input v-model="searchQuery" type="text" placeholder="Buscar factura o cliente..." class="dt-input dt-body-sm" style="padding-left: 2.5rem; border-radius: 12px; min-width: 200px;" />
+        <div class="relative">
+          <div class="flex items-center bg-white border border-[#d2c4b4] rounded-full px-4 py-1.5 focus-within:border-[#624200] focus-within:ring-2 focus-within:ring-[rgba(98,66,0,0.2)] transition-all">
+            <span class="material-icons-outlined" style="color: #d2c4b4; margin-right: 0.5rem; font-size: 1rem;">search</span>
+            <input v-model="searchQuery" type="text" placeholder="Buscar factura o cliente..."
+              class="bg-transparent border-none focus:ring-0 outline-none text-sm"
+              style="font-family: 'Inter', sans-serif; color: #0b1c30;" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Panel -->
+      <div v-if="showFilters" class="filter-panel-container px-4 py-4 border-b border-[#d2c4b4]/30" style="background: #fff;">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; color: #4f4539;">Rango de Fecha</label>
+            <div class="flex items-center gap-2">
+              <div class="flex items-center gap-sm bg-white px-3 py-2 border border-outline-variant/30 dt-focus-ring flex-1" style="border-radius: 12px;">
+                <span class="material-symbols-outlined text-gray-500" style="font-size: 1.25rem;">calendar_month</span>
+                <input class="dt-body-sm border-none p-0 focus:ring-0 w-full outline-none bg-transparent" type="date" v-model="dateFrom" placeholder="Desde" />
+              </div>
+              <span style="color: #4f4539; font-size: 0.875rem;">—</span>
+              <div class="flex items-center gap-sm bg-white px-3 py-2 border border-outline-variant/30 dt-focus-ring flex-1" style="border-radius: 12px;">
+                <span class="material-symbols-outlined text-gray-500" style="font-size: 1.25rem;">calendar_month</span>
+                <input class="dt-body-sm border-none p-0 focus:ring-0 w-full outline-none bg-transparent" type="date" v-model="dateTo" placeholder="Hasta" />
+              </div>
+            </div>
+          </div>
+          <div>
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; color: #4f4539;">Estado</label>
+            <select v-model="filterStatus" class="w-full rounded-lg px-3 py-2 text-sm appearance-none bg-white transition-all" style="font-family: 'Inter', sans-serif; color: #0b1c30; border: 1.5px solid #E5E7EB;">
+              <option value="">Todos</option>
+              <option value="completed">Completado</option>
+              <option value="cancelled">Reembolsado</option>
+              <option value="pending">Pendiente</option>
+            </select>
+          </div>
+          <div>
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; color: #4f4539;">Método de Pago</label>
+            <select v-model="filterPayment" class="w-full rounded-lg px-3 py-2 text-sm appearance-none bg-white transition-all" style="font-family: 'Inter', sans-serif; color: #0b1c30; border: 1.5px solid #E5E7EB;">
+              <option value="">Todos</option>
+              <option value="cash">Efectivo</option>
+              <option value="card">Tarjeta</option>
+              <option value="transfer">Transferencia</option>
+            </select>
+          </div>
+          <div class="flex items-end gap-2">
+            <button @click="applyFilters" class="hidden px-4 py-2 rounded-lg text-sm font-semibold transition-all" style="background: #624200; color: white; font-family: 'Inter', sans-serif;">
+              <span class="flex items-center gap-1">
+                <span class="material-icons-outlined" style="font-size: 1rem;">search</span>
+                Aplicar Filtros
+              </span>
+            </button>
+            <button v-if="hasActiveFilters" @click="resetFilters" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all border" style="background: #624200; color: white; font-family: 'Inter', sans-serif;">
+              <span class="flex items-center gap-1">
+                <span class="material-icons-outlined" style="font-size: 1rem;">clear</span>
+                Restablecer
+              </span>
+            </button>
           </div>
         </div>
       </div>
@@ -122,7 +171,7 @@
                   <span class="font-medium" style="color: #452d00;">{{ sale.client_name }}</span>
                 </div>
               </td>
-              <td class="dt-financial">{{ formatCurrency(sale.total) }}</td>
+              <td class="dt-financial">{{ formatTable(sale.total) }}</td>
               <td>
                 <div class="flex items-center gap-xs" style="color: #4f4539;">
                   <span class="material-symbols-outlined text-[18px]">{{ paymentIcon(sale.payment_type) }}</span>
@@ -136,10 +185,10 @@
               </td>
               <td>
                 <div class="flex items-center justify-end gap-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button @click.stop="$router.push(`/app/sales/${sale.id}`)" class="dt-btn-icon" title="Ver detalles">
+                  <button @click.stop="$router.push(`/app/sales/${sale.id}`)" class="inline-flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200" title="Ver detalles" style="color: #4f4539; background: transparent; border: none; cursor: pointer;" @mouseenter="e => { e.currentTarget.style.background = 'rgba(98,66,0,0.05)'; e.currentTarget.style.color = '#624200'; }" @mouseleave="e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#4f4539'; }">
                     <span class="material-symbols-outlined">visibility</span>
                   </button>
-                  <button v-if="sale.status !== 'cancelled' && can('sales', 'create')" @click.stop="cancelSale(sale)" class="dt-btn-icon" title="Anular" style="color: #ba1a1a;">
+                  <button v-if="sale.status !== 'cancelled' && can('sales', 'create')" @click.stop="cancelSale(sale)" class="inline-flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200" title="Anular" style="color: #ba1a1a; background: transparent; border: none; cursor: pointer;" @mouseenter="e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#ba1a1a'; }" @mouseleave="e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ba1a1a'; }">
                     <span class="material-symbols-outlined">cancel</span>
                   </button>
                 </div>
@@ -188,8 +237,8 @@
               <span class="dt-body-sm">{{ paymentLabel(sale.payment_type) }}</span>
             </div>
             <div class="flex items-center gap-sm">
-              <span class="dt-financial">{{ formatCurrency(sale.total) }}</span>
-              <button @click.stop="$router.push(`/app/sales/${sale.id}`)" class="dt-btn-icon" title="Ver detalles">
+              <span class="dt-financial">{{ formatTable(sale.total) }}</span>
+              <button @click.stop="$router.push(`/app/sales/${sale.id}`)" class="inline-flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200" title="Ver detalles" style="color: #4f4539; background: transparent; border: none; cursor: pointer;" @mouseenter="e => { e.currentTarget.style.background = 'rgba(98,66,0,0.05)'; e.currentTarget.style.color = '#624200'; }" @mouseleave="e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#4f4539'; }">
                 <span class="material-symbols-outlined">chevron_right</span>
               </button>
             </div>
@@ -237,7 +286,10 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { salesAPI } from '../../api';
 import { useAuth } from '../../composables/useAuth';
-import { normalizeSales, formatCurrency, formatDate } from '../../utils';
+import { normalizeSales, formatDate } from '../../utils';
+import { useCurrency } from '../../composables/useCurrency';
+
+const { format: formatCurrency, formatTable } = useCurrency();
 
 const router = useRouter();
 const { can } = useAuth();
@@ -247,9 +299,15 @@ const sales = ref([]);
 const searchQuery = ref('');
 const filterStatus = ref('');
 const filterPayment = ref('');
-const dateRangeText = ref('');
+const dateFrom = ref('');
+const dateTo = ref('');
 const currentPage = ref(1);
 const perPage = ref(10);
+const showFilters = ref(false);
+
+const hasActiveFilters = computed(() =>
+  searchQuery.value || filterStatus.value || filterPayment.value || dateFrom.value || dateTo.value
+);
 
 // Computed: filtered sales
 const filteredSales = computed(() => {
@@ -275,6 +333,18 @@ const filteredSales = computed(() => {
       if (filterPayment.value === 'transfer') return pt === 'transfer' || pt === 'transferencia' || pt === 'bank_transfer';
       return true;
     });
+  }
+
+  // Date range filter
+  if (dateFrom.value) {
+    const from = new Date(dateFrom.value);
+    from.setHours(0, 0, 0, 0);
+    result = result.filter(s => s.created_at && new Date(s.created_at) >= from);
+  }
+  if (dateTo.value) {
+    const to = new Date(dateTo.value);
+    to.setHours(23, 59, 59, 999);
+    result = result.filter(s => s.created_at && new Date(s.created_at) <= to);
   }
 
   return result;
@@ -361,6 +431,15 @@ const formatTime = (date) => {
 
 const changePage = (page) => {
   if (page >= 1 && page <= totalPages.value) currentPage.value = page;
+};
+
+const resetFilters = () => {
+  searchQuery.value = '';
+  filterStatus.value = '';
+  filterPayment.value = '';
+  dateFrom.value = '';
+  dateTo.value = '';
+  currentPage.value = 1;
 };
 
 const applyFilters = () => {

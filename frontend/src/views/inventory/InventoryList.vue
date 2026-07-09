@@ -12,13 +12,14 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { inventoryAPI } from '../../api';
+import { normalizeInventoryItems } from '../../utils';
 import DataTable from '../../components/shared/DataTable.vue';
 
 const router = useRouter();
 const items = ref([]);
 
 const columns = [
-  { key: 'product_name', label: 'Producto', sortable: true },
+  { key: 'name', label: 'Producto', sortable: true },
   { key: 'sku', label: 'SKU' },
   { key: 'stock', label: 'Stock', type: 'number', sortable: true },
   { key: 'min_stock', label: 'Stock Mínimo', type: 'number' },
@@ -30,7 +31,7 @@ const goToKardex = (row) => router.push(`/app/inventory/kardex?product_id=${row.
 onMounted(async () => {
   try {
     const res = await inventoryAPI.getAll();
-    items.value = res.data || [];
+    items.value = normalizeInventoryItems(res.data || []);
   } catch (e) { /* ignore */ }
 });
 </script>

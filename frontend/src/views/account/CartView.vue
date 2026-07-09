@@ -228,13 +228,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onBeforeMount } from 'vue';
+import { ref, computed, onMounted, onBeforeMount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 import { cartAPI, checkoutAPI } from '../../api';
+import { useCurrency } from '../../composables/useCurrency';
+import { useEcommerceConfig } from '../../composables/useEcommerceConfig';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const { formatTable } = useCurrency();
+const { taxRate, taxIncluded, loadConfig } = useEcommerceConfig();
 
 const loading = ref(true);
 const error = ref(null);
@@ -253,9 +257,21 @@ const deliveryDate = ref('');
 // Calcular totales
 const subtotal = computed(() => items.value.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0));
 const discount = computed(() => items.value.reduce((sum, item) => sum + (item.discount || 0), 0));
-const taxRate = computed(() => 19); // 19% ITEBIS / IVA
-const tax = computed(() => (subtotal.value - discount.value) * (taxRate.value / 100));
-const total = computed(() => subtotal.value - discount.value + tax.value);
+const tax = computed(() => {
+  const rate = taxRate.value / 100;
+  const taxable = subtotal.value - discount.value;
+  if (taxIncluded.value) {
+    // Precio ya incluye IVA → extraer la porción de impuesto
+    return taxable - (taxable / (1 + rate));
+  }
+  return taxable * rate;
+});
+const total = computed(() => {
+  if (taxIncluded.value) {
+    return subtotal.value - discount.value;
+  }
+  return subtotal.value - discount.value + tax.value;
+});
 const itemCount = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0));
 
 const isClient = computed(() => authStore.isAuthenticated && authStore.user?.role === 'cliente');
@@ -286,7 +302,9 @@ async function fetchCart() {
     loading.value = false;
   }
 }
-
+onMounted(() => {
+  loadConfig();
+});
 async function incrementQuantity(item) {
   try {
     const newQty = item.quantity + 1;
@@ -334,18 +352,9 @@ async function proceedCheckout() {
 
   try {
     const payload = {
-      items: items.value.map(item => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price
-      })),
-      subtotal: subtotal.value,
-      tax: tax.value,
-      discount: discount.value,
-      total: total.value,
-      purchase_date: checkoutDate.value,
-      delivery_date: deliveryDate.value,
-      coupon_code: couponCode.value || null,
+      paymentMethod: 'card',
+      source: 'ecommerce',
+      notes: '',
     };
 
     await checkoutAPI.checkout(payload);
@@ -360,7 +369,7 @@ async function proceedCheckout() {
 }
 
 function formatPrice(value) {
-  return (parseFloat(value) || 0).toFixed(2);
+  return formatTable(value);
 }
 
 onBeforeMount(() => {

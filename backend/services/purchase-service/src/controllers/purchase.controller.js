@@ -13,7 +13,7 @@ const getPurchases = async (req, res, next) => {
 
     let query = supabase
       .from('purchases')
-      .select('*, suppliers(*), users(name)', { count: 'exact' });
+      .select('*, suppliers(*), users!purchases_user_id_fkey(name)', { count: 'exact' });
 
     if (status) query = query.eq('status', status);
     if (supplier_id) query = query.eq('supplier_id', supplier_id);
@@ -114,15 +114,10 @@ const createPurchase = async (req, res, next) => {
       const itemTotal = qty * unitCost;
       subtotal += itemTotal;
       const product = productMap[item.product_id] || {};
-      const productImage = Array.isArray(product.images) && product.images.length > 0
-        ? (typeof product.images[0] === 'string' ? product.images[0] : product.images[0]?.url || '')
-        : (item.product_image || '');
       return {
         product_id: item.product_id || null,
         product_name: product.name || item.product_name || 'Producto',
         sku: product.sku || item.sku || '',
-        barcode: product.barcode || item.barcode || '',
-        product_image: productImage,
         quantity: qty,
         unit_price: unitCost,
         total: itemTotal
@@ -175,16 +170,17 @@ const createPurchase = async (req, res, next) => {
       // Actualizar/crear registro en inventory
       const { data: existingStock } = await supabase
         .from('inventory')
-        .select('id, stock, total_cost')
+        .select('id, stock')
         .eq('product_id', item.product_id)
         .single();
+
+      const currentQty = existingStock?.stock || 0;
 
       if (existingStock) {
         await supabase
           .from('inventory')
           .update({
-            stock: existingStock.stock + qty,
-            total_cost: (existingStock.total_cost || 0) + (qty * unitCost),
+            stock: currentQty + qty,
             updated_at: new Date().toISOString()
           })
           .eq('id', existingStock.id);
@@ -194,21 +190,11 @@ const createPurchase = async (req, res, next) => {
           .insert({
             product_id: item.product_id,
             warehouse: 'principal',
-            stock: qty,
-            total_cost: qty * unitCost
+            stock: qty
           });
       }
 
       // Crear movimiento de inventario
-      const { data: currentStock } = await supabase
-        .from('inventory')
-        .select('stock')
-        .eq('product_id', item.product_id)
-        .single();
-
-      const prevStock = existingStock?.stock || 0;
-      const newStock = currentStock?.stock || qty;
-
       await supabase
         .from('inventory_movements')
         .insert({
@@ -216,8 +202,8 @@ const createPurchase = async (req, res, next) => {
           warehouse: 'principal',
           type: 'entry',
           quantity: qty,
-          previous_stock: prevStock,
-          new_stock: newStock,
+          previous_stock: currentQty,
+          new_stock: currentQty + qty,
           reference_type: 'purchase',
           reference_id: purchase.id,
           reason: `Entrada por compra #${purchaseNumber}`,
@@ -330,26 +316,30 @@ const cancelPurchase = async (req, res, next) => {
       .eq('purchase_id', id);
 
     for (const item of items) {
-      const { data: stock } = await supabase
+      const { data: invRecord } = await supabase
         .from('inventory')
-        .select('id, quantity')
+        .select('id, stock')
         .eq('product_id', item.product_id)
         .single();
 
-      if (stock) {
+      if (invRecord) {
         await supabase
           .from('inventory')
-          .update({ quantity: stock.quantity - item.quantity })
-          .eq('id', stock.id);
+          .update({ stock: invRecord.stock - item.quantity })
+          .eq('id', invRecord.id);
       }
 
       await supabase.from('inventory_movements').insert({
         product_id: item.product_id,
-        type: 'purchase_cancellation',
+        warehouse: 'principal',
+        type: 'adjustment',
         quantity: item.quantity,
-        notes: `Cancelación de compra #${id}`,
-        reference: `CANCEL-${id}`,
-        created_by: req.user.id
+        previous_stock: invRecord?.stock || 0,
+        new_stock: (invRecord?.stock || 0) - item.quantity,
+        reference_type: 'purchase_cancellation',
+        reference_id: id,
+        reason: `Cancelación de compra #${purchase.purchase_number}`,
+        user_id: req.user.id
       });
     }
 
@@ -399,24 +389,87 @@ const sendToInventory = async (req, res, next) => {
     const results = [];
 
     for (const item of purchase.purchase_items) {
-      if (!item.product_id) continue;
-
       const qty = item.quantity || 1;
       const unitCost = item.unit_price || 0;
+      let productId = item.product_id;
+
+      // ============================================================
+      // Si el item no tiene product_id, buscar por SKU o CREAR producto
+      // ============================================================
+      if (!productId) {
+        // Intentar encontrar producto existente por SKU
+        if (item.sku) {
+          const { data: existingProduct } = await supabase
+            .from('products')
+            .select('id')
+            .eq('sku', item.sku)
+            .maybeSingle();
+          if (existingProduct) {
+            productId = existingProduct.id;
+          }
+        }
+
+        // Si aún no hay productId, crear un nuevo producto
+        if (!productId) {
+          const productSlug = item.sku
+            ? item.sku.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+            : 'producto-' + Date.now();
+
+          const { data: newProduct, error: createError } = await supabase
+            .from('products')
+            .insert({
+              name: item.product_name || 'Producto sin nombre',
+              sku: item.sku || `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+              barcode: item.barcode || null,
+              slug: productSlug,
+              price: unitCost, // Precio de venta por defecto = costo
+              cost_price: unitCost,
+              unit: 'unidad',
+              min_stock: 5,
+              images: item.product_image ? [item.product_image] : [],
+              status: 'active',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .select('id')
+            .single();
+
+          if (createError) {
+            console.error(`[PurchaseService] Error creating product for item "${item.product_name}":`, createError);
+            results.push({
+              product_id: null,
+              product_name: item.product_name,
+              quantity: qty,
+              status: 'error',
+              error: createError.message
+            });
+            continue;
+          }
+
+          productId = newProduct.id;
+
+          // Actualizar el purchase_item con el nuevo product_id
+          await supabase
+            .from('purchase_items')
+            .update({ product_id: productId })
+            .eq('id', item.id);
+        }
+      }
 
       // 1. Actualizar/crear registro en inventory
       const { data: existingStock } = await supabase
         .from('inventory')
-        .select('id, stock, total_cost')
-        .eq('product_id', item.product_id)
+        .select('id, stock')
+        .eq('product_id', productId)
         .maybeSingle();
+
+      const currentQty = existingStock?.stock || 0;
 
       if (existingStock) {
         await supabase
           .from('inventory')
           .update({
-            stock: existingStock.stock + qty,
-            total_cost: (existingStock.total_cost || 0) + (qty * unitCost),
+            stock: currentQty + qty,
             updated_at: new Date().toISOString()
           })
           .eq('id', existingStock.id);
@@ -424,32 +477,22 @@ const sendToInventory = async (req, res, next) => {
         await supabase
           .from('inventory')
           .insert({
-            product_id: item.product_id,
+            product_id: productId,
             warehouse: 'principal',
-            stock: qty,
-            total_cost: qty * unitCost
+            stock: qty
           });
       }
 
       // 2. Crear movimiento de inventario
-      const { data: currentStock } = await supabase
-        .from('inventory')
-        .select('stock')
-        .eq('product_id', item.product_id)
-        .single();
-
-      const prevStock = existingStock?.stock || 0;
-      const newStock = currentStock?.stock || qty;
-
       await supabase
         .from('inventory_movements')
         .insert({
-          product_id: item.product_id,
+          product_id: productId,
           warehouse: 'principal',
           type: 'entry',
           quantity: qty,
-          previous_stock: prevStock,
-          new_stock: newStock,
+          previous_stock: currentQty,
+          new_stock: currentQty + qty,
           reference_type: 'purchase',
           reference_id: purchase.id,
           reason: `Entrada por compra #${purchase.purchase_number}`,
@@ -461,10 +504,10 @@ const sendToInventory = async (req, res, next) => {
       await supabase
         .from('products')
         .update({ cost_price: unitCost, updated_at: new Date().toISOString() })
-        .eq('id', item.product_id);
+        .eq('id', productId);
 
       results.push({
-        product_id: item.product_id,
+        product_id: productId,
         product_name: item.product_name,
         quantity: qty,
         status: 'processed'

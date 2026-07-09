@@ -24,7 +24,7 @@ export function useSectionReveal(target, opts = {}) {
     to: { opacity: 1, y: 0, scale: 1, filter: 'blur(0)', duration: 1.2, ease: 'power3.out' },
     start: 'top 85%',
     end: 'top 35%',
-    toggleActions: 'play reverse play reverse',
+    toggleActions: 'play none none none',
     ...opts,
   };
   return gsap.fromTo(target, defaults.from, {
@@ -195,7 +195,7 @@ export function useFocusHighlight(target, opts = {}) {
         start: 'top 40%',
         end: 'top 10%',
         scrub: 1,
-        toggleActions: 'play reverse play reverse',
+        toggleActions: 'play none none none',
       },
     }
   );

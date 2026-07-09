@@ -1,0 +1,1 @@
+{"success":false,"error":{"code":"SERVICE_UNAVAILABLE","message":"Servicio inventory no disponible","timestamp":"2026-07-08T13:19:39.665Z"}}

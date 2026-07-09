@@ -23,7 +23,11 @@
     </div>
 
     <div class="flex gap-3 mt-4">
-      <router-link to="/app/admin" class="dt-btn-secondary">Volver</router-link>
+      <router-link to="/app/admin"
+        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+        style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
+        @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
+        @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">Volver</router-link>
     </div>
   </div>
 </template>

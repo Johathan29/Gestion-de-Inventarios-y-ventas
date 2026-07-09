@@ -31,7 +31,7 @@
     <!-- Product Data Table Card -->
     <div class="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/30 overflow-hidden flex flex-col" style="min-height: 500px;">
       <!-- Table Header (Filter/Sort Bar) -->
-      <div class="filter-bar-container p-4 border-b border-[#d2c4b4]/30 flex justify-between items-center" style="background: #FDFBF7;">
+      <div class="filter-bar-container p-4 border-b border-[#d2c4b4]/30 flex justify-between items-center" style="background: #ffffff;">
         <div class="flex gap-2">
           <button @click="toggleFilters"
             class="px-3 py-1.5 text-sm font-medium border border-[#d2c4b4] rounded-md flex items-center gap-1 hover:bg-[#eff4ff] transition-colors bg-white relative"
@@ -108,10 +108,10 @@
             <div style="padding: 0.25rem 0;">
               <div class="flex items-center justify-between mb-2">
                 <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; color: #624200;">
-                  {{ formatCurrency(filters.price_min ?? 0) }}
+                  {{ formatTable(filters.price_min ?? 0) }}
                 </span>
                 <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #4f4539;">
-                  {{ formatCurrency(filters.price_max ?? priceRangeMax) }}
+                  {{ formatTable(filters.price_max ?? priceRangeMax) }}
                 </span>
               </div>
               <div class="relative" style="height: 28px;">
@@ -151,101 +151,46 @@
       <Loading v-if="loading" />
 
       <!-- Desktop Table View -->
-      <div v-else-if="viewMode === 'table'" class="hidden md:block overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr style="background: #F9F7F2; border-bottom: 1px solid rgba(210,196,180,0.5);">
-              <th class="p-4 font-semibold w-16" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539;">Img</th>
-              <th class="p-4 font-semibold cursor-pointer select-none" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539;"
-                  @click="toggleSort('name')">
-                <span class="flex items-center gap-1">Nombre <span v-if="sortKey === 'name'" class="material-icons-outlined" style="font-size: 0.875rem;">{{ sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></span>
-              </th>
-              <th class="p-4 font-semibold" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539;">SKU</th>
-              <th class="p-4 font-semibold" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539;">Categoría</th>
-              <th class="p-4 font-semibold text-right cursor-pointer select-none" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539;"
-                  @click="toggleSort('price')">
-                <span class="flex items-center justify-end gap-1">Precio <span v-if="sortKey === 'price'" class="material-icons-outlined" style="font-size: 0.875rem;">{{ sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></span>
-              </th>
-              <th class="p-4 font-semibold text-center" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539;">Stock</th>
-              <th class="p-4 font-semibold text-center" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539;">Estado</th>
-              <th class="p-4 font-semibold text-right" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; line-height: 1; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; color: #4f4539;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="prod in products" :key="prod.id"
-              class="group cursor-pointer"
-              style="border-bottom: 1px solid rgba(210,196,180,0.3); transition: background 0.15s;"
-              @mouseenter="e => e.currentTarget.style.background = 'rgba(98,66,0,0.02)'"
-              @mouseleave="e => e.currentTarget.style.background = ''"
-              @click="$router.push(`/app/products/${prod.id}`)">
-              <td class="p-4">
-                <div class="w-12 h-12 rounded-md overflow-hidden flex items-center justify-center" style="background: #e5eeff; border: 1px solid rgba(210,196,180,0.3);">
-                  <img v-if="firstImage(prod)" :src="firstImage(prod)" :alt="prod.name"
-                    class="w-full h-full object-cover"
-                    @error="brokenImages[prod.id] = true" />
-                  <span v-else class="material-icons-outlined" style="color: #d2c4b4; font-size: 1.5rem;">inventory_2</span>
-                </div>
-              </td>
-              <td class="p-4">
-                <div style="font-weight: 500; color: #0b1c30; font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5;">{{ prod.name }}</div>
-                <div v-if="prod.brand" style="font-size: 0.75rem; color: #4f4539; margin-top: 0.125rem; font-family: 'Inter', sans-serif;">{{ prod.brand }}</div>
-              </td>
-              <td class="p-4">
-                <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; line-height: 1.4; font-weight: 500; background: #eff4ff; padding: 0.25rem 0.5rem; border-radius: 0.25rem; color: #4f4539; border: 1px solid rgba(210,196,180,0.2);">{{ prod.sku }}</span>
-              </td>
-              <td class="p-4">
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" style="background: rgba(253,202,92,0.3); color: #735500; border: 1px solid rgba(121,89,0,0.1); font-family: 'Inter', sans-serif;">
-                  {{ prod.categories?.name || prod.category_name || '-' }}
-                </span>
-              </td>
-              <td class="p-4 text-right" style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; line-height: 1.4; font-weight: 600; color: #0b1c30;">{{ formatCurrency(prod.price) }}</td>
-              <td class="p-4 text-center">
-                <span class="font-medium" :style="{ color: stockColor(prod), fontFamily: 'Inter, sans-serif', fontSize: '0.875rem' }">
-                  {{ prod.stock ?? 0 }}
-                </span>
-              </td>
-              <td class="p-4 text-center">
-                <span v-if="prod.status === 'active' || prod.is_active" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border" style="background: #dcfce7; color: #166534; border-color: #bbf7d0; font-family: 'Inter', sans-serif;">
-                  <span class="w-1.5 h-1.5 rounded-full" style="background: #16a34a;"></span>
-                  Activo
-                </span>
-                <span v-else class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border" style="background: #f3f4f6; color: #4b5563; border-color: #e5e7eb; font-family: 'Inter', sans-serif;">
-                  <span class="w-1.5 h-1.5 rounded-full" style="background: #9ca3af;"></span>
-                  Inactivo
-                </span>
-              </td>
-              <td class="p-4 text-right" @click.stop>
-                <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button @click="$router.push(`/app/products/${prod.id}`)"
-                    class="p-1.5 rounded-md transition-colors" style="color: #4f4539;"
-                    @mouseenter="e => { e.currentTarget.style.color = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.05)'; }"
-                    @mouseleave="e => { e.currentTarget.style.color = '#4f4539'; e.currentTarget.style.background = ''; }"
-                    title="Ver detalles">
-                    <span class="material-icons-outlined" style="font-size: 1.25rem;">visibility</span>
-                  </button>
-                  <button v-if="can('products', 'update')" @click="$router.push(`/app/products/${prod.id}/edit`)"
-                    class="p-1.5 rounded-md transition-colors" style="color: #4f4539;"
-                    @mouseenter="e => { e.currentTarget.style.color = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.05)'; }"
-                    @mouseleave="e => { e.currentTarget.style.color = '#4f4539'; e.currentTarget.style.background = ''; }"
-                    title="Editar">
-                    <span class="material-icons-outlined" style="font-size: 1.25rem;">edit</span>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="products.length === 0">
-              <td colspan="8" class="px-5 py-16 text-center">
-                <span class="material-icons-outlined" style="font-size: 3rem; color: #d2c4b4; display: block; margin-bottom: 0.75rem;">inventory_2</span>
-                <p style="color: #4f4539; margin-bottom: 0.25rem; font-family: 'Inter', sans-serif;">No hay productos registrados</p>
-                <p style="font-size: 0.75rem; color: #4f4539; margin-bottom: 1rem; font-family: 'Inter', sans-serif;">Crea tu primer producto para empezar a gestionar tu inventario</p>
-                <button @click="$router.push('/app/products/create')"
-                  style="font-size: 0.875rem; color: #624200; font-weight: 500; font-family: 'Inter', sans-serif;">
-                  + Crear producto
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div v-else-if="viewMode === 'table'" class="hidden md:block">
+        <DataTable :columns="productColumns" :data="products" :server-pagination="true" :total="pagination.total" :current-page-prop="currentPage" :per-page="perPage" empty-message="No hay productos registrados" @page-change="changePage" @row-click="$router.push(`/app/products/${$event.id}`)">
+          <template #cell-image="{ row }">
+            <div class="w-12 h-12 rounded-md overflow-hidden flex items-center justify-center" style="background: #e5eeff; border: 1px solid rgba(210,196,180,0.3);">
+              <img v-if="firstImage(row)" :src="firstImage(row)" :alt="row.name"
+                class="w-full h-full object-cover"
+                @error="brokenImages[row.id] = true" />
+              <span v-else class="material-icons-outlined" style="color: #d2c4b4; font-size: 1.5rem;">inventory_2</span>
+            </div>
+          </template>
+          <template #cell-name="{ row }">
+            <div style="font-weight: 500; color: #0b1c30; font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5;">{{ row.name }}</div>
+            <div v-if="row.brand" style="font-size: 0.75rem; color: #4f4539; margin-top: 0.125rem; font-family: 'Inter', sans-serif;">{{ row.brand }}</div>
+          </template>
+          <template #cell-sku="{ row }">
+            <span class="dt-mono dt-sku">{{ row.sku }}</span>
+          </template>
+          <template #cell-category="{ row }">
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" style="background: rgba(253,202,92,0.3); color: #735500; border: 1px solid rgba(121,89,0,0.1); font-family: 'Inter', sans-serif;">
+              {{ row.categories?.name || row.category_name || '-' }}
+            </span>
+          </template>
+          <template #cell-stock="{ row }">
+            <span class="font-medium" :style="{ color: stockColor(row), fontFamily: 'Inter, sans-serif', fontSize: '0.875rem' }">
+              {{ row.stock ?? 0 }}
+            </span>
+          </template>
+          <template #cell-status="{ row }">
+            <span v-if="row.status === 'active' || row.is_active" class="dt-badge dt-badge-success">Activo</span>
+            <span v-else class="dt-badge dt-badge-neutral">Inactivo</span>
+          </template>
+          <template #actions="{ row }">
+            <button @click.stop="$router.push(`/app/products/${row.id}`)" class="inline-flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200" title="Ver detalles" style="color: #4f4539; background: transparent; border: none; cursor: pointer;" @mouseenter="e => { e.currentTarget.style.background = 'rgba(98,66,0,0.05)'; e.currentTarget.style.color = '#624200'; }" @mouseleave="e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#4f4539'; }">
+              <span class="material-icons-outlined" style="font-size: 1.25rem;">visibility</span>
+            </button>
+            <button v-if="can('products', 'update')" @click.stop="$router.push(`/app/products/${row.id}/edit`)" class="inline-flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200" title="Editar" style="color: #4f4539; background: transparent; border: none; cursor: pointer;" @mouseenter="e => { e.currentTarget.style.background = 'rgba(98,66,0,0.05)'; e.currentTarget.style.color = '#624200'; }" @mouseleave="e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#4f4539'; }">
+              <span class="material-icons-outlined" style="font-size: 1.25rem;">edit</span>
+            </button>
+          </template>
+        </DataTable>
       </div>
 
       <!-- Desktop Grid View -->
@@ -271,7 +216,7 @@
                 <span v-if="prod.featured" class="material-icons-outlined shrink-0" style="font-size: 1rem; color: #d0a71f;">star</span>
               </div>
               <div class="flex items-center justify-between mt-2">
-                <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600; color: #624200;">{{ formatCurrency(prod.price) }}</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600; color: #624200;">{{ formatTable(prod.price) }}</span>
                 <span class="text-xs font-medium" :style="{ color: stockColor(prod), fontFamily: 'Inter, sans-serif' }">{{ prod.stock ?? 0 }} uds</span>
               </div>
               <div class="flex items-center justify-between mt-2 pt-2" style="border-top: 1px solid rgba(210,196,180,0.2);">
@@ -311,8 +256,8 @@
         </div>
       </div>
 
-      <!-- Pagination Footer -->
-      <div v-if="totalPages > 1" class="p-4 mt-auto flex flex-col sm:flex-row justify-between items-center gap-4" style="background: #F9F7F2; border-top: 1px solid rgba(210,196,180,0.3);">
+      <!-- Grid Pagination Footer -->
+      <div v-if="viewMode === 'grid' && totalPages > 1" class="p-4 mt-auto flex flex-col sm:flex-row justify-between items-center gap-4" style="background: #F9F7F2; border-top: 1px solid rgba(210,196,180,0.3);">
         <span style="font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5; color: #4f4539; font-weight: 500;">
           Mostrando <strong style="color: #0b1c30; font-weight: 600;">{{ ((currentPage - 1) * perPage) + 1 }}-{{ Math.min(currentPage * perPage, pagination.total) }}</strong> de <strong style="color: #0b1c30; font-weight: 600;">{{ pagination.total }}</strong> productos
         </span>
@@ -355,7 +300,7 @@
                 </div>
                 <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #4f4539; margin-top: 0.25rem;">{{ prod.sku }}</p>
                 <div class="flex items-center flex-wrap gap-3 mt-2">
-                  <span style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #0b1c30; font-size: 0.875rem;">{{ formatCurrency(prod.price) }}</span>
+                  <span style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #0b1c30; font-size: 0.875rem;">{{ formatTable(prod.price) }}</span>
                   <span class="text-xs font-medium" :style="{ color: stockColor(prod), fontFamily: 'Inter, sans-serif' }">
                     {{ prod.stock ?? 0 }} en stock
                   </span>
@@ -392,7 +337,7 @@
               </div>
               <div v-if="prod.cost_price" class="col-span-2">
                 <p style="font-size: 0.75rem; color: #4f4539; margin-bottom: 0.125rem; font-family: 'Inter', sans-serif;">Costo</p>
-                <p style="font-weight: 500; color: #0b1c30; font-size: 0.875rem; font-family: 'Inter', sans-serif;">{{ formatCurrency(prod.cost_price) }}</p>
+                <p style="font-weight: 500; color: #0b1c30; font-size: 0.875rem; font-family: 'Inter', sans-serif;">{{ formatTable(prod.cost_price) }}</p>
               </div>
             </div>
             <div v-if="prod.description" class="mt-3">
@@ -444,7 +389,10 @@ import { useRouter } from 'vue-router';
 import { productsAPI, categoriesAPI } from '../../api';
 import { useAuth } from '../../composables/useAuth';
 import Loading from '../../components/shared/Loading.vue';
-import { formatCurrency } from '../../utils';
+import DataTable from '../../components/shared/DataTable.vue';
+import { useCurrency } from '../../composables/useCurrency';
+
+const { formatTable } = useCurrency();
 
 const router = useRouter();
 const { can } = useAuth();
@@ -474,6 +422,16 @@ const filters = reactive({
 
 // Sort options
 const selectBgSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234f4539' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E";
+
+const productColumns = [
+  { key: 'image', label: 'Img', type: 'custom' },
+  { key: 'name', label: 'Nombre', sortable: true },
+  { key: 'sku', label: 'SKU' },
+  { key: 'category', label: 'Categoría' },
+  { key: 'price', label: 'Precio', type: 'currency' },
+  { key: 'stock', label: 'Stock' },
+  { key: 'status', label: 'Estado' }
+];
 
 const sortOptions = [
   { key: 'name', dir: 'asc', label: 'Nombre (A-Z)' },

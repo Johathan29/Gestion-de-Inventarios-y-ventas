@@ -1,15 +1,103 @@
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-// Formatear moneda (COP)
-export const formatCurrency = (value) => {
+// ─── CONSTANTES DE FORMATO COMPACTO ─────────────────────────
+const MILLION = 1_000_000;
+const BILLION = 1_000_000_000;
+
+/**
+ * Formatea un valor numérico como moneda.
+ * @param {number} value - El valor a formatear
+ * @param {object} [options] - Opciones de formato
+ * @param {boolean} [options.compact=false] - Si es true, muestra millones como "1.5M", etc.
+ * @param {string} [options.currency='COP'] - Código de moneda (USD, COP, EUR, etc.)
+ * @param {string} [options.locale='es-CO'] - Locale para formato numérico
+ * @returns {string} Valor formateado como moneda
+ *
+ * @example
+ * formatCurrency(1500000)                    // → "$1.500.000" (COP legacy)
+ * formatCurrency(1500000, { compact: true }) // → "$1.5M"
+ * formatCurrency(50, { currency: 'USD', locale: 'en-US' }) // → "$50"
+ */
+export const formatCurrency = (value, options = {}) => {
   if (value === null || value === undefined) return '$0';
-  return new Intl.NumberFormat('es-CO', {
+
+  const {
+    compact = false,
+    currency: currencyCode = 'COP',
+    locale = 'es-CO',
+  } = options;
+
+  // ── Formato compacto para millones / billones ──
+  if (compact && Math.abs(value) >= MILLION) {
+    const abs = Math.abs(value);
+    let compactValue, suffix;
+    if (abs >= BILLION) {
+      compactValue = value / BILLION;
+      suffix = 'B';
+    } else {
+      compactValue = value / MILLION;
+      suffix = 'M';
+    }
+    // Extraer el símbolo de la moneda desde Intl
+    const symbol = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: currencyCode,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(0).replace(/[\d,.\s]/g, '').trim() || '$';
+
+    const numFormatted = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    }).format(compactValue);
+
+    return `${symbol}${numFormatted}${suffix}`;
+  }
+
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: 'COP',
+    currency: currencyCode,
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
   }).format(value);
+};
+
+/**
+ * Formatea un número con soporte para formato compacto (millones, billones).
+ * Útil para cantidades grandes como conteo de productos, visitas, etc.
+ * @param {number} value - El valor a formatear
+ * @param {object} [options] - Opciones de formato
+ * @param {boolean} [options.compact=false] - Si es true, muestra millones como "1.5M"
+ * @param {string} [options.locale='es-CO'] - Locale para formato numérico
+ * @returns {string} Número formateado
+ *
+ * @example
+ * formatNumber(1500)               // → "1.500"
+ * formatNumber(2500000, { compact: true }) // → "2.5M"
+ */
+export const formatNumber = (value, options = {}) => {
+  if (value === null || value === undefined) return '0';
+
+  const { compact = false, locale = 'es-CO' } = options;
+
+  if (compact && Math.abs(value) >= MILLION) {
+    const abs = Math.abs(value);
+    let compactValue, suffix;
+    if (abs >= BILLION) {
+      compactValue = value / BILLION;
+      suffix = 'B';
+    } else {
+      compactValue = value / MILLION;
+      suffix = 'M';
+    }
+    return new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    }).format(compactValue) + suffix;
+  }
+
+  return new Intl.NumberFormat(locale).format(value);
 };
 
 // Formatear fecha
@@ -116,6 +204,29 @@ export const normalizeInvoice = (inv) => {
 };
 
 export const normalizeInvoices = (invoices) => (invoices || []).map(normalizeInvoice);
+
+/**
+ * Normaliza un ítem de inventario desde el backend (hexagonal) al formato esperado por frontend
+ * El backend devuelve: minStock, unitCost, totalCost, product.min_stock, product.name, product.sku
+ * El frontend espera:  min_stock, purchase_price, cost_price, product.name, product.sku
+ */
+export const normalizeInventoryItem = (item) => {
+  if (!item) return item;
+  return {
+    ...item,
+    // Flatten product nested object
+    product_name: item.product_name ?? item.product?.name ?? '-',
+    sku: item.sku ?? item.product?.sku ?? '-',
+    product_id: item.product_id ?? item.productId ?? item.product?.id ?? null,
+    // Flatten camelCase to snake_case
+    min_stock: item.min_stock ?? item.product?.min_stock ?? item.minStock ?? 0,
+    purchase_price: item.purchase_price ?? item.cost_price ?? item.unitCost ?? 0,
+    cost_price: item.cost_price ?? item.unitCost ?? 0,
+    price: item.price ?? item.product?.price ?? 0,
+  };
+};
+
+export const normalizeInventoryItems = (items) => (items || []).map(normalizeInventoryItem);
 
 // Obtener iniciales del nombre
 export const getInitials = (name) => {

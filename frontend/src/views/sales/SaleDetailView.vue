@@ -73,9 +73,9 @@
                 </div>
               </td>
               <td class="px-4 py-3 text-right font-medium">{{ item.quantity }}</td>
-              <td class="px-4 py-3 text-right">{{ formatCurrency(item.unit_price || item.price) }}</td>
+              <td class="px-4 py-3 text-right">{{ formatTable(item.unit_price || item.price) }}</td>
               <td class="px-4 py-3 text-right font-medium dt-financial">
-                {{ formatCurrency(item.total || (item.quantity * (item.unit_price || item.price))) }}
+                {{ formatTable(item.total || (item.quantity * (item.unit_price || item.price))) }}
               </td>
             </tr>
           </tbody>
@@ -103,9 +103,9 @@
                 </span>
               </div>
               <div class="flex justify-between items-center mt-2 text-sm">
-                <span>{{ item.quantity }} x {{ formatCurrency(item.unit_price || item.price) }}</span>
+                <span>{{ item.quantity }} x {{ formatTable(item.unit_price || item.price) }}</span>
                 <span class="font-bold dt-financial">
-                  {{ formatCurrency(item.total || (item.quantity * (item.unit_price || item.price))) }}
+                  {{ formatTable(item.total || (item.quantity * (item.unit_price || item.price))) }}
                 </span>
               </div>
             </div>
@@ -115,17 +115,27 @@
 
       <div class="flex justify-end pt-4" style="border-top: 1px solid #e2d6c8;">
         <div class="w-64 space-y-1 text-sm">
-          <div class="flex justify-between"><span class="text-gray-500">Subtotal</span><span class="font-medium">{{ formatCurrency(sale.subtotal) }}</span></div>
-          <div class="flex justify-between"><span class="text-gray-500">IVA</span><span class="font-medium">{{ formatCurrency(sale.tax) }}</span></div>
-          <div class="flex justify-between text-lg font-bold pt-1 border-t"><span>Total</span><span class="text-primary-600">{{ formatCurrency(sale.total) }}</span></div>
+          <div class="flex justify-between"><span class="text-gray-500">Subtotal</span><span class="font-medium">{{ format(sale.subtotal) }}</span></div>
+          <div class="flex justify-between"><span class="text-gray-500">IVA</span><span class="font-medium">{{ format(sale.tax) }}</span></div>
+          <div class="flex justify-between text-lg font-bold pt-1 border-t"><span>Total</span><span class="text-primary-600">{{ format(sale.total) }}</span></div>
         </div>
       </div>
     </div>
 
     <div class="flex gap-3">
-      <router-link :to="`/invoices/${sale.invoice_id}`" v-if="sale.invoice_id" class="dt-btn-primary">Ver Factura</router-link>
-      <button v-if="sale.status === 'completed'" @click="handleCancel" class="dt-btn-secondary" style="border-color: #ef4444; color: #ef4444;">Anular Venta</button>
-      <router-link to="/app/sales" class="dt-btn-secondary">Volver</router-link>
+      <router-link :to="`/invoices/${sale.invoice_id}`" v-if="sale.invoice_id"
+        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
+        style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">Ver Factura</router-link>
+      <button v-if="sale.status === 'completed'" @click="handleCancel"
+        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+        style="border-color: #ef4444; color: #ef4444; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
+        @mouseenter="e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#dc2626'; }"
+        @mouseleave="e => { e.currentTarget.style.background = ''; e.currentTarget.style.borderColor = '#ef4444'; }">Anular Venta</button>
+      <router-link to="/app/sales"
+        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+        style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
+        @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
+        @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">Volver</router-link>
     </div>
   </div>
 </template>
@@ -136,7 +146,10 @@ import { normalizeSale } from '../../utils';
 import { useRoute, useRouter } from 'vue-router';
 import { salesAPI } from '../../api';
 import Loading from '../../components/shared/Loading.vue';
-import { formatCurrency, formatDateTime } from '../../utils';
+import { useCurrency } from '../../composables/useCurrency';
+import { formatDateTime } from '../../utils';
+
+const { format, formatTable } = useCurrency();
 import Swal from 'sweetalert2';
 
 const route = useRoute();

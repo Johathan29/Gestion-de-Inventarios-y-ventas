@@ -1,9 +1,14 @@
 <template>
   <div>
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="dt-headline-sm" style="margin-bottom: 0;">Banners Flotantes</h3>
-      <button @click="openModal(null)" class="dt-btn-primary">
-        <span class="material-symbols-outlined text-sm mr-1" data-icon="add">add</span>
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+      <div>
+        <h2 class="font-headline-lg-mobile md:font-headline-lg" style="font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.25; font-weight: 700; color: #0b1c30; letter-spacing: -0.02em; font-family: 'Plus Jakarta Sans', sans-serif;">Banners Flotantes</h2>
+        <p style="color: #4f4539; font-family: 'Inter', sans-serif; font-size: 1rem; line-height: 1.5; margin-top: 0.25rem;">
+          Gestiona los banners flotantes
+        </p>
+      </div>
+      <button @click="openModal(null)" class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border" style="background: #624200; color: white; border-color: rgba(139,94,0,0.2); font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5;">
+        <span class="material-icons-outlined" style="font-size: 1.25rem;">add</span>
         Nuevo Banner Flotante
       </button>
     </div>
@@ -45,8 +50,16 @@
 
         <!-- Actions -->
         <div class="flex gap-2 flex-shrink-0">
-          <button @click="openModal(banner)" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Editar</button>
-          <button @click="confirmDelete(banner)" class="dt-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem; border-color: #ef4444; color: #ef4444;">Eliminar</button>
+          <button @click="openModal(banner)"
+            class="shrink-0 flex items-center gap-1 font-semibold px-3 py-1.5 rounded-lg transition-all duration-200 border-2"
+            style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.8rem;"
+            @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
+            @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">Editar</button>
+          <button @click="confirmDelete(banner)"
+            class="shrink-0 flex items-center gap-1 font-semibold px-3 py-1.5 rounded-lg transition-all duration-200 border-2"
+            style="border-color: #ef4444; color: #ef4444; font-family: Inter, sans-serif; font-size: 0.8rem;"
+            @mouseenter="e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#dc2626'; }"
+            @mouseleave="e => { e.currentTarget.style.background = ''; e.currentTarget.style.borderColor = '#ef4444'; }">Eliminar</button>
         </div>
       </div>
     </div>
@@ -56,21 +69,35 @@
       <form @submit.prevent="handleSave" class="space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="form-label">Título</label>
-            <input v-model="form.title" class="form-input" placeholder="Envío gratis" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Título</label>
+            <input v-model="form.title"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              placeholder="Envío gratis"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
           <div>
-            <label class="form-label">Orden</label>
-            <input v-model.number="form.sort_order" type="number" min="0" class="form-input" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Orden</label>
+            <input v-model.number="form.sort_order" type="number" min="0"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
         </div>
         <div>
-          <label class="form-label">Subtítulo</label>
-          <input v-model="form.subtitle" class="form-input" placeholder="En compras mayores a $50" />
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Subtítulo</label>
+          <input v-model="form.subtitle"
+            class="w-full rounded-lg px-3 py-2.5 transition-all"
+            style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+            placeholder="En compras mayores a $50"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="form-label">Imagen del Banner</label>
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Imagen del Banner</label>
             <!-- Upload zone -->
             <div
               @click="triggerUpload"
@@ -107,65 +134,104 @@
             </div>
             <div class="mt-2">
               <label class="text-xs text-gray-500">O ingresa una URL manualmente:</label>
-              <input v-model="form.image_url" class="form-input text-xs mt-1" placeholder="https://ejemplo.com/banner.jpg" />
+              <input v-model="form.image_url"
+                class="w-full rounded-lg px-3 py-2 transition-all text-xs mt-1"
+                style="font-family: 'Inter', sans-serif; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+                placeholder="https://ejemplo.com/banner.jpg"
+                @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+                @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
             </div>
           </div>
           <div>
-            <label class="form-label">URL de Destino (link)</label>
-            <input v-model="form.link_url" class="form-input" placeholder="#products" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">URL de Destino (link)</label>
+            <input v-model="form.link_url"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              placeholder="#products"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="form-label">Color de Fondo</label>
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Color de Fondo</label>
             <div class="flex gap-2">
-              <input v-model="form.background_color" class="form-input flex-1" placeholder="#1a1a2e" />
-              <input type="color" v-model="form.background_color" class="w-10 h-10 rounded cursor-pointer" />
+              <input v-model="form.background_color"
+                class="w-full rounded-lg px-3 py-2.5 transition-all flex-1"
+                style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+                placeholder="#1a1a2e"
+                @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+                @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+              <input type="color" v-model="form.background_color" class="w-10 h-10 rounded cursor-pointer" style="border: 1.5px solid #E5E7EB;" />
             </div>
           </div>
           <div>
-            <label class="form-label">Color de Texto</label>
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Color de Texto</label>
             <div class="flex gap-2">
-              <input v-model="form.text_color" class="form-input flex-1" placeholder="#ffffff" />
-              <input type="color" v-model="form.text_color" class="w-10 h-10 rounded cursor-pointer" />
+              <input v-model="form.text_color"
+                class="w-full rounded-lg px-3 py-2.5 transition-all flex-1"
+                style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+                placeholder="#ffffff"
+                @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+                @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+              <input type="color" v-model="form.text_color" class="w-10 h-10 rounded cursor-pointer" style="border: 1.5px solid #E5E7EB;" />
             </div>
           </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="dt-label">Posición</label>
-            <select v-model="form.position" class="dt-input">
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Posición</label>
+            <select v-model="form.position"
+              class="w-full rounded-lg px-3 py-2.5 appearance-none transition-all"
+              :style="{ fontFamily: 'Inter, sans-serif', fontSize: '0.875rem', color: '#0b1c30', background: '#ffffff', border: '1.5px solid #E5E7EB' }"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }">
               <option value="top">Superior (top)</option>
               <option value="bottom">Inferior (bottom)</option>
             </select>
           </div>
           <div>
-            <label class="dt-label">Fecha Inicio</label>
-            <input v-model="form.start_date" type="date" class="dt-input" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Fecha Inicio</label>
+            <input v-model="form.start_date" type="date"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="dt-label">Fecha Fin</label>
-            <input v-model="form.end_date" type="date" class="dt-input" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Fecha Fin</label>
+            <input v-model="form.end_date" type="date"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
           <div class="flex items-center gap-6 pt-6">
             <div class="flex items-center gap-2">
-              <input type="checkbox" v-model="form.is_active" id="fb_active" class="w-4 h-4 rounded border-white/20" />
-              <label for="fb_active" class="dt-body-sm" style="color: #4f4539;">Activo</label>
+              <input type="checkbox" v-model="form.is_active" id="fb_active" class="w-4 h-4 rounded" style="accent-color: #624200;" />
+              <label for="fb_active" style="font-family: 'Inter', sans-serif; color: #0b1c30; font-size: 0.875rem;">Activo</label>
             </div>
             <div class="flex items-center gap-2">
-              <input type="checkbox" v-model="form.is_sticky" id="fb_sticky" class="w-4 h-4 rounded border-white/20" />
-              <label for="fb_sticky" class="dt-body-sm" style="color: #4f4539;">Sticky (fijo al hacer scroll)</label>
+              <input type="checkbox" v-model="form.is_sticky" id="fb_sticky" class="w-4 h-4 rounded" style="accent-color: #624200;" />
+              <label for="fb_sticky" style="font-family: 'Inter', sans-serif; color: #0b1c30; font-size: 0.875rem;">Sticky (fijo al hacer scroll)</label>
             </div>
           </div>
         </div>
 
         <div class="flex justify-end gap-3 pt-4">
-          <button type="button" @click="closeModal" class="dt-btn-secondary">Cancelar</button>
-          <button type="submit" :disabled="saving" class="dt-btn-primary">
-            <span v-if="saving" class="material-symbols-outlined animate-spin inline-block mr-2" data-icon="refresh">refresh</span>
+          <button type="button" @click="closeModal"
+            class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+            style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
+            @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
+            @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">Cancelar</button>
+          <button type="submit" :disabled="saving"
+            class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
+            style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
+            <span v-if="saving" class="material-symbols-outlined animate-spin" data-icon="refresh">refresh</span>
+            <span v-else class="material-icons-outlined" style="font-size: 1.125rem;">flag</span>
             {{ editing ? 'Actualizar Banner' : 'Crear Banner' }}
           </button>
         </div>

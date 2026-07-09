@@ -1,29 +1,55 @@
 <template>
-  <div class="dt-card p-6 max-w-4xl mx-auto">
-    <h3 class="dt-headline-sm" style="margin-bottom: 1.5rem;">Configuración de Hero (Landing Page)</h3>
+  <div>
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+      <div>
+        <h2 class="font-headline-lg-mobile md:font-headline-lg" style="font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.25; font-weight: 700; color: #0b1c30; letter-spacing: -0.02em; font-family: 'Plus Jakarta Sans', sans-serif;">Configuración de Hero</h2>
+        <p style="color: #4f4539; font-family: 'Inter', sans-serif; font-size: 1rem; line-height: 1.5; margin-top: 0.25rem;">Personaliza el Hero de la Landing Page</p>
+      </div>
+    </div>
+    <div class="max-w-4xl mx-auto bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/30 p-5 md:p-6">
 
     <Alert v-if="successMsg" type="success" :message="successMsg" :show="!!successMsg" dismissible @close="successMsg = ''" class="mb-4" />
     <Alert v-if="errorMsg" type="error" :message="errorMsg" :show="!!errorMsg" dismissible @close="errorMsg = ''" class="mb-4" />
 
     <Loading v-if="loading" />
 
-    <form v-else @submit.prevent="handleSave" class="space-y-6">
+    <form v-else @submit.prevent="handleSave" class="flex flex-col gap-5">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="form-label">Badge (etiqueta superior)</label>
-          <input v-model="form.badge" class="form-input" placeholder="Elite Animal Companionship" />
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Badge (etiqueta superior)</label>
+          <input v-model="form.badge"
+            class="w-full rounded-lg px-3 py-2.5 transition-all"
+            style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+            placeholder="Elite Animal Companionship"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
         </div>
         <div>
-          <label class="form-label">Título - Línea 1</label>
-          <input v-model="form.title_line1" class="form-input" placeholder="The Luxury" />
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Título - Línea 1</label>
+          <input v-model="form.title_line1"
+            class="w-full rounded-lg px-3 py-2.5 transition-all"
+            style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+            placeholder="The Luxury"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
         </div>
         <div>
-          <label class="form-label">Título - Línea 2</label>
-          <input v-model="form.title_line2" class="form-input" placeholder="Pet Atelier." />
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Título - Línea 2</label>
+          <input v-model="form.title_line2"
+            class="w-full rounded-lg px-3 py-2.5 transition-all"
+            style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+            placeholder="Pet Atelier."
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
         </div>
         <div>
-          <label class="form-label">Estilo línea 2</label>
-          <select v-model="form.title_line2_style" class="form-input">
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Estilo línea 2</label>
+          <select v-model="form.title_line2_style"
+            class="w-full rounded-lg px-3 py-2.5 appearance-none transition-all"
+            :style="{ fontFamily: 'Inter, sans-serif', fontSize: '0.875rem', color: '#0b1c30', background: '#ffffff', border: '1.5px solid #E5E7EB' }"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }">
             <option value="italic">Cursiva</option>
             <option value="normal">Normal</option>
           </select>
@@ -31,53 +57,98 @@
       </div>
 
       <div>
-        <label class="form-label">Descripción</label>
-        <textarea v-model="form.description" class="form-input" rows="3" placeholder="Descripción principal del hero"></textarea>
+        <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Descripción</label>
+        <textarea v-model="form.description" class="w-full rounded-lg px-3 py-2.5 transition-all resize-none" rows="3"
+          style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+          placeholder="Descripción principal del hero"
+          @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+          @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }"></textarea>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="form-label">Texto Botón 1</label>
-          <input v-model="form.button1_text" class="form-input" placeholder="Explore Collection" />
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Texto Botón 1</label>
+          <input v-model="form.button1_text"
+            class="w-full rounded-lg px-3 py-2.5 transition-all"
+            style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+            placeholder="Explore Collection"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
         </div>
         <div>
-          <label class="form-label">URL Botón 1</label>
-          <input v-model="form.button1_url" class="form-input" placeholder="#products" />
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">URL Botón 1</label>
+          <input v-model="form.button1_url"
+            class="w-full rounded-lg px-3 py-2.5 transition-all"
+            style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+            placeholder="#products"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
         </div>
         <div>
-          <label class="form-label">Texto Botón 2</label>
-          <input v-model="form.button2_text" class="form-input" placeholder="Our Story" />
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Texto Botón 2</label>
+          <input v-model="form.button2_text"
+            class="w-full rounded-lg px-3 py-2.5 transition-all"
+            style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+            placeholder="Our Story"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
         </div>
         <div>
-          <label class="form-label">URL Botón 2</label>
-          <input v-model="form.button2_url" class="form-input" placeholder="#story" />
+          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">URL Botón 2</label>
+          <input v-model="form.button2_url"
+            class="w-full rounded-lg px-3 py-2.5 transition-all"
+            style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+            placeholder="#story"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
         </div>
       </div>
 
-      <div class="pt-6" style="border-top: 1px solid #e2d6c8;">
-        <h4 class="font-semibold" style="color: #0b1c30; margin-bottom: 1rem; font-size: 1rem;">Imágenes</h4>
+      <div class="pt-6" style="border-top: 1px solid #d2c4b4;">
+        <div class="flex items-center gap-2 pb-2 mb-4" style="border-bottom: 1px solid #d2c4b4;">
+          <span class="material-icons-outlined" style="color: #624200; font-size: 1.25rem;">image</span>
+          <h4 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; font-weight: 600; color: #0b1c30;">Imágenes</h4>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label class="dt-label">Imagen Principal</label>
-            <input v-model="form.image_main_url" class="dt-input" style="font-size: 0.75rem;" placeholder="URL de imagen principal" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Imagen Principal</label>
+            <input v-model="form.image_main_url"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              placeholder="URL de imagen principal"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
             <img v-if="form.image_main_url" :src="form.image_main_url" class="mt-2 w-full h-32 object-cover rounded-lg" />
           </div>
           <div>
-            <label class="dt-label">Imagen Superior Izquierda</label>
-            <input v-model="form.image_top_url" class="dt-input" style="font-size: 0.75rem;" placeholder="URL" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Imagen Superior Izquierda</label>
+            <input v-model="form.image_top_url"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              placeholder="URL"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
             <img v-if="form.image_top_url" :src="form.image_top_url" class="mt-2 w-full h-32 object-cover rounded-lg" />
           </div>
           <div>
-            <label class="dt-label">Imagen Inferior Derecha</label>
-            <input v-model="form.image_bottom_url" class="dt-input" style="font-size: 0.75rem;" placeholder="URL" />
+            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Imagen Inferior Derecha</label>
+            <input v-model="form.image_bottom_url"
+              class="w-full rounded-lg px-3 py-2.5 transition-all"
+              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+              placeholder="URL"
+              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
             <img v-if="form.image_bottom_url" :src="form.image_bottom_url" class="mt-2 w-full h-32 object-cover rounded-lg" />
           </div>
         </div>
       </div>
 
       <!-- Preview -->
-      <div class="pt-6" style="border-top: 1px solid #e2d6c8;">
-        <h4 class="font-semibold" style="color: #0b1c30; margin-bottom: 1rem; font-size: 1rem;">Vista Previa</h4>
+      <div class="pt-6" style="border-top: 1px solid #d2c4b4;">
+        <div class="flex items-center gap-2 pb-2 mb-4" style="border-bottom: 1px solid #d2c4b4;">
+          <span class="material-icons-outlined" style="color: #624200; font-size: 1.25rem;">visibility</span>
+          <h4 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; font-weight: 600; color: #0b1c30;">Vista Previa</h4>
+        </div>
         <div class="bg-[#151215] rounded-2xl p-8 border border-white/10">
           <span class="text-xs uppercase tracking-widest text-[#e9b3fc] mb-3 block">{{ form.badge }}</span>
           <h2 class="text-3xl text-[#e8e0e4] mb-2">
@@ -92,12 +163,16 @@
       </div>
 
       <div class="flex justify-end pt-4">
-        <button type="submit" :disabled="saving" class="dt-btn-primary">
-          <span v-if="saving" class="material-symbols-outlined animate-spin inline-block mr-2" data-icon="refresh">refresh</span>
+        <button type="submit" :disabled="saving"
+          class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
+          style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
+          <span v-if="saving" class="material-symbols-outlined animate-spin" data-icon="refresh">refresh</span>
+          <span v-else class="material-icons-outlined" style="font-size: 1.125rem;">save</span>
           Guardar Cambios
         </button>
       </div>
     </form>
+    </div>
   </div>
 </template>
 

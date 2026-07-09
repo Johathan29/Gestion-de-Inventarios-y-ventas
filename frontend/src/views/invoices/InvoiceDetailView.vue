@@ -72,8 +72,8 @@
               </div>
             </td>
             <td class="px-4 py-3 text-right">{{ item.quantity }}</td>
-            <td class="px-4 py-3 text-right">{{ formatCurrency(item.unit_price || item.price) }}</td>
-            <td class="px-4 py-3 text-right font-medium">{{ formatCurrency(item.total || item.quantity * (item.unit_price || item.price)) }}</td>
+            <td class="px-4 py-3 text-right">{{ formatTable(item.unit_price || item.price) }}</td>
+            <td class="px-4 py-3 text-right font-medium">{{ formatTable(item.total || item.quantity * (item.unit_price || item.price)) }}</td>
           </tr>
         </tbody>
       </table>
@@ -81,13 +81,13 @@
       <!-- Totales -->
       <div class="flex justify-end">
         <div class="w-72 space-y-1 text-sm">
-          <div class="flex justify-between text-gray-500"><span>Subtotal</span><span>{{ formatCurrency(invoice.subtotal) }}</span></div>
-          <div class="flex justify-between text-gray-500"><span>Descuento</span><span v-if="invoice.discount > 0" class="text-red-500">-{{ formatCurrency(invoice.discount) }}</span><span v-else>$0</span></div>
-          <div class="flex justify-between text-gray-500"><span>IVA (19%)</span><span>{{ formatCurrency(invoice.tax) }}</span></div>
+          <div class="flex justify-between text-gray-500"><span>Subtotal</span><span>{{ format(invoice.subtotal) }}</span></div>
+          <div class="flex justify-between text-gray-500"><span>Descuento</span><span v-if="invoice.discount > 0" class="text-red-500">-{{ format(invoice.discount) }}</span><span v-else>$0</span></div>
+          <div class="flex justify-between text-gray-500"><span>IVA (19%)</span><span>{{ format(invoice.tax) }}</span></div>
           <div class="flex justify-between text-lg font-bold pt-2 border-t" style="border-color: #d2c4b4;">
             <span style="color: #0b1c30;">Total</span>
             <span :class="invoice.status === 'paid' ? 'text-green-600' : 'text-primary-600'">
-              {{ formatCurrency(invoice.total) }}
+              {{ format(invoice.total) }}
             </span>
           </div>
         </div>
@@ -101,33 +101,56 @@
 
     <!-- Actions -->
     <div class="flex flex-wrap gap-3">
-      <button @click="downloadPDF" class="dt-btn-primary">
-        <span class="material-icons-outlined">picture_as_pdf</span> PDF
+      <button @click="downloadPDF"
+        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
+        style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
+        <span class="material-icons-outlined" style="font-size: 1.125rem;">picture_as_pdf</span> PDF
       </button>
-      <button @click="downloadExcel" class="dt-btn-secondary">
-        <span class="material-icons-outlined">table_chart</span> Excel
+      <button @click="downloadExcel"
+        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+        style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
+        @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
+        @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
+        <span class="material-icons-outlined" style="font-size: 1.125rem;">table_chart</span> Excel
       </button>
-      <button @click="printInvoice" class="dt-btn-secondary">
-        <span class="material-icons-outlined">print</span> Imprimir
+      <button @click="downloadFiscalPDF"
+        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
+        style="background: #1e40af; color: white; border-color: rgba(30, 64, 175, 0.3); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
+        <span class="material-icons-outlined" style="font-size: 1.125rem;">receipt_long</span> Asiento Fiscal
+      </button>
+      <button @click="printInvoice"
+        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+        style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
+        @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
+        @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
+        <span class="material-icons-outlined" style="font-size: 1.125rem;">print</span> Imprimir
       </button>
 
       <button v-if="invoice.status === 'issued'"
               @click="handleTogglePaid"
               :disabled="updatingPayment"
-              class="dt-btn-primary" style="background: #059669;">
-        <span class="material-icons-outlined">paid</span>
+              class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
+              style="background: #059669; color: white; border-color: rgba(5, 150, 105, 0.3); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
+        <span class="material-icons-outlined" style="font-size: 1.125rem;">paid</span>
         {{ updatingPayment ? 'Procesando...' : 'Marcar como Pagada' }}
       </button>
       <button v-if="invoice.status === 'paid'"
               @click="handleToggleIssued"
               :disabled="updatingPayment"
-              class="dt-btn-secondary" style="border-color: #d97706; color: #d97706;">
-        <span class="material-icons-outlined">undo</span>
+              class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+              style="border-color: #d97706; color: #d97706; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
+              @mouseenter="e => { e.currentTarget.style.background = '#fffbeb'; e.currentTarget.style.borderColor = '#b45309'; }"
+              @mouseleave="e => { e.currentTarget.style.background = ''; e.currentTarget.style.borderColor = '#d97706'; }">
+        <span class="material-icons-outlined" style="font-size: 1.125rem;">undo</span>
         {{ updatingPayment ? 'Procesando...' : 'Revertir Pago' }}
       </button>
 
-      <router-link to="/app/invoices" class="dt-btn-secondary">
-        <span class="material-icons-outlined">arrow_back</span> Volver
+      <router-link to="/app/invoices"
+        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
+        style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
+        @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
+        @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
+        <span class="material-icons-outlined" style="font-size: 1.125rem;">arrow_back</span> Volver
       </router-link>
     </div>
   </div>
@@ -138,8 +161,14 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { invoicesAPI } from '../../api';
 import Loading from '../../components/shared/Loading.vue';
-import { formatCurrency, formatDate } from '../../utils';
+import { useCurrency } from '../../composables/useCurrency';
+import { formatDate } from '../../utils';
 import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import Swal from 'sweetalert2';
+import * as XLSX from 'xlsx';
+
+const { format, formatTable } = useCurrency();
 import 'jspdf-autotable';
 import Swal from 'sweetalert2';
 import * as XLSX from 'xlsx';
@@ -221,6 +250,103 @@ const downloadPDF = () => {
   }
 
   doc.save(`factura-${invoice.value.invoice_number}.pdf`);
+};
+
+const downloadFiscalPDF = () => {
+  const doc = new jsPDF();
+  const inv = invoice.value;
+  const client = inv.clients || {};
+
+  // Header fiscal
+  doc.setFillColor(30, 64, 175);
+  doc.rect(0, 0, 210, 45, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.text('ASIENTO FISCAL', 105, 18, { align: 'center' });
+  doc.setFontSize(9);
+  doc.text(`Factura N°: ${inv.invoice_number || ''}`, 105, 28, { align: 'center' });
+  doc.text(`Fecha de emisión: ${formatDate(inv.created_at)}`, 105, 36, { align: 'center' });
+
+  // Datos del contribuyente
+  doc.setTextColor(30, 64, 175);
+  doc.setFontSize(11);
+  doc.text('DATOS DEL CONTRIBUYENTE', 14, 55);
+  doc.setDrawColor(30, 64, 175);
+  doc.line(14, 58, 80, 58);
+  doc.setTextColor(60, 60, 60);
+  doc.setFontSize(9);
+  doc.text(`Razón Social: ${client.business_name || client.name || 'Cliente General'}`, 14, 66);
+  doc.text(`RUC/CI: ${client.document_id || inv.client_document || 'N/A'}`, 14, 74);
+  doc.text(`Dirección: ${client.address || 'N/A'}`, 14, 82);
+  doc.text(`Teléfono: ${client.phone || 'N/A'}`, 14, 90);
+  doc.text(`Email: ${client.email || 'N/A'}`, 14, 98);
+
+  // Detalle de transacción
+  let y = 110;
+  doc.setTextColor(30, 64, 175);
+  doc.setFontSize(11);
+  doc.text('DETALLE DE TRANSACCIÓN', 14, y);
+  doc.line(14, y + 3, 80, y + 3);
+  y += 11;
+  doc.setTextColor(60, 60, 60);
+  doc.setFontSize(9);
+  doc.text(`Tipo de Comprobante: Factura de Venta`, 14, y);
+  doc.text(`N° de Factura: ${inv.invoice_number || ''}`, 14, y + 8);
+  doc.text(`Fecha de Emisión: ${formatDate(inv.created_at)}`, 14, y + 16);
+  if (inv.due_date) doc.text(`Fecha de Vencimiento: ${formatDate(inv.due_date)}`, 14, y + 24);
+  doc.text(`Estado Fiscal: ${inv.status === 'paid' ? 'PAGADA' : inv.status === 'issued' ? 'EMITIDA' : 'ANULADA'}`, 14, y + 32);
+  if (inv.paid_at) doc.text(`Fecha de Pago: ${formatDate(inv.paid_at)}`, 14, y + 40);
+
+  // Tabla de items
+  y += 50;
+  const tableItems = items.value.map(i => [
+    i.products?.name || i.product_name || 'Producto',
+    String(i.quantity),
+    `$${Number(i.unit_price || i.price).toLocaleString('es-CO')}`,
+    `$${Number(i.total || (i.quantity * (i.unit_price || i.price))).toLocaleString('es-CO')}`
+  ]);
+  doc.autoTable({
+    startY: y,
+    head: [['Producto/Servicio', 'Cant.', 'Precio Unit.', 'Subtotal']],
+    body: tableItems,
+    headStyles: { fillColor: [30, 64, 175], textColor: [255, 255, 255] },
+    alternateRowStyles: { fillColor: [240, 245, 255] }
+  });
+
+  // Resumen fiscal
+  const fy = doc.lastAutoTable.finalY + 12;
+  doc.setTextColor(30, 64, 175);
+  doc.setFontSize(11);
+  doc.text('RESUMEN FISCAL', 14, fy);
+  doc.line(14, fy + 3, 60, fy + 3);
+  doc.setTextColor(60, 60, 60);
+  doc.setFontSize(10);
+  const subY = fy + 12;
+  doc.text('Subtotal:', 140, subY);
+  doc.text(`$${Number(inv.subtotal).toLocaleString('es-CO')}`, 175, subY, { align: 'right' });
+  if (inv.discount > 0) {
+    doc.text('Descuento:', 140, subY + 8);
+    doc.text(`-$${Number(inv.discount).toLocaleString('es-CO')}`, 175, subY + 8, { align: 'right' });
+  }
+  doc.text('IVA (19%):', 140, subY + (inv.discount > 0 ? 16 : 8));
+  doc.text(`$${Number(inv.tax).toLocaleString('es-CO')}`, 175, subY + (inv.discount > 0 ? 16 : 8), { align: 'right' });
+
+  doc.setDrawColor(30, 64, 175);
+  doc.line(130, subY + (inv.discount > 0 ? 22 : 14), 190, subY + (inv.discount > 0 ? 22 : 14));
+  doc.setTextColor(30, 64, 175);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  const totalY = subY + (inv.discount > 0 ? 30 : 22);
+  doc.text('TOTAL:', 140, totalY);
+  doc.text(`$${Number(inv.total).toLocaleString('es-CO')}`, 175, totalY, { align: 'right' });
+
+  // Footer fiscal
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Documento generado electrónicamente. Este comprobante tiene validez fiscal conforme a la normativa vigente.', 105, 280, { align: 'center' });
+
+  doc.save(`asiento-fiscal-${inv.invoice_number}.pdf`);
 };
 
 const downloadExcel = () => {

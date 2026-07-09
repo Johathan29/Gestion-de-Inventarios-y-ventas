@@ -1,20 +1,41 @@
 <template>
-  <div class="dt-card p-6 max-w-3xl mx-auto">
-    <h3 class="dt-headline-sm" style="margin-bottom: 1.5rem;">Configuración del Sistema</h3>
+  <div>
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+      <div>
+        <h2 class="font-headline-lg-mobile md:font-headline-lg" style="font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.25; font-weight: 700; color: #0b1c30; letter-spacing: -0.02em; font-family: 'Plus Jakarta Sans', sans-serif;">Configuración del Sistema</h2>
+        <p style="color: #4f4539; font-family: 'Inter', sans-serif; font-size: 1rem; line-height: 1.5; margin-top: 0.25rem;">Gestiona las variables de configuración del sistema</p>
+      </div>
+    </div>
+    <div class="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/30 p-5 md:p-6 max-w-3xl mx-auto">
     <Alert v-if="successMsg" type="success" :message="successMsg" :show="!!successMsg" dismissible @close="successMsg = ''" class="mb-4" />
 
     <div v-for="(group, section) in groupedConfig" :key="section" class="mb-8">
-      <h4 class="font-medium capitalize mb-4 pb-2" style="color: #0b1c30; border-bottom: 1px solid #e2d6c8;">{{ section }}</h4>
+      <div class="flex items-center gap-2 pb-2 mb-4" style="border-bottom: 1px solid #d2c4b4;">
+        <span class="material-icons-outlined" style="color: #624200; font-size: 1.25rem;">tune</span>
+        <h4 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; font-weight: 600; color: #0b1c30; text-transform: capitalize;">{{ section }}</h4>
+      </div>
       <div class="space-y-4">
         <div v-for="item in group" :key="item.key" class="grid grid-cols-3 gap-4 items-center">
-          <label class="dt-body-sm" style="color: #4f4539; font-weight: 500;">{{ item.key }}</label>
-          <input v-if="item.type === 'number' || item.type === 'integer'" v-model.number="item.value" type="number" class="dt-input" style="grid-column: span 2;" @change="updateConfig(item.key, item.value)" />
-          <input v-else-if="item.type === 'boolean'" type="checkbox" v-model="item.value" class="rounded" @change="updateConfig(item.key, item.value)" />
-          <input v-else v-model="item.value" class="dt-input" style="grid-column: span 2;" @change="updateConfig(item.key, item.value)" />
+          <label style="color: #4f4539; font-family: 'Inter', sans-serif; font-size: 0.875rem; font-weight: 500;">{{ item.key }}</label>
+          <input v-if="item.type === 'number' || item.type === 'integer'" v-model.number="item.value" type="number"
+            class="w-full rounded-lg px-3 py-2.5 transition-all"
+            style="grid-column: span 2; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+            @change="updateConfig(item.key, item.value)"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+          <input v-else-if="item.type === 'boolean'" type="checkbox" v-model="item.value" class="w-4 h-4 rounded" style="accent-color: #624200;" @change="updateConfig(item.key, item.value)" />
+          <input v-else v-model="item.value"
+            class="w-full rounded-lg px-3 py-2.5 transition-all"
+            style="grid-column: span 2; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+            @change="updateConfig(item.key, item.value)"
+            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
+            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
         </div>
       </div>
     </div>
     <p v-if="!Object.keys(groupedConfig).length" class="text-center py-8 text-gray-500">No hay configuración disponible</p>
+    </div>
   </div>
 </template>
 

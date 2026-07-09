@@ -130,16 +130,13 @@ export const categoriesAPI = {
 };
 
 export const inventoryAPI = {
-  getAll: (params) => api.get('/inventory', { params }),
-  getByProduct: (id) => api.get(`/inventory/product/${id}`),
-  create: (data) => api.post('/inventory', data),
-  update: (id, data) => api.put(`/inventory/${id}`, data),
-  delete: (id) => api.delete(`/inventory/${id}`),
+  getAll: (params) => api.get('/inventory/stock', { params }),
+  getByProduct: (id) => api.get(`/inventory/stock/${id}`),
   getMovements: (params) => api.get('/inventory/movements', { params }),
-  createEntry: (data) => api.post('/inventory/entry', data),
-  createExit: (data) => api.post('/inventory/exit', data),
-  createAdjustment: (data) => api.post('/inventory/adjustment', data),
-  createTransfer: (data) => api.post('/inventory/transfer', data),
+  createEntry: (data) => api.post('/inventory/entries', data),
+  createExit: (data) => api.post('/inventory/exits', data),
+  createAdjustment: (data) => api.post('/inventory/adjustments', data),
+  createTransfer: (data) => api.post('/inventory/transfers', data),
   getAlerts: () => api.get('/inventory/alerts'),
   getSummary: () => api.get('/inventory/summary')
 };
@@ -245,19 +242,19 @@ export const catalogAPI = {
 };
 
 export const clientsAPI = {
-  getAll: (params) => api.get('/users/clients', { params }),
-  getById: (id) => api.get(`/users/clients/${id}`),
-  getByUserId: (userId) => api.get(`/users/clients/by-user/${userId}`),
-  create: (data) => api.post('/users/clients', data),
-  update: (id, data) => api.put(`/users/clients/${id}`, data),
-  delete: (id) => api.delete(`/users/clients/${id}`),
+  getAll: (params) => api.get('/users', { params }),
+  getById: (id) => api.get(`/users/${id}`),
+  getByUserId: (userId) => api.get(`/users/by-user/${userId}`),
+  create: (data) => api.post('/users', data),
+  update: (id, data) => api.put(`/users/${id}`, data),
+  delete: (id) => api.delete(`/users/${id}`),
   // Cuenta de crédito
-  getCreditAccount: () => api.get('/users/clients/credit-account'),
-  createCreditAccount: (data) => api.post('/users/clients/credit-account', data),
-  updateCreditAccount: (id, data) => api.put(`/users/clients/credit-account/${id}`, data),
+  getCreditAccount: () => api.get('/users/credit-account'),
+  createCreditAccount: (data) => api.post('/users/credit-account', data),
+  updateCreditAccount: (id, data) => api.put(`/users/credit-account/${id}`, data),
   // Preferencias de notificación
-  getNotificationPreferences: () => api.get('/users/clients/notification-prefs'),
-  updateNotificationPreferences: (data) => api.put('/users/clients/notification-prefs', data)
+  getNotificationPreferences: () => api.get('/users/notification-prefs'),
+  updateNotificationPreferences: (data) => api.put('/users/notification-prefs', data)
 };
 
 export const reportsAPI = {

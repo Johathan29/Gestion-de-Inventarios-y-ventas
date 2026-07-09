@@ -1,20 +1,25 @@
 {
-  "name": "@inventory/inventory-service",
+  "name": "@erp/inventory-service",
   "version": "1.0.0",
-  "description": "Servicio de Inventario",
+  "type": "module",
+  "private": true,
+  "description": "Inventory Service — Stock, Movements, Reservations (Hexagonal)",
   "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
   },
   "dependencies": {
-    "@inventory/shared": "file:../../shared",
-    "express": "^4.18.2",
+    "@erp/common": "file:../../../packages/common",
+    "@erp/shared-kernel": "file:../../../packages/shared-kernel",
+    "@erp/event-bus": "file:../../../packages/event-bus",
     "dotenv": "^16.3.1",
     "@supabase/supabase-js": "^2.39.0",
-    "zod": "^3.22.4"
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.0.0"
   }
 }

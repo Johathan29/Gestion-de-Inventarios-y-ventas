@@ -1,8 +1,14 @@
 FROM node:18-alpine
 WORKDIR /app
-COPY shared/ ./shared/
-COPY services/catalog-service/package*.json ./services/catalog-service/
-RUN cd services/catalog-service && npm ci --only=production
-COPY services/catalog-service/ ./services/catalog-service/
-EXPOSE 3013
-CMD ["node", "services/catalog-service/src/server.js"]
+COPY packages/shared-kernel/package.json /app/packages/shared-kernel/
+COPY packages/event-bus/package.json /app/packages/event-bus/
+COPY packages/common/package.json /app/packages/common/
+COPY backend/services/catalog-service/package.json /app/backend/services/catalog-service/
+WORKDIR /app/backend/services/catalog-service
+RUN npm install
+COPY packages/shared-kernel /app/packages/shared-kernel
+COPY packages/event-bus /app/packages/event-bus
+COPY packages/common /app/packages/common
+COPY backend/services/catalog-service /app/backend/services/catalog-service
+EXPOSE 3003
+CMD ["node", "src/server.js"]

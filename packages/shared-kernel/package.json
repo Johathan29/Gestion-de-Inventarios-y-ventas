@@ -1,0 +1,27 @@
+{
+  "name": "@erp/shared-kernel",
+  "version": "1.0.0",
+  "description": "ERP Domain shared kernel — primitives, Value Objects, Domain Events, repository interfaces",
+  "main": "src/index.js",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./domain": "./src/domain/index.js",
+    "./domain/events": "./src/domain/events/index.js",
+    "./domain/value-objects": "./src/domain/value-objects/index.js",
+    "./domain/errors": "./src/domain/errors/index.js",
+    "./domain/repositories": "./src/domain/repositories/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/.bin/jest"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.1"
+  },
+  "peerDependencies": {
+    "zod": "^3.22.0"
+  }
+}

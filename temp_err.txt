@@ -1,0 +1,1 @@
+{"success":false,"message":"Internal server error","code":"PGRST201","details":[{"cardinality":"many-to-one","embedding":"sales with users","relationship":"sales_cancelled_by_fkey using sales(cancelled_by) and users(id)"},{"cardinality":"many-to-one","embedding":"sales with users","relationship":"sales_user_id_fkey using sales(user_id) and users(id)"}]}
