@@ -1,0 +1,102 @@
+# ============================================================
+# Render Blueprint — Backend API (all microservices in one container)
+# ============================================================
+# Deploy this from the repo root.
+# Render will auto-detect this file and offer to deploy.
+# ============================================================
+
+services:
+  # ─── Backend (API Gateway + all microservices) ──────────────
+  - type: web
+    name: backend-inventario
+    runtime: image
+    image:
+      url: https://github.com/OWNER/REPO.git            # ← Reemplaza con tu repo
+      # O usa Dockerfile directamente:
+      # dockerfilePath: backend/Dockerfile.render
+    dockerfilePath: backend/Dockerfile.render
+    dockerContext: .
+    envVars:
+      # ── Node ──
+      - key: NODE_ENV
+        value: production
+      - key: GATEWAY_PORT
+        value: 3000
+
+      # ── Supabase ──
+      - key: SUPABASE_URL
+        sync: false                                       # ← Set manual en dashboard
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_DB_HOST
+        sync: false
+      - key: SUPABASE_DB_PORT
+        value: "5432"
+      - key: SUPABASE_DB_NAME
+        value: "postgres"
+      - key: SUPABASE_DB_USER
+        value: "postgres"
+      - key: SUPABASE_DB_PASSWORD
+        sync: false
+
+      # ── JWT ──
+      - key: JWT_SECRET
+        generateValue: true                              # ← Auto-generado por Render
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: "15m"
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: "7d"
+      - key: JWT_ISSUER
+        value: "inventory-system"
+
+      # ── CORS (tu frontend en Render) ──
+      - key: CORS_ORIGIN
+        value: "https://frontend-inventario.onrender.com"   # ← Cambia al URL real de tu frontend
+      - key: CORS_ORIGIN_ALTERNATE
+        value: "https://frontend-inventario.onrender.com"
+
+      # ── Encryption ──
+      - key: BCRYPT_SALT_ROUNDS
+        value: "12"
+      - key: ENCRYPTION_KEY
+        generateValue: true
+
+      # ── Ports de servicios (resuena conflictos) ──
+      - key: CATALOG_SERVICE_PORT
+        value: "3013"
+      # identity-service y procurement-service NO se ejecutan (excluidos)
+
+      # ── Email (Opcional) ──
+      - key: SMTP_HOST
+        value: "smtp.gmail.com"
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_SECURE
+        value: "false"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+
+    healthCheckPath: /health
+    autoDeploy: true
+
+  # ─── Frontend (SPA) ────────────────────────────────────────
+  - type: web
+    name: frontend-inventario
+    runtime: image
+    image:
+      url: https://github.com/OWNER/REPO.git
+      dockerfilePath: frontend/Dockerfile.render
+    dockerContext: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # VITE_API_URL is /api/v1 — nginx proxies to backend automatically
+      - key: VITE_API_URL
+        value: "/api/v1"
+    autoDeploy: true

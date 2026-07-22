@@ -1,0 +1,36 @@
+# ============================================================
+# Stage 1: Build (Vite) — context is repo root
+# ============================================================
+FROM node:18-alpine AS build
+WORKDIR /app
+
+COPY frontend/package*.json ./frontend/
+RUN cd frontend && npm ci
+
+COPY frontend/ ./frontend/
+
+# VITE_API_URL is set to /api/v1 so the SPA calls go through nginx proxy
+ENV VITE_API_URL=/api/v1
+
+RUN cd frontend && npm run build
+
+# ============================================================
+# Stage 2: Serve (Nginx) — proxies /api to backend
+# ============================================================
+FROM nginx:stable-alpine AS runner
+
+RUN adduser -D -u 1001 -g 'appuser' appuser
+
+COPY --from=build /app/frontend/dist /usr/share/nginx/html
+COPY frontend/nginx.render.conf /etc/nginx/nginx.conf
+
+RUN chown -R appuser:appuser /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html && \
+    touch /var/run/nginx.pid && \
+    chown appuser:appuser /var/run/nginx.pid && \
+    chown -R appuser:appuser /var/cache/nginx
+
+EXPOSE 80
+USER appuser
+
+CMD ["nginx", "-g", "daemon off;"]

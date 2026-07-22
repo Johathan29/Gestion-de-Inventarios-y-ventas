@@ -4,5 +4,12 @@ npm-debug.log
 .gitignore
 .env
 .env.local
+.env.example
 *.md
 .gitkeep
+logs/
+docs/
+scripts/
+temp_*.json
+database/migrations/
+*.log

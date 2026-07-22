@@ -1,0 +1,83 @@
+# ============================================================
+# Backend monolith for Render — runs ALL microservices
+# ============================================================
+FROM node:18-alpine
+
+WORKDIR /app
+
+# --- System deps for native modules ---
+RUN apk add --no-cache bash
+
+# --- Copy workspace root ---
+COPY backend/package.json ./backend/
+
+# --- Copy shared packages (used by legacy + hexagonal services) ---
+COPY backend/shared/ ./backend/shared/
+COPY packages/ ./packages/
+
+# --- Install shared dependencies first ---
+RUN cd backend/shared && npm install --omit=dev --legacy-peer-deps 2>/dev/null || true
+RUN cd packages/common && npm install --omit=dev --legacy-peer-deps 2>/dev/null || true
+RUN cd packages/event-bus && npm install --omit=dev --legacy-peer-deps 2>/dev/null || true
+RUN cd packages/shared-kernel && npm install --omit=dev --legacy-peer-deps 2>/dev/null || true
+
+# --- Copy API Gateway ---
+COPY backend/api-gateway/package.json ./backend/api-gateway/
+RUN cd backend/api-gateway && npm install --omit=dev --legacy-peer-deps
+
+# --- Copy ALL service package.json files first (for layer caching) ---
+# Note: identity-service, procurement-service, cart-service, checkout-service excluded
+# (identity conflicts with auth port; procurement not routed; cart/checkout handled by sale-service)
+COPY backend/services/auth-service/package.json ./backend/services/auth-service/
+COPY backend/services/user-service/package.json ./backend/services/user-service/
+COPY backend/services/product-service/package.json ./backend/services/product-service/
+COPY backend/services/category-service/package.json ./backend/services/category-service/
+COPY backend/services/inventory-service/package.json ./backend/services/inventory-service/
+COPY backend/services/purchase-service/package.json ./backend/services/purchase-service/
+COPY backend/services/sale-service/package.json ./backend/services/sale-service/
+COPY backend/services/report-service/package.json ./backend/services/report-service/
+COPY backend/services/invoice-service/package.json ./backend/services/invoice-service/
+COPY backend/services/ecommerce-service/package.json ./backend/services/ecommerce-service/
+COPY backend/services/catalog-service/package.json ./backend/services/catalog-service/
+COPY backend/services/email-service/package.json ./backend/services/email-service/
+COPY backend/services/whatsapp-service/package.json ./backend/services/whatsapp-service/
+COPY backend/services/notification-service/package.json ./backend/services/notification-service/
+COPY backend/services/audit-service/package.json ./backend/services/audit-service/
+COPY backend/services/config-service/package.json ./backend/services/config-service/
+COPY backend/services/payment-service/package.json ./backend/services/payment-service/
+
+# --- Install dependencies for each service ---
+RUN cd backend/services/auth-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/user-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/product-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/category-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/inventory-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/purchase-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/sale-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/report-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/invoice-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/ecommerce-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/catalog-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/email-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/whatsapp-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/notification-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/audit-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/config-service && npm install --omit=dev --legacy-peer-deps
+RUN cd backend/services/payment-service && npm install --omit=dev --legacy-peer-deps
+
+# --- Install concurrently at root level ---
+RUN cd backend && npm install concurrently --omit=dev
+
+# --- Copy ALL source code ---
+COPY backend/api-gateway/ ./backend/api-gateway/
+COPY backend/services/ ./backend/services/
+
+# --- Copy root start script ---
+COPY backend/start-render.sh ./backend/start-render.sh
+RUN chmod +x ./backend/start-render.sh
+
+WORKDIR /app/backend
+
+EXPOSE 3000
+
+CMD ["./start-render.sh"]
