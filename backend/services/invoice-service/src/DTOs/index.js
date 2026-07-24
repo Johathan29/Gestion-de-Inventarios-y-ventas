@@ -20,6 +20,7 @@ export const InvoiceQueryDTO = paginationSchema.extend({
   invoiceType: z.string().optional(),
   fromDate: z.string().optional(),
   toDate: z.string().optional(),
+  search: z.string().optional(),
 });
 
 export const UpdatePaymentStatusDTO = z.object({

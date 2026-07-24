@@ -44,7 +44,7 @@ async function main() {
 
   const appService = new PaymentsApplicationService({ paymentMethodRepo, cashRegisterRepo, transactionRepo, eventBus });
 
-  app.use('/api/payments', createPaymentsRouter(appService));
+  app.use('/api/payments', createPaymentsRouter(appService, supabase));
   app.use(errorHandler);
 
   app.listen(PORT, () => {

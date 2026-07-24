@@ -3,13 +3,14 @@
 // ============================================================
 
 import {
-  ListNotificationsUseCase, CreateNotificationUseCase,
+  GetNotificationUseCase, ListNotificationsUseCase, CreateNotificationUseCase,
   MarkNotificationReadUseCase, MarkAllNotificationsReadUseCase, DeleteNotificationUseCase,
   SendEmailUseCase, SendWhatsAppUseCase, SendOrderNotificationUseCase,
 } from '../usecases/index.js';
 
 export class NotificationApplicationService {
   constructor({ notifRepo, emailService, whatsAppService, eventBus }) {
+    this._getNotification = new GetNotificationUseCase({ notifRepo });
     this._listNotifications = new ListNotificationsUseCase({ notifRepo });
     this._createNotification = new CreateNotificationUseCase({ notifRepo, eventBus });
     this._markRead = new MarkNotificationReadUseCase({ notifRepo, eventBus });
@@ -20,6 +21,7 @@ export class NotificationApplicationService {
     this._sendOrderNotification = new SendOrderNotificationUseCase({ whatsAppService });
   }
 
+  getNotification(id, userId) { return this._getNotification.execute({ id, userId }); }
   listNotifications(query) { return this._listNotifications.execute(query); }
   createNotification(input) { return this._createNotification.execute(input); }
   markRead(id, userId) { return this._markRead.execute({ id, userId }); }

@@ -1,59 +1,64 @@
 <template>
   <div>
-    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-      <div>
-        <h2 class="font-headline-lg-mobile md:font-headline-lg" style="font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.25; font-weight: 700; color: #0b1c30; letter-spacing: -0.02em; font-family: 'Plus Jakarta Sans', sans-serif;">Slides del Carrusel</h2>
-        <p style="color: #4f4539; font-family: 'Inter', sans-serif; font-size: 1rem; line-height: 1.5; margin-top: 0.25rem;">
-          Slides del carrusel principal (Hero)
-        </p>
+    <div
+      class="mesh-gradient-header"
+      style="
+        background: radial-gradient(circle at 100% 100%, #f0c04d 0%, #9154dc 50%, #7738c1 100%);
+      "
+    >
+      <div class="header-icon-container">
+        <span class="material-symbols-outlined animate-header-icon"> view_carousel </span>
       </div>
-      <button @click="openModal(null)" class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border" style="background: #624200; color: white; border-color: rgba(139,94,0,0.2); font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5;">
-        <span class="material-icons-outlined" style="font-size: 1.25rem;">add</span>
-        Nuevo Slide
-      </button>
+      <div class="header-glass">
+        <div class="header-information">
+          <PageHeader
+            title="Slides del Carrusel"
+            description="Slides del carrusel principal (Hero)"
+            tag="h1"
+          />
+        </div>
+        <div class="header-actions">
+          <button @click="openModal(null)" class="aurora-header-button aurora-header-button-primary">
+            <span class="material-symbols-outlined"> add </span>
+            Nuevo Slide
+          </button>
+        </div>
+      </div>
     </div>
 
-    <Alert v-if="successMsg" type="success" :message="successMsg" :show="!!successMsg" dismissible @close="successMsg = ''" class="mb-4" />
-    <Alert v-if="errorMsg" type="error" :message="errorMsg" :show="!!errorMsg" dismissible @close="errorMsg = ''" class="mb-4" />
-    <Loading v-if="loading" />
+    <Alert v-if="successMsg" type="success" :message="successMsg" :show="!!successMsg" dismissible :duration="500" @close="successMsg = ''" class="mb-md" />
+    <Alert v-if="errorMsg" type="error" :message="errorMsg" :show="!!errorMsg" dismissible @close="errorMsg = ''" class="mb-md" />
+    <CardGridSkeleton v-if="loading" />
 
-    <div v-else-if="slides.length === 0" class="text-sm text-gray-500 text-center py-8">No hay slides configurados. ¡Crea el primero!</div>
+    <div v-else-if="slides.length === 0" class="text-on-surface-variant text-center py-8">No hay slides configurados. ¡Crea el primero!</div>
 
     <div v-else class="space-y-4">
       <div v-for="(slide, index) in slides" :key="slide.id"
-        class="dt-card p-4 flex flex-col md:flex-row gap-4 items-start"
-        :style="{ borderColor: slide.is_active ? '#624200' : '' }"
+        class="aurora-raised-card flex flex-col md:flex-row gap-4 items-start"
+        :style="{ borderLeft: slide.is_active ? '4px solid var(--aurora-primary)' : '' }"
       >
         <!-- Imagen preview -->
         <div class="w-full md:w-48 h-32 rounded-xl overflow-hidden flex-shrink-0 bg-white/5">
           <img v-if="slide.image_url" :src="slide.image_url" class="w-full h-full object-cover" />
-          <div v-else class="w-full h-full flex items-center justify-center text-gray-500 text-xs">Sin imagen</div>
+          <div v-else class="w-full h-full flex items-center justify-center text-on-surface-variant text-xs">Sin imagen</div>
         </div>
 
         <!-- Info -->
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-1">
-            <span class="text-xs font-medium text-gray-400">#{{ index + 1 }}</span>
-            <span v-if="slide.is_active" class="dt-badge dt-badge-success" style="font-size: 0.75rem;">Activo</span>
-            <span v-else class="dt-badge dt-badge-disabled" style="font-size: 0.75rem;">Inactivo</span>
+            <span class="text-xs font-medium text-on-surface-variant">#{{ index + 1 }}</span>
+            <span v-if="slide.is_active" class="aurora-badge aurora-badge-success" style="font-size: 0.75rem;">Activo</span>
+            <span v-else class="aurora-badge aurora-badge-secondary" style="font-size: 0.75rem;">Inactivo</span>
           </div>
-          <h4 class="font-medium truncate" style="color: #0b1c30;">{{ slide.badge || 'Sin badge' }}</h4>
-          <p class="text-sm text-gray-500 truncate">{{ slide.title_line1 }} {{ slide.title_line2 }}</p>
-          <p class="text-xs text-gray-400 mt-1 truncate">{{ slide.description }}</p>
+          <h4 class="font-medium truncate text-on-surface">{{ slide.badge || 'Sin badge' }}</h4>
+          <p class="text-sm text-on-surface-variant truncate">{{ slide.title_line1 }} {{ slide.title_line2 }}</p>
+          <p class="text-xs text-on-surface-variant mt-1 truncate">{{ slide.description }}</p>
         </div>
 
         <!-- Actions -->
         <div class="flex gap-2 flex-shrink-0">
-          <button @click="openModal(slide)"
-            class="shrink-0 flex items-center gap-1 font-semibold px-3 py-1.5 rounded-lg transition-all duration-200 border-2"
-            style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.8rem;"
-            @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-            @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">Editar</button>
-          <button @click="confirmDelete(slide)"
-            class="shrink-0 flex items-center gap-1 font-semibold px-3 py-1.5 rounded-lg transition-all duration-200 border-2"
-            style="border-color: #ef4444; color: #ef4444; font-family: Inter, sans-serif; font-size: 0.8rem;"
-            @mouseenter="e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#dc2626'; }"
-            @mouseleave="e => { e.currentTarget.style.background = ''; e.currentTarget.style.borderColor = '#ef4444'; }">Eliminar</button>
+          <button @click="openModal(slide)" class="aurora-btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">Editar</button>
+          <button @click="confirmDelete(slide)" class="aurora-btn-secondary" style="padding: 6px 12px; font-size: 0.8rem; color: var(--aurora-error); border-color: var(--aurora-error);">Eliminar</button>
         </div>
       </div>
     </div>
@@ -61,115 +66,68 @@
     <!-- Modal Slide -->
     <Modal :show="showModal" :title="editing ? 'Editar Slide' : 'Nuevo Slide'" @close="closeModal" size="lg">
       <form @submit.prevent="handleSave" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Badge (etiqueta)</label>
-            <input v-model="form.badge"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              placeholder="Elite Animal Companionship"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Badge (etiqueta)</label>
+            <input v-model="form.badge" class="aurora-input" placeholder="Elite Animal Companionship" />
           </div>
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Orden</label>
-            <input v-model.number="form.sort_order" type="number" min="0"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Orden</label>
+            <input v-model.number="form.sort_order" type="number" min="0" class="aurora-input" style="font-family: 'JetBrains Mono', monospace;" />
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Título Línea 1</label>
-            <input v-model="form.title_line1"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              placeholder="The Luxury"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Título Línea 1</label>
+            <input v-model="form.title_line1" class="aurora-input" placeholder="The Luxury" />
           </div>
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Título Línea 2</label>
-            <input v-model="form.title_line2"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              placeholder="Pet Atelier."
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Título Línea 2</label>
+            <input v-model="form.title_line2" class="aurora-input" placeholder="Pet Atelier." />
           </div>
         </div>
         <div>
-          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Estilo Línea 2</label>
-          <select v-model="form.title_line2_style"
-            class="w-full rounded-lg px-3 py-2.5 appearance-none transition-all"
-            :style="{ fontFamily: 'Inter, sans-serif', fontSize: '0.875rem', color: '#0b1c30', background: '#ffffff', border: '1.5px solid #E5E7EB' }"
-            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }">
+          <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Estilo Línea 2</label>
+          <select v-model="form.title_line2_style" class="aurora-select">
             <option value="italic">Cursiva (italic)</option>
             <option value="normal">Normal</option>
           </select>
         </div>
         <div>
-          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Descripción</label>
-          <textarea v-model="form.description" class="w-full rounded-lg px-3 py-2.5 transition-all resize-none" rows="2"
-            style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-            placeholder="Descripción del slide"
-            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }"></textarea>
+          <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Descripción</label>
+          <textarea v-model="form.description" class="aurora-textarea" rows="2" placeholder="Descripción del slide"></textarea>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Texto Botón 1</label>
-            <input v-model="form.button1_text"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              placeholder="Explore Collection"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Texto Botón 1</label>
+            <input v-model="form.button1_text" class="aurora-input" placeholder="Explore Collection" />
           </div>
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">URL Botón 1</label>
-            <input v-model="form.button1_url"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              placeholder="#products"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">URL Botón 1</label>
+            <input v-model="form.button1_url" class="aurora-input" placeholder="#products" />
           </div>
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Texto Botón 2</label>
-            <input v-model="form.button2_text"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              placeholder="Our Story"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Texto Botón 2</label>
+            <input v-model="form.button2_text" class="aurora-input" placeholder="Our Story" />
           </div>
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">URL Botón 2</label>
-            <input v-model="form.button2_url"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              placeholder="#story"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">URL Botón 2</label>
+            <input v-model="form.button2_url" class="aurora-input" placeholder="#story" />
           </div>
         </div>
 
         <!-- Imagen: Upload a Storage -->
-        <div class="border-t border-[#d2c4b4]/30 pt-4">
-          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Imagen del Slide</label>
+        <div class="border-t pt-4" style="border-color: var(--aurora-outline-variant);">
+          <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Imagen del Slide</label>
           <div class="mt-2 flex flex-col md:flex-row gap-4 items-start">
             <!-- Upload area -->
             <div
-              class="relative w-full md:w-64 h-40 rounded-xl border-2 border-dashed border-white/20 hover:border-primary/50 transition-all flex flex-col items-center justify-center cursor-pointer bg-white/5 hover:bg-white/10 overflow-hidden"
+              class="relative w-full md:w-64 h-40 rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center cursor-pointer overflow-hidden aurora-raised"
               @click="triggerUpload"
               @dragover.prevent="dragOver = true"
               @dragleave="dragOver = false"
               @drop.prevent="onDrop"
-              :class="{ 'bg-primary/10 border-primary': uploading, 'border-primary/50': dragOver }"
+              :class="{ 'aurora-pressed': uploading || dragOver }"
             >
               <!-- Preview si ya hay imagen -->
               <img v-if="form.image_url && !previewFile" :src="form.image_url" class="absolute inset-0 w-full h-full object-cover" />
@@ -178,19 +136,19 @@
 
               <!-- Overlay con icono si hay imagen -->
               <div v-if="form.image_url || previewFile" class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                <span class="material-symbols-outlined text-3xl text-white" data-icon="cloud_upload">cloud_upload</span>
+                <span class="material-symbols-outlined text-3xl text-white">cloud_upload</span>
               </div>
 
               <!-- Placeholder si no hay imagen -->
               <div v-if="!form.image_url && !previewFile" class="text-center p-4">
-                <span class="material-symbols-outlined text-3xl text-gray-400 mb-2" data-icon="add_photo_alternate">add_photo_alternate</span>
-                <p class="text-xs text-gray-400">Click o arrastra una imagen aquí</p>
-                <p class="text-xs text-gray-500 mt-1">PNG, JPG, WebP • Max 10MB</p>
+                <span class="material-symbols-outlined text-3xl text-on-surface-variant mb-2">add_photo_alternate</span>
+                <p class="text-xs text-on-surface-variant">Click o arrastra una imagen aquí</p>
+                <p class="text-xs text-on-surface-variant mt-1">PNG, JPG, WebP • Max 10MB</p>
               </div>
 
               <!-- Spinner de carga -->
               <div v-if="uploading" class="absolute inset-0 bg-black/60 flex items-center justify-center">
-                <span class="material-symbols-outlined animate-spin text-3xl text-white" data-icon="refresh">refresh</span>
+                <span class="material-symbols-outlined animate-spin text-3xl text-white">refresh</span>
               </div>
 
               <input ref="fileInputRef" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" class="hidden" @change="onFileSelected" />
@@ -199,29 +157,21 @@
             <!-- Info / URL actual -->
             <div class="flex-1 min-w-0">
               <div v-if="form.image_url" class="mb-2">
-                <label class="text-xs text-gray-400 mb-1 block">URL actual:</label>
+                <label class="text-xs text-on-surface-variant mb-1 block">URL actual:</label>
                 <div class="flex gap-2">
-                  <input :value="form.image_url"
-                    class="w-full rounded-lg px-3 py-2 transition-all text-xs flex-1"
-                    style="font-family: 'JetBrains Mono', monospace; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-                    readonly @focus="$event.target.select()" />
-                  <button type="button" @click="clearImage" class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-red-400/10 flex items-center gap-1">
-                    <span class="material-symbols-outlined text-sm" data-icon="delete">delete</span>
+                  <input :value="form.image_url" class="aurora-input text-xs flex-1" style="font-family: 'JetBrains Mono', monospace;" readonly @focus="$event.target.select()" />
+                  <button type="button" @click="clearImage" class="aurora-btn-icon danger" style="width: auto; height: auto; padding: 4px 8px; border-radius: var(--aurora-radius); gap: 4px;">
+                    <span class="material-symbols-outlined text-sm">delete</span>
                     Quitar
                   </button>
                 </div>
               </div>
               <div class="flex gap-2 items-center">
-                <span class="text-xs text-gray-500">O ingresa una URL manualmente:</span>
-                <input v-model="form.image_url"
-                  class="w-full rounded-lg px-3 py-2 transition-all flex-1 text-xs"
-                  style="font-family: 'Inter', sans-serif; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                  @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-                  @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+                <span class="text-xs text-on-surface-variant">O ingresa una URL manualmente:</span>
+                <input v-model="form.image_url" class="aurora-input flex-1 text-xs" placeholder="https://ejemplo.com/imagen.jpg" />
               </div>
-              <p class="text-xs text-amber-400/80 mt-2 flex items-center gap-1">
-                <span class="material-symbols-outlined text-sm" data-icon="info">info</span>
+              <p class="text-xs mt-2 flex items-center gap-1" style="color: var(--aurora-tertiary);">
+                <span class="material-symbols-outlined text-sm">info</span>
                 Al subir una imagen se guarda en Supabase Storage y el trigger actualiza automáticamente la URL.
               </p>
             </div>
@@ -229,21 +179,15 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <input type="checkbox" v-model="form.is_active" id="slide_active" class="w-4 h-4 rounded" style="accent-color: #624200;" />
-          <label for="slide_active" style="font-family: 'Inter', sans-serif; color: #0b1c30; font-size: 0.875rem;">Slide activo</label>
+          <input type="checkbox" v-model="form.is_active" id="slide_active" class="w-4 h-4 rounded" style="accent-color: var(--aurora-primary);" />
+          <label for="slide_active" class="text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Slide activo</label>
         </div>
 
-        <div class="flex justify-end gap-3 pt-4 border-t border-[#d2c4b4]/30">
-          <button type="button" @click="closeModal"
-            class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
-            style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
-            @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-            @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">Cancelar</button>
-          <button type="submit" :disabled="saving || uploading"
-            class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
-            style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
-            <span v-if="saving" class="material-symbols-outlined animate-spin" data-icon="refresh">refresh</span>
-            <span v-else class="material-icons-outlined" style="font-size: 1.125rem;">slideshow</span>
+        <div class="flex justify-end gap-3 pt-4 border-t" style="border-color: var(--aurora-outline-variant);">
+          <button type="button" @click="closeModal" class="aurora-btn-secondary">Cancelar</button>
+          <button type="submit" :disabled="saving || uploading" class="aurora-btn-primary">
+            <span v-if="saving" class="material-symbols-outlined animate-spin">refresh</span>
+            <span v-else class="material-symbols-outlined" style="font-size: 1.125rem;">slideshow</span>
             {{ editing ? 'Actualizar Slide' : 'Crear Slide' }}
           </button>
         </div>
@@ -258,9 +202,11 @@
 import { ref, onMounted } from 'vue';
 import { ecommerceAPI } from '../../api';
 import { supabase } from '../../api/supabase';
+import PageHeader from '../../components/shared/PageHeader.vue';
 import Modal from '../../components/shared/Modal.vue';
 import ConfirmDialog from '../../components/shared/ConfirmDialog.vue';
 import Alert from '../../components/shared/Alert.vue';
+import CardGridSkeleton from '../../components/skeletons/CardGridSkeleton.vue';
 import Loading from '../../components/shared/Loading.vue';
 
 const slides = ref([]);

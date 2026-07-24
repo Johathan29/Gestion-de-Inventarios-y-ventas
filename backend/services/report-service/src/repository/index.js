@@ -140,29 +140,52 @@ export class SupabaseReportRepository {
   }
 
   async getInventoryReport(filters) {
+    const page = filters.page || 1;
+    const limit = filters.limit || 20;
+
+    let countQuery = this._supabase
+      .from('inventory')
+      .select('*', { count: 'exact', head: true });
+
     let query = this._supabase
       .from('inventory')
       .select('*, products(id, name, sku, price, category_id, categories(name))')
       .order('stock', { ascending: true });
 
-    if (filters.min_stock) query = query.gte('stock', parseInt(filters.min_stock));
-    if (filters.max_stock) query = query.lte('stock', parseInt(filters.max_stock));
-    if (filters.category) query = query.eq('products.category_id', filters.category);
+    if (filters.min_stock) {
+      countQuery = countQuery.gte('stock', parseInt(filters.min_stock));
+      query = query.gte('stock', parseInt(filters.min_stock));
+    }
+    if (filters.max_stock) {
+      countQuery = countQuery.lte('stock', parseInt(filters.max_stock));
+      query = query.lte('stock', parseInt(filters.max_stock));
+    }
+    if (filters.category) {
+      query = query.eq('products.category_id', filters.category);
+      countQuery = countQuery.eq('products.category_id', filters.category);
+    }
 
-    const { data: inventory, error } = await query;
+    const { count } = await countQuery;
+
+    const from = (page - 1) * limit;
+    const { data: inventory, error } = await query.range(from, from + limit - 1);
     if (error) throw error;
 
     const totalValue = inventory?.reduce((sum, item) => sum + (Number(item.stock) * Number(item.products?.price || 0)), 0) || 0;
     const totalProducts = inventory?.length || 0;
     const itemsWithIssues = inventory?.filter(item => item.stock <= (item.min_stock || 5)).length || 0;
 
-    return { summary: { totalProducts, totalValue, itemsWithIssues }, items: inventory };
+    return {
+      summary: { totalProducts, totalValue, itemsWithIssues },
+      items: inventory,
+      pagination: { page, limit, total: count || 0, totalPages: Math.ceil((count || 0) / limit) },
+    };
   }
 
-  async getTopProducts({ start_date, end_date, limit }) {
+  async getTopProducts({ start_date, end_date, limit, groupByVariant }) {
     let itemsQuery = this._supabase
       .from('sale_items')
-      .select('product_id, products(name, sku, price), quantity, total, sales(created_at)');
+      .select('product_id, variant_id, variant_name, variant_attributes, products(name, sku, price), quantity, total, sales(created_at)');
 
     if (start_date) itemsQuery = itemsQuery.gte('sales.created_at', start_date);
     if (end_date) itemsQuery = itemsQuery.lte('sales.created_at', end_date);
@@ -170,32 +193,48 @@ export class SupabaseReportRepository {
     const { data: items, error } = await itemsQuery;
     if (error) throw error;
 
+    const groupByVariantKey = groupByVariant === true || groupByVariant === 'true';
     const productMap = {};
     items?.forEach(item => {
-      const id = item.product_id;
-      if (!productMap[id]) {
-        productMap[id] = {
-          product_id: id, name: item.products?.name || 'N/A',
-          sku: item.products?.sku || 'N/A', price: item.products?.price || 0,
+      // Determine grouping key: use variant_id if present and groupByVariant is requested
+      const useVariant = groupByVariantKey && item.variant_id;
+      const key = useVariant ? `${item.product_id}::${item.variant_id}` : item.product_id;
+
+      if (!productMap[key]) {
+        productMap[key] = {
+          product_id: item.product_id,
+          variant_id: item.variant_id || null,
+          variant_name: item.variant_name || null,
+          variant_attributes: item.variant_attributes || null,
+          name: useVariant
+            ? `${item.products?.name || 'N/A'} - ${item.variant_name || ''}`
+            : item.products?.name || 'N/A',
+          sku: item.products?.sku || 'N/A',
+          price: item.products?.price || 0,
           totalQuantity: 0, totalRevenue: 0, orderCount: 0,
         };
       }
-      productMap[id].totalQuantity += item.quantity;
-      productMap[id].totalRevenue += Number(item.total);
-      productMap[id].orderCount++;
+      productMap[key].totalQuantity += item.quantity;
+      productMap[key].totalRevenue += Number(item.total);
+      productMap[key].orderCount++;
     });
 
     return Object.values(productMap)
       .sort((a, b) => b.totalQuantity - a.totalQuantity)
-      .slice(0, parseInt(limit));
+      .slice(0, parseInt(limit) || 50);
   }
 
-  async getClientReport({ start_date, end_date }) {
+  async getClientReport({ start_date, end_date, page = 1, limit = 20 }) {
+    let countQuery = this._supabase.from('clients').select('*', { count: 'exact', head: true });
     let query = this._supabase.from('clients').select('*, sales(id, total, created_at)');
-    const { data: clients, error } = await query;
+
+    const { count } = await countQuery;
+
+    const from = (page - 1) * limit;
+    const { data: clients, error } = await query.range(from, from + limit - 1);
     if (error) throw error;
 
-    return clients?.map(client => {
+    const mapped = clients?.map(client => {
       const clientSales = client.sales?.filter(s => {
         if (start_date && end_date) return s.created_at >= start_date && s.created_at <= end_date;
         return true;
@@ -212,6 +251,8 @@ export class SupabaseReportRepository {
         phone: client.phone, totalPurchases, totalSpent,
         averageTicket: totalPurchases > 0 ? totalSpent / totalPurchases : 0, lastPurchase,
       };
-    }).sort((a, b) => b.totalSpent - a.totalSpent);
+    }).sort((a, b) => b.totalSpent - a.totalSpent) || [];
+
+    return { data: mapped, pagination: { page, limit, total: count || 0, totalPages: Math.ceil((count || 0) / limit) } };
   }
 }

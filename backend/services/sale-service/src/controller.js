@@ -40,33 +40,18 @@ export function createSalesRouter(appService) {
     })
   );
 
-  router.get('/:id',
-    authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.CASHIER),
-    asyncHandler(async (req, res) => {
-      const sale = await appService.getSale(req.params.id);
-      res.json({ success: true, data: sale });
-    })
-  );
-
-  router.get('/client/:clientId',
-    authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.CASHIER),
+  // ─── Client self-service: my sales ─────────────────────────
+  // MUST be before /:id to avoid Express matching "my-sales" as an :id param
+  router.get('/my-sales',
     validate(SaleQueryDTO, 'query'),
     asyncHandler(async (req, res) => {
-      const result = await appService.getClientSales(req.params.clientId, req.validatedQuery);
+      const result = await appService.getClientSalesByUserId(req.user.id, req.validatedQuery);
       res.json({ success: true, ...result });
     })
   );
 
-  router.post('/:id/cancel',
-    authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
-    asyncHandler(async (req, res) => {
-      const result = await appService.cancelSale({ id: req.params.id, userId: req.user.id, reason: req.body.reason });
-      res.json({ success: true, data: result });
-    })
-  );
-
   // ─── Cart ─────────────────────────────────────────────────
-
+  // MUST be before /:id to avoid Express matching "cart" as an :id param
   router.get('/cart',
     asyncHandler(async (req, res) => {
       const cart = await appService.getCart(req.user.id);
@@ -105,12 +90,41 @@ export function createSalesRouter(appService) {
   );
 
   // ─── Checkout ────────────────────────────────────────────
-
+  // MUST be before /:id to avoid Express matching "checkout" as an :id param
   router.post('/checkout',
     validate(CheckoutDTO, 'body'),
     asyncHandler(async (req, res) => {
       const sale = await appService.checkout({ userId: req.user.id, ...req.validatedBody });
       res.status(201).json({ success: true, data: sale });
+    })
+  );
+
+  // ─── Sales (parameterized) ────────────────────────────────
+  // These use :id param which would shadow /cart, /my-sales, /checkout etc.
+  // so they MUST be defined AFTER the specific routes above.
+
+  router.get('/client/:clientId',
+    authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.CASHIER),
+    validate(SaleQueryDTO, 'query'),
+    asyncHandler(async (req, res) => {
+      const result = await appService.getClientSales(req.params.clientId, req.validatedQuery);
+      res.json({ success: true, ...result });
+    })
+  );
+
+  router.get('/:id',
+    authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.CASHIER),
+    asyncHandler(async (req, res) => {
+      const sale = await appService.getSale(req.params.id);
+      res.json({ success: true, data: sale });
+    })
+  );
+
+  router.post('/:id/cancel',
+    authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+    asyncHandler(async (req, res) => {
+      const result = await appService.cancelSale({ id: req.params.id, userId: req.user.id, reason: req.body.reason });
+      res.json({ success: true, data: result });
     })
   );
 

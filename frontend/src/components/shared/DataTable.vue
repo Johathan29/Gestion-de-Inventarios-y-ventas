@@ -1,118 +1,169 @@
 <template>
-  <div class="dt-card">
+  <div class="nexus-card !p-0 overflow-hidden flex flex-col" style="min-height: 400px;">
     <!-- Toolbar -->
-    <div v-if="$slots.toolbar || title || searchable" class="p-4" style="border-bottom: 1px solid #e2d6c8;">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <h3 v-if="title" class="text-[32px] font-bold tracking-tight" style="font-family: 'Plus Jakarta Sans', sans-serif; color: #452d00; line-height: 1.25; margin-bottom: 0;">{{ title }}</h3>
-        <div class="flex items-center gap-2 ml-auto">
-          <div v-if="searchable" class="relative">
-            <div class="flex items-center bg-white border border-[#d2c4b4] rounded-full px-4 py-1.5 focus-within:border-[#624200] focus-within:ring-2 focus-within:ring-[rgba(98,66,0,0.2)] transition-all">
-              <span class="material-icons-outlined" style="color: #d2c4b4; margin-right: 0.5rem; font-size: 1rem;">search</span>
-              <input v-model="searchQuery" type="text" placeholder="Buscar..."
-                     class="bg-transparent border-none focus:ring-0 outline-none text-sm"
-                     style="font-family: 'Inter', sans-serif; color: #0b1c30;" />
-            </div>
-          </div>
-          <slot name="toolbar" />
-        </div>
+    <div v-if="title || $slots.toolbar" class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-4 border-b border-gray-100">
+      <div v-if="title" class="flex flex-col">
+        <h3 class="text-lg font-semibold" style="color: #1e293b;">{{ title }}</h3>
+      </div>
+      <div v-if="$slots.toolbar" class="flex items-center gap-3">
+        <slot name="toolbar" />
       </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- DESKTOP TABLE (hidden on mobile) -->
-    <!-- ============================================ -->
-    <div class="overflow-x-auto dt-hide-mobile">
-      <table class="dt-table">
+    <!-- Table Wrapper (Desktop) -->
+    <div class="overflow-x-auto hidden md:block">
+      <table class="w-full">
+        <!-- Table Header -->
         <thead>
-          <tr>
-            <th v-for="col in columns" :key="col.key"
-                :class="{ 'cursor-pointer select-none': col.sortable, 'text-right': col.type === 'number' || col.type === 'currency' }"
-                @click="col.sortable && toggleSort(col.key)">
-              <div class="flex items-center gap-1" :class="{ 'justify-end': col.type === 'number' || col.type === 'currency' }">
-                {{ col.label }}
-                <span v-if="col.sortable && sortKey === col.key" class="material-icons-outlined text-sm">
-                  {{ sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward' }}
+          <tr style="background: #1e293b;">
+            <th
+              v-for="col in columns"
+              :key="col.key"
+              class="px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider cursor-pointer select-none"
+              style="color: #f1f5f9;"
+              :class="{ 'hover:text-white': col.sortable }"
+              @click="toggleSort(col)"
+            >
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-bold uppercase tracking-wider">{{ col.label }}</span>
+                <span v-if="col.sortable" class="inline-flex items-center justify-center w-5 h-5 rounded transition-all duration-300 ease-in-out">
+                  <!-- Text column sort icons (A-Z / Z-A) -->
+                  <span v-if="col.type === 'text' || !col.type" class="material-icons-outlined transition-all duration-300 ease-in-out" style="font-size: 14px;"
+                    :class="sortKey === col.key ? 'bg-white/15 text-white' : 'text-slate-400'">
+                    {{ sortKey === col.key ? (sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'sort' }}
+                  </span>
+                  <!-- Number column sort icons -->
+                  <span v-else-if="col.type === 'number' || col.type === 'currency'" class="material-icons-outlined transition-all duration-300 ease-in-out" style="font-size: 14px;"
+                    :class="sortKey === col.key ? 'bg-white/15 text-white' : 'text-slate-400'">
+                    {{ sortKey === col.key ? (sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'sort' }}
+                  </span>
+                  <!-- Date column sort icons -->
+                  <span v-else class="material-icons-outlined transition-all duration-300 ease-in-out" style="font-size: 14px;"
+                    :class="sortKey === col.key ? 'bg-white/15 text-white' : 'text-slate-400'">
+                    {{ sortKey === col.key ? (sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'sort' }}
+                  </span>
                 </span>
               </div>
             </th>
-            <th v-if="$slots.actions" class="text-right">Acciones</th>
+            <th v-if="$slots.actions" class="px-4 py-3.5 text-right text-xs font-bold uppercase tracking-wider w-20" style="color: #f1f5f9;">
+              Acciones
+            </th>
           </tr>
         </thead>
+        <!-- Table Body -->
         <tbody>
-          <tr v-for="(row, rowIdx) in filteredData" :key="row.id || rowIdx"
-              class="cursor-pointer group"
-              @click="$emit('rowClick', row)">
-            <td v-for="col in columns" :key="col.key">
-              <!-- Status badge -->
-              <span v-if="col.type === 'status'"
-                    class="dt-badge"
-                    :class="statusClass(row[col.key])">
-                {{ getStatusLabel(row[col.key]) }}
-              </span>
+          <tr
+            v-for="(row, rowIdx) in displayData"
+            :key="row.id || rowIdx"
+            class="transition-all duration-300 ease-in-out cursor-pointer group hover:bg-[#7840da0f]"
+            @click="$emit('row-click', row)"
+          >
+            <td
+              v-for="col in columns"
+              :key="col.key"
+              class="px-4 py-3.5 text-sm"
+              style="color: #475569;"
+              :data-type="col.type"
+            >
+              <!-- Custom cell via slot -->
+              <slot v-if="$slots[`cell-${col.key}`]" :name="`cell-${col.key}`" :row="row" />
+              <!-- Custom column type (needs slot) -->
+              <template v-else-if="col.type === 'custom'">
+                {{ getValue(row, col.key) }}
+              </template>
               <!-- Currency -->
-              <span v-else-if="col.type === 'currency'" class="dt-financial">
-                {{ formatTable(row[col.key]) }}
-              </span>
-              <!-- Date -->
-              <span v-else-if="col.type === 'date'">{{ formatDate(row[col.key]) }}</span>
-              <!-- DateTime -->
-              <span v-else-if="col.type === 'datetime'">{{ formatDateTime(row[col.key]) }}</span>
+              <template v-else-if="col.type === 'currency'">
+                {{ formatCurrency(getValue(row, col.key)) }}
+              </template>
               <!-- Number -->
-              <span v-else-if="col.type === 'number'" class="dt-financial">{{ row[col.key] }}</span>
-              <!-- Boolean -->
-              <span v-else-if="col.type === 'boolean'">
-                <span class="material-icons-outlined" :class="row[col.key] ? 'text-green-500' : 'text-red-400'">
-                  {{ row[col.key] ? 'check_circle' : 'cancel' }}
-                </span>
-              </span>
-              <!-- Image -->
-              <img v-else-if="col.type === 'image'" :src="row[col.key]" class="w-10 h-10 rounded object-cover" />
-              <!-- Custom -->
-              <span v-else-if="col.type === 'custom'">
-                <slot :name="`cell-${col.key}`" :row="row" :value="row[col.key]">
-                  {{ row[col.key] }}
-                </slot>
-              </span>
-              <!-- Default text -->
-              <span v-else class="font-medium" style="color: #0b1c30;">{{ row[col.key] || '-' }}</span>
+              <template v-else-if="col.type === 'number'">
+                {{ formatNumber(getValue(row, col.key)) }}
+              </template>
+              <!-- Date -->
+              <template v-else-if="col.type === 'date'">
+                {{ formatDate(getValue(row, col.key)) }}
+              </template>
+              <!-- Datetime -->
+              <template v-else-if="col.type === 'datetime'">
+                {{ formatDatetime(getValue(row, col.key)) }}
+              </template>
+              <!-- Default: plain text -->
+              <template v-else>
+                {{ getValue(row, col.key) }}
+              </template>
             </td>
-            <td v-if="$slots.actions" class="text-right">
-              <div class="flex items-center justify-end gap-sm opacity-0 group-hover:opacity-100 transition-opacity">
+            <td v-if="$slots.actions" class="px-4 py-3.5 text-right">
+              <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity" @click.stop>
                 <slot name="actions" :row="row" />
               </div>
             </td>
           </tr>
-          <tr v-if="filteredData.length === 0">
-            <td :colspan="columns.length + ($slots.actions ? 1 : 0)" class="dt-empty-state">
-              <span class="dt-empty-icon material-symbols-outlined">inbox</span>
-              <p>{{ emptyMessage || 'No hay datos disponibles' }}</p>
-            </td>
-          </tr>/
         </tbody>
       </table>
     </div>
 
-    <!-- ============================================ -->
-    <!-- Pagination (dt-pagination per DESIGN.md) -->
-    <!-- ============================================ -->
-    <div v-if="totalPages > 1" class="dt-pagination">
-      <span class="dt-pagination-info">
-        Mostrando <strong>{{ ((currentPage - 1) * perPage) + 1 }}</strong> a <strong>{{ Math.min(currentPage * perPage, total) }}</strong> de <strong>{{ total }}</strong> resultados
+    <!-- Mobile Cards -->
+    <div class="md:hidden">
+      <div
+        v-for="(row, rowIdx) in displayData"
+        :key="row.id || rowIdx"
+        class="p-4 transition-colors cursor-pointer group"
+        @click="$emit('row-click', row)"
+      >
+        <div v-for="col in columns" :key="col.key" class="flex items-center justify-between py-1.5">
+          <span class="text-xs" style="color: #94a3b8;">{{ col.label }}</span>
+          <span class="text-sm text-right" style="color: #475569;" :data-type="col.type">
+            <slot v-if="$slots[`cell-${col.key}`]" :name="`cell-${col.key}`" :row="row" />
+            <template v-else-if="col.type === 'currency'">{{ formatCurrency(getValue(row, col.key)) }}</template>
+            <template v-else-if="col.type === 'number'">{{ formatNumber(getValue(row, col.key)) }}</template>
+            <template v-else-if="col.type === 'date'">{{ formatDate(getValue(row, col.key)) }}</template>
+            <template v-else-if="col.type === 'datetime'">{{ formatDatetime(getValue(row, col.key)) }}</template>
+            <template v-else>{{ getValue(row, col.key) }}</template>
+          </span>
+        </div>
+        <div v-if="$slots.actions" class="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-gray-50 opacity-0 group-hover:opacity-100 transition-opacity" @click.stop>
+          <slot name="actions" :row="row" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div v-if="displayData.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
+      <span class="material-icons-outlined text-5xl mb-4" style="color: #cbd5e1;">inventory_2</span>
+      <p class="text-sm" style="color: #94a3b8;">{{ emptyMessage }}</p>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-gray-100 mt-auto">
+      <span class="text-sm" style="color: #94a3b8;">
+        Mostrando <strong style="color: #1e293b;">{{ showingFrom }}-{{ showingTo }}</strong> de <strong style="color: #1e293b;">{{ totalRows }}</strong>
       </span>
-      <div class="dt-pagination-buttons">
-        <button @click="prevPage" :disabled="currentPage <= 1" class="dt-pagination-btn">
-          <span class="material-symbols-outlined">chevron_left</span>
+      <div class="flex items-center gap-1">
+        <button
+          @click="goToPage(currentPage - 1)"
+          :disabled="currentPage <= 1"
+          class="w-9 h-9 flex items-center justify-center rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-100"
+          style="color: #64748b;"
+        >
+          <span class="material-icons-outlined text-lg">chevron_left</span>
         </button>
-        <span v-for="p in visiblePages" :key="p">
-          <span v-if="p === '...'" class="dt-pagination-ellipsis">...</span>
-          <button v-else @click="goToPage(p)"
-                  class="dt-pagination-btn"
-                  :class="p === currentPage ? 'dt-pagination-active' : ''">
-            {{ p }}
-          </button>
-        </span>
-        <button @click="nextPage" :disabled="currentPage >= totalPages" class="dt-pagination-btn">
-          <span class="material-symbols-outlined">chevron_right</span>
+        <button
+          v-for="p in visiblePageNumbers"
+          :key="p"
+          @click="goToPage(p)"
+          class="w-9 h-9 flex items-center justify-center rounded-lg text-sm font-medium transition-colors"
+          :class="p === currentPage ? 'bg-primary text-white' : 'hover:bg-gray-100'"
+          :style="p !== currentPage ? 'color: #64748b;' : ''"
+        >
+          {{ p }}
+        </button>
+        <button
+          @click="goToPage(currentPage + 1)"
+          :disabled="currentPage >= totalPages"
+          class="w-9 h-9 flex items-center justify-center rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-100"
+          style="color: #64748b;"
+        >
+          <span class="material-icons-outlined text-lg">chevron_right</span>
         </button>
       </div>
     </div>
@@ -121,79 +172,164 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useCurrency } from '../../composables/useCurrency';
-import { formatDate, formatDateTime, getStatusLabel, statusClass } from '../../utils';
-
-const { formatTable } = useCurrency();
 
 const props = defineProps({
   columns: { type: Array, required: true },
-  data: { type: Array, default: () => [] },
-  title: { type: String, default: '' },
-  searchable: { type: Boolean, default: false },
-  emptyMessage: { type: String, default: '' },
-  perPage: { type: Number, default: 10 },
+  data: { type: Array, required: true },
+  title: { type: String, default: null },
   serverPagination: { type: Boolean, default: false },
   total: { type: Number, default: 0 },
-  currentPageProp: { type: Number, default: 1 }
+  currentPageProp: { type: Number, default: 1 },
+  perPage: { type: Number, default: 10 },
+  emptyMessage: { type: String, default: 'No hay registros disponibles' },
+  searchable: { type: Boolean, default: false }
 });
 
-const emit = defineEmits(['rowClick', 'pageChange', 'sortChange']);
+const emit = defineEmits(['page-change', 'row-click', 'sort-change']);
 
-const searchQuery = ref('');
-const currentPage = ref(props.currentPageProp);
+// Internal sort state
 const sortKey = ref('');
 const sortDir = ref('asc');
 
-watch(() => props.currentPageProp, (val) => { currentPage.value = val; });
-watch(searchQuery, () => { currentPage.value = 1; });
+// Internal pagination state (client-side)
+const internalPage = ref(1);
 
-const filteredData = computed(() => {
-  if (props.serverPagination) return props.data;
-  let result = [...props.data];
-  if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase();
-    result = result.filter(row =>
-      Object.values(row).some(val => val?.toString().toLowerCase().includes(q))
-    );
-  }
-  if (sortKey.value) {
-    result.sort((a, b) => {
-      const va = a[sortKey.value], vb = b[sortKey.value];
-      if (sortDir.value === 'asc') return va > vb ? 1 : -1;
-      return va < vb ? 1 : -1;
+// Current page — use prop if server-pagination, else internal
+const currentPage = computed(() => props.serverPagination ? props.currentPageProp : internalPage.value);
+
+// Total rows — use prop if server-pagination, else computed from data
+const totalRows = computed(() => props.serverPagination ? props.total : props.data.length);
+
+const totalPages = computed(() => Math.max(1, Math.ceil(totalRows.value / props.perPage)));
+
+// Computed display data with client-side sorting/pagination
+const displayData = computed(() => {
+  let items = [...props.data];
+
+  // Client-side sorting
+  if (!props.serverPagination && sortKey.value) {
+    items.sort((a, b) => {
+      const aVal = getValue(a, sortKey.value);
+      const bVal = getValue(b, sortKey.value);
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+      const cmp = typeof aVal === 'number' ? aVal - bVal : String(aVal).localeCompare(String(bVal));
+      return sortDir.value === 'asc' ? cmp : -cmp;
     });
   }
-  return result;
+
+  // Client-side pagination
+  if (!props.serverPagination) {
+    const start = (currentPage.value - 1) * props.perPage;
+    items = items.slice(start, start + props.perPage);
+  }
+
+  return items;
 });
 
-const totalPages = computed(() => props.serverPagination
-  ? Math.ceil(props.total / props.perPage)
-  : Math.ceil(filteredData.value.length / props.perPage)
-);
+// Pagination display helpers
+const showingFrom = computed(() => totalRows.value === 0 ? 0 : ((currentPage.value - 1) * props.perPage) + 1);
+const showingTo = computed(() => Math.min(currentPage.value * props.perPage, totalRows.value));
 
-const toggleSort = (key) => {
-  if (sortKey.value === key) sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
-  else { sortKey.value = key; sortDir.value = 'asc'; }
-  emit('sortChange', { key, dir: sortDir.value });
-};
-
-const goToPage = (page) => { currentPage.value = page; emit('pageChange', page); };
-const prevPage = () => { if (currentPage.value > 1) goToPage(currentPage.value - 1); };
-const nextPage = () => { if (currentPage.value < totalPages.value) goToPage(currentPage.value + 1); };
-
-const visiblePages = computed(() => {
+const visiblePageNumbers = computed(() => {
   const pages = [];
   const total = totalPages.value;
   const current = currentPage.value;
-  if (total <= 7) { for (let i = 1; i <= total; i++) pages.push(i); }
-  else {
-    pages.push(1);
-    if (current > 3) pages.push('...');
-    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
-    if (current < total - 2) pages.push('...');
-    pages.push(total);
+  let start = Math.max(1, current - 2);
+  let end = Math.min(total, current + 2);
+  if (end - start < 4) {
+    if (start === 1) end = Math.min(total, start + 4);
+    else start = Math.max(1, end - 4);
   }
+  for (let i = start; i <= end; i++) pages.push(i);
   return pages;
 });
+
+// Helpers
+function getValue(obj, key) {
+  if (!obj) return '';
+  // Support nested keys like 'categories.name'
+  if (key.includes('.')) {
+    return key.split('.').reduce((o, k) => (o && o[k] !== undefined ? o[k] : ''), obj);
+  }
+  const val = obj[key];
+  return val !== undefined && val !== null ? val : '';
+}
+
+function formatCurrency(val) {
+  const num = Number(val);
+  if (isNaN(num)) return val;
+  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 2 }).format(num);
+}
+
+function formatNumber(val) {
+  const num = Number(val);
+  if (isNaN(num)) return val;
+  return new Intl.NumberFormat('es-MX').format(num);
+}
+
+function formatDate(val) {
+  if (!val) return '';
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return val;
+  return new Intl.DateTimeFormat('es-MX', { year: 'numeric', month: 'short', day: 'numeric' }).format(d);
+}
+
+function formatDatetime(val) {
+  if (!val) return '';
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return val;
+  return new Intl.DateTimeFormat('es-MX', {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  }).format(d);
+}
+
+function toggleSort(col) {
+  if (!col.sortable) return;
+  if (sortKey.value === col.key) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortKey.value = col.key;
+    sortDir.value = 'asc';
+  }
+  // Reset to first page on sort change (client-side)
+  if (!props.serverPagination) internalPage.value = 1;
+  // Emit sort event for server-side sorting
+  if (props.serverPagination) {
+    emit('sort-change', { key: sortKey.value, dir: sortDir.value });
+  }
+}
+
+function goToPage(p) {
+  if (p < 1 || p > totalPages.value) return;
+  if (props.serverPagination) {
+    emit('page-change', p);
+  } else {
+    internalPage.value = p;
+  }
+}
+
+// Watch for data changes to reset client-side pagination
+watch(() => props.data.length, () => {
+  if (!props.serverPagination && internalPage.value > totalPages.value) {
+    internalPage.value = Math.max(1, totalPages.value);
+  }
+});
 </script>
+
+<style scoped>
+@keyframes rowFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+tbody tr {
+  animation: rowFadeIn 0.3s ease-out both;
+}
+</style>

@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#151215] text-[#e8e0e4] selection:bg-primary selection:text-on-primary overflow-x-hidden">
+  <div class="min-h-screen bg-[#151215] text-[#e8e0e4] selection:bg-primary selection:text-on-primary overflow-x-hidden landing-scope">
     <!-- Background Shader -->
     <div class="fixed inset-0 w-full h-full -z-10 opacity-30 pointer-events-none">
       <canvas id="shader-canvas" style="display:block;width:100%;height:100%"></canvas>
@@ -10,41 +10,112 @@
 
     <main class="relative z-10">
       <!-- Header -->
-      <div class="pt-32 pb-12 px-4">
+      <div class="pt-28 pb-12 px-4">
         <div class="max-w-7xl mx-auto">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 entrance-reveal">
             <div>
-              <p class="text-primary font-label-sm text-label-sm uppercase tracking-[0.2em] mb-3">Our Collection</p>
-              <h1 class="font-headline-lg text-headline-lg text-on-surface">All Products</h1>
-              <p class="font-body-md text-body-md text-on-surface-variant mt-3 max-w-2xl">
-                Discover our curated selection of premium products, each thoughtfully designed to elevate your experience.
+              <em class="text-secondary font-label-sm text-label-sm not-italic tracking-[0.15em] mb-3 block">Nuestra Colección</em>
+              <h1 class="font-headline-lg text-headline-lg text-white">Todos los Productos</h1>
+              <p class="font-body-md text-body-md text-white/60 mt-3 max-w-2xl">
+                Descubre nuestra selección de productos premium, cuidadosamente diseñados para elevar tu experiencia.
               </p>
             </div>
             <div class="flex items-center gap-3 w-full md:w-auto">
+              <!-- Filter Toggle Button -->
+              <button
+                @click="showFilters = !showFilters"
+                class="flex items-center gap-2 px-5 py-3.5 rounded-full border border-white/20 text-white/70 hover:text-primary hover:border-primary transition-all font-body-md text-body-md !cursor-pointer"
+                :class="{ 'bg-primary/10 border-primary text-primary': showFilters }"
+              >
+                <span class="material-symbols-outlined text-lg">filter_list</span>
+                <span class="hidden sm:inline">Filtros</span>
+              </button>
               <!-- Search -->
               <div class="relative flex-1 md:w-72">
-                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-xl">search</span>
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/40 text-xl">search</span>
                 <input
                   v-model="searchQuery"
                   type="text"
-                  placeholder="Search products..."
-                  class="w-full bg-white/5 border border-white/10 rounded-full pl-12 pr-5 py-3.5 text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-body-md"
+                  placeholder="Buscar productos..."
+                  class="w-full bg-black/40 backdrop-blur-sm border border-white/20 rounded-full pl-12 pr-5 py-3.5 text-white placeholder:text-white/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-body-md"
                   @input="debouncedSearch"
                 />
               </div>
             </div>
           </div>
 
-          <!-- Category Pills -->
+          <!-- Filter Panel -->
+          <transition name="fade">
+            <div v-if="showFilters" class="mt-6 p-6 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl entrance-reveal">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <!-- Category Filter -->
+                <div>
+                  <label class="block text-sm font-medium text-white/80 mb-2">Categoría</label>
+                  <select
+                    v-model="filterCategory"
+                    class="w-full px-4 py-2.5 bg-white/[0.08] border border-white/20 rounded-xl text-white focus:outline-none focus:border-primary/50 transition-all"
+                  >
+                    <option value="">Todas las categorías</option>
+                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                  </select>
+                </div>
+
+                <!-- Price Range (min & max) -->
+                <div>
+                  <label class="block text-sm font-medium text-white/80 mb-2">Precio mín.</label>
+                  <input
+                    v-model="filterPriceMin"
+                    type="number"
+                    min="0"
+                    placeholder="$0"
+                    class="w-full px-4 py-2.5 bg-white/[0.08] border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-primary/50 transition-all"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-white/80 mb-2">Precio máx.</label>
+                  <input
+                    v-model="filterPriceMax"
+                    type="number"
+                    min="0"
+                    placeholder="$999,999"
+                    class="w-full px-4 py-2.5 bg-white/[0.08] border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-primary/50 transition-all"
+                  />
+                </div>
+
+                <!-- Supplier / Brand -->
+                <div>
+                  <label class="block text-sm font-medium text-white/80 mb-2">Marca / Proveedor</label>
+                  <input
+                    v-model="filterBrand"
+                    type="text"
+                    placeholder="Marca o proveedor..."
+                    class="w-full px-4 py-2.5 bg-white/[0.08] border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-primary/50 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 mt-4 pt-4 border-t border-white/10">
+                <button
+                  v-if="hasActiveFilters"
+                  @click="clearFilters"
+                  class="px-6 py-2.5 border border-white/20 text-white/70 rounded-full font-label-sm text-label-sm hover:bg-white/5 transition-all !cursor-pointer"
+                >
+                  Limpiar filtros
+                </button>
+              </div>
+            </div>
+          </transition>
+
+          <!-- Category Pills (quick filters) -->
           <div class="flex flex-wrap gap-3 mt-10 entrance-reveal">
             <button
               @click="selectedCategory = null; currentPage = 1; syncUrlQuery(); fetchProducts()"
               class="px-6 py-2.5 rounded-full font-label-sm text-label-sm transition-all duration-300 !cursor-pointer"
               :class="!selectedCategory
-                ? 'bg-primary text-on-primary'
-                : 'bg-white/5 border border-white/10 text-on-surface-variant hover:bg-white/10'"
+                ? 'bg-primary text-white'
+                : 'bg-black/40 border border-white/10 text-white/70 hover:bg-white/10'"
             >
-              All
+              Todos
             </button>
             <button
               v-for="cat in categories"
@@ -52,8 +123,8 @@
               @click="selectedCategory = cat.id; currentPage = 1; syncUrlQuery(); fetchProducts()"
               class="px-6 py-2.5 rounded-full font-label-sm text-label-sm transition-all duration-300 !cursor-pointer"
               :class="selectedCategory === cat.id
-                ? 'bg-primary text-on-primary'
-                : 'bg-white/5 border border-white/10 text-on-surface-variant hover:bg-white/10'"
+                ? 'bg-primary text-white'
+                : 'bg-black/40 border border-white/10 text-white/70 hover:bg-white/10'"
             >
               {{ cat.name }}
             </button>
@@ -66,29 +137,28 @@
         <div class="max-w-7xl mx-auto">
           <!-- Loading -->
           <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <div v-for="n in 8" :key="'skel-'+n" class="glass-card rounded-[32px] p-6 h-full animate-pulse">
-              <div class="aspect-square mb-6 overflow-hidden rounded-2xl bg-white/5"></div>
-              <div class="h-5 bg-white/5 rounded w-3/4 mb-3"></div>
-              <div class="h-4 bg-white/5 rounded w-1/3 mb-3"></div>
-              <div class="h-4 bg-white/5 rounded w-full mb-2"></div>
-              <div class="h-4 bg-white/5 rounded w-2/3 mb-6"></div>
-              <div class="h-11 bg-white/5 rounded-xl w-full"></div>
+            <div v-for="n in 8" :key="'skel-'+n" class="bg-black/40 border border-white/10 rounded-[20px] overflow-hidden animate-pulse">
+              <div class="aspect-[3/4] bg-white/5"></div>
+              <div class="p-3 space-y-2">
+                <div class="h-4 bg-white/10 rounded w-3/4"></div>
+                <div class="h-3 bg-white/10 rounded w-1/3"></div>
+              </div>
             </div>
           </div>
 
           <!-- Empty -->
           <div v-else-if="products.length === 0" class="text-center py-24">
-            <span class="material-symbols-outlined text-6xl text-on-surface-variant mb-4">inventory_2</span>
-            <h3 class="font-headline-md text-headline-md text-on-surface mb-2">No products found</h3>
-            <p class="font-body-md text-body-md text-on-surface-variant mb-6">
-              {{ searchQuery ? 'Try a different search term.' : 'Check back later for new arrivals.' }}
+            <span class="material-symbols-outlined text-6xl text-white/20 mb-4">inventory_2</span>
+            <h3 class="font-headline-md text-headline-md text-white mb-2">No se encontraron productos</h3>
+            <p class="font-body-md text-body-md text-white/60 mb-6">
+              {{ searchQuery ? 'Intenta con otro término de búsqueda.' : 'Vuelve pronto para ver nuevos productos.' }}
             </p>
             <button
               v-if="searchQuery"
               @click="searchQuery = ''; fetchProducts()"
-              class="px-6 py-3 bg-primary text-on-primary rounded-full font-label-sm text-label-sm !cursor-pointer"
+              class="px-6 py-3 bg-primary text-white rounded-full font-label-sm text-label-sm !cursor-pointer hover:brightness-110 transition-all"
             >
-              Clear search
+              Limpiar búsqueda
             </button>
           </div>
 
@@ -97,16 +167,14 @@
             <div
               v-for="product in products"
               :key="product.id"
-              class="perspective"
+              class="group"
             >
               <div
-                class="glass-card rounded-[32px] p-5 h-full flex flex-col group cursor-pointer overflow-hidden product-card hover:shadow-2xl hover:shadow-primary/20 transition-shadow duration-500"
+                class="relative overflow-hidden rounded-[20px] cursor-pointer bg-black/40 border border-white/10 hover:border-primary/40 transition-all duration-500 product-card-overlay"
                 @click="goToDetail(product)"
-                @mousemove="handleMouseMove"
-                @mouseleave="resetCard"
               >
-                <!-- Image -->
-                <div class="relative aspect-square mb-5 overflow-hidden rounded-2xl bg-white/5">
+                <!-- Image 100% container -->
+                <div class="aspect-[3/4] w-full overflow-hidden">
                   <img
                     v-if="product.images && product.images.length > 0 && !brokenImages[product.id]"
                     class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
@@ -117,52 +185,65 @@
                   />
                   <div
                     v-else
-                    class="w-full h-full flex items-center justify-center bg-white/5"
+                    class="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10"
                   >
-                    <span class="material-symbols-outlined text-6xl text-on-surface-variant/20">inventory_2</span>
-                  </div>
-                  <div
-                    v-if="productBadge(product)"
-                    class="absolute top-3 right-3 glass-card px-3 py-1.5 rounded-full font-label-sm text-label-sm text-on-surface text-xs"
-                  >
-                    {{ productBadge(product) }}
-                  </div>
-                  <div
-                    v-if="product.discountPercent > 0"
-                    class="absolute top-3 left-3 bg-secondary text-on-secondary px-3 py-1.5 rounded-full font-label-sm text-label-sm text-xs"
-                  >
-                    -{{ product.discountPercent }}%
+                    <span class="material-symbols-outlined text-7xl text-white/15">inventory_2</span>
                   </div>
                 </div>
 
-                <!-- Info -->
-                <div class="flex-1 flex flex-col">
-                  <div class="flex justify-between items-start mb-2 gap-2">
-                    <h3 class="font-headline-sm text-headline-sm text-on-surface line-clamp-1">{{ product.name }}</h3>
-                    <span class="font-headline-sm text-headline-sm text-secondary shrink-0">${{ formatPrice(product.price) }}</span>
+                <!-- Gradient overlay (like team-block-info) -->
+                <div class="absolute inset-0 bg-gradient-to-t from-[#151215] via-[#151215]/60 to-transparent pointer-events-none z-10"></div>
+
+                <!-- Badges (arrow-tail style) -->
+                <div class="absolute top-4 left-4 z-20 flex flex-col gap-2">
+                  <span v-if="productBadge(product)"
+                    class="product-badge inline-block bg-primary text-white text-[11px] font-extrabold px-3.5 py-1.5 rounded-full relative">
+                    {{ productBadge(product) }}
+                  </span>
+                  <span v-if="product.discountPercent > 0"
+                    class="product-badge inline-block bg-secondary text-white text-[11px] font-extrabold px-3.5 py-1.5 rounded-full relative">
+                    -{{ product.discountPercent }}%
+                  </span>
+                </div>
+
+                <!-- Info overlaid at bottom -->
+                <div class="absolute bottom-0 left-0 right-0 p-4 z-20">
+                  <div class="flex justify-between items-start gap-2 mb-1">
+                    <h3 class="font-bold text-sm md:text-xl text-white leading-tight line-clamp-1">{{ product.name }}</h3>
                   </div>
-                  <p v-if="product.brand" class="font-body-sm text-body-sm text-primary/70 mb-1.5">{{ product.brand }}</p>
-                  <p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 mb-4 text-sm">
-                    {{ product.description || '' }}
-                  </p>
-                  <div class="mt-auto flex items-center gap-2">
-                    <span class="text-xs text-on-surface-variant/60">
-                      <span v-if="product.stock > 0">{{ product.stock }} in stock</span>
-                      <span v-else class="text-red-400/70">Out of stock</span>
-                    </span>
-                    <div class="flex-1"></div>
+                 <div class="flex md:flex-row flex-col gap-2 justify-between items-start md:items-center">
+                    <span class="font-bold text-sm md:text-base text-secondary shrink-0">${{ formatPrice(product.price) }}</span>
+                    <p v-if="product.brand" class="text-[11px] bg-secondary text-white rounded-md p-[4px] uppercase tracking-wider mb-1">{{ product.brand }}</p>
+
+                </div>
+
+                  <!-- Actions - appear on hover -->
+                  <div class="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+                    <button
+                      @click.stop="buyNow(product)"
+                      :disabled="product.stock <= 0"
+                      class="flex-1 py-2.5 rounded-full bg-primary text-white font-bold text-xs hover:brightness-110 disabled:opacity-30 disabled:cursor-not-allowed transition-all !cursor-pointer"
+                    >
+                      Comprar
+                    </button>
                     <button
                       @click.stop="addToCart(product)"
                       :disabled="addingToCart === product.id || product.stock <= 0"
-                      class="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:bg-primary hover:text-on-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center !cursor-pointer"
+                      class="w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-primary hover:border-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center justify-center !cursor-pointer"
                     >
                       <template v-if="addingToCart === product.id">
-                        <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+                        <span class="material-symbols-outlined text-base animate-spin text-white">progress_activity</span>
                       </template>
                       <template v-else>
-                        <span class="material-symbols-outlined text-lg">shopping_bag</span>
+                        <span class="material-symbols-outlined text-base text-white">shopping_bag</span>
                       </template>
                     </button>
+                  </div>
+
+                  <!-- Stock indicator always visible -->
+                  <div class="mt-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 delay-75">
+                    <span v-if="product.stock > 0" class="text-[10px] text-white/40">En stock ({{ product.stock }})</span>
+                    <span v-else class="text-[10px] text-red-400/70">Sin stock</span>
                   </div>
                 </div>
               </div>
@@ -174,9 +255,9 @@
             <button
               @click="changePage(currentPage - 1)"
               :disabled="currentPage <= 1"
-              class="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:text-on-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all !cursor-pointer"
+              class="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center hover:bg-primary hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all !cursor-pointer"
             >
-              <span class="material-symbols-outlined">chevron_left</span>
+              <span class="material-symbols-outlined text-white">chevron_left</span>
             </button>
 
             <button
@@ -185,8 +266,8 @@
               @click="changePage(p)"
               class="min-w-[44px] h-11 rounded-full font-label-sm text-label-sm transition-all !cursor-pointer"
               :class="p === currentPage
-                ? 'bg-primary text-on-primary'
-                : 'bg-white/5 border border-white/10 text-on-surface-variant hover:bg-white/10'"
+                ? 'bg-primary text-white'
+                : 'bg-black/40 border border-white/10 text-white/70 hover:bg-white/10'"
               :disabled="p === '...'"
             >
               {{ p }}
@@ -195,9 +276,9 @@
             <button
               @click="changePage(currentPage + 1)"
               :disabled="currentPage >= totalPages"
-              class="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:text-on-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all !cursor-pointer"
+              class="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center hover:bg-primary hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all !cursor-pointer"
             >
-              <span class="material-symbols-outlined">chevron_right</span>
+              <span class="material-symbols-outlined text-white">chevron_right</span>
             </button>
           </div>
         </div>
@@ -240,12 +321,23 @@ const loading = ref(true);
 const searchQuery = ref(route.query.search || '');
 const selectedCategory = ref(route.query.category || null);
 const currentPage = ref(parseInt(route.query.page) || 1);
-const perPage = 16;
+const perPage = 10;
 const totalProducts = ref(0);
 const addingToCart = ref(null);
 
+// Filter state
+const showFilters = ref(false);
+const filterCategory = ref('');
+const filterPriceMin = ref('');
+const filterPriceMax = ref('');
+const filterBrand = ref('');
+
 // Computed
 const totalPages = computed(() => Math.ceil(totalProducts.value / perPage));
+
+const hasActiveFilters = computed(() => {
+  return filterCategory.value || filterPriceMin.value || filterPriceMax.value || filterBrand.value;
+});
 
 const visiblePages = computed(() => {
   const pages = [];
@@ -271,7 +363,10 @@ function syncUrlQuery() {
   const query = {
     ...(searchQuery.value && { search: searchQuery.value }),
     ...(selectedCategory.value && { category: selectedCategory.value }),
-    ...(currentPage.value > 1 && { page: String(currentPage.value) })
+    ...(currentPage.value > 1 && { page: String(currentPage.value) }),
+    ...(filterBrand.value && { brand: filterBrand.value }),
+    ...(filterPriceMin.value && { price_min: filterPriceMin.value }),
+    ...(filterPriceMax.value && { price_max: filterPriceMax.value })
   };
   router.replace({ query });
 }
@@ -301,6 +396,13 @@ watch(() => route.query, (newQuery) => {
   }
 });
 
+// Watchers: auto-aplicar filtros cuando cambien
+watch([filterCategory, filterPriceMin, filterPriceMax, filterBrand], () => {
+  currentPage.value = 1;
+  syncUrlQuery();
+  fetchProducts();
+});
+
 // Fetch products from API
 async function fetchProducts() {
   loading.value = true;
@@ -321,20 +423,27 @@ async function fetchProducts() {
       params.category_id = selectedCategory.value;
     }
 
+    if (filterBrand.value) {
+      params.brand = filterBrand.value;
+    }
+    if (filterPriceMin.value) {
+      params.price_min = filterPriceMin.value;
+    }
+    if (filterPriceMax.value) {
+      params.price_max = filterPriceMax.value;
+    }
+
     const res = await productsAPI.getAll(params);
     const result = res.data;
 
-    if (result && Array.isArray(result.data)) {
-      products.value = result.data.map(p => ({
+    if (Array.isArray(result)) {
+      products.value = result.map(p => ({
         ...p,
         discountPercent: p.compare_price && p.compare_price > p.price
           ? Math.round((1 - p.price / p.compare_price) * 100)
           : 0
       }));
-      totalProducts.value = result.pagination?.total || result.data.length;
-    } else if (Array.isArray(result)) {
-      products.value = result;
-      totalProducts.value = result.length;
+      totalProducts.value = res.pagination?.total || result.length;
     } else {
       products.value = [];
       totalProducts.value = 0;
@@ -356,6 +465,17 @@ async function fetchCategories() {
   } catch (err) {
     console.error('[Catalog] Error fetching categories:', err);
   }
+}
+
+function clearFilters() {
+  filterCategory.value = '';
+  filterPriceMin.value = '';
+  filterPriceMax.value = '';
+  filterBrand.value = '';
+  selectedCategory.value = null;
+  currentPage.value = 1;
+  syncUrlQuery();
+  // fetchProducts() se llama automáticamente via el watcher de filtros
 }
 
 function changePage(page) {
@@ -391,10 +511,27 @@ async function addToCart(product) {
 
   addingToCart.value = product.id;
   try {
-    await cartAPI.addItem({ product_id: product.id, quantity: 1 });
+    await cartAPI.addItem({ productId: product.id, quantity: 1 });
   } catch (err) {
     console.error('[Catalog] Error adding to cart:', err);
   } finally {
+    addingToCart.value = null;
+  }
+}
+
+async function buyNow(product) {
+  const token = sessionStorage.getItem('accessToken');
+  if (!token) {
+    router.push({ name: 'Login', query: { redirect: router.currentRoute.value.fullPath } });
+    return;
+  }
+
+  addingToCart.value = product.id;
+  try {
+    await cartAPI.addItem({ productId: product.id, quantity: 1 });
+    router.push({ name: 'Cart' });
+  } catch (err) {
+    console.error('[Catalog] Error buying now:', err);
     addingToCart.value = null;
   }
 }

@@ -14,6 +14,8 @@ export class SaleMapper {
       clientId: raw.client_id,
       client: raw.clients || null,
       userId: raw.user_id,
+      invoiceId: raw.invoice_id,
+      invoice: raw.invoices || null,
       items,
       subtotal: raw.subtotal,
       discount: raw.discount,
@@ -42,6 +44,9 @@ export class SaleMapper {
       discount: raw.discount || 0,
       total: raw.total,
       createdAt: raw.created_at ? new Date(raw.created_at) : undefined,
+      variantId: raw.variant_id,
+      variantName: raw.variant_name,
+      variantAttributes: raw.variant_attributes,
     });
   }
 
@@ -74,6 +79,9 @@ export class SaleMapper {
       unit_price: domain.unitPrice,
       discount: domain.discount || 0,
       total: domain.total,
+      variant_id: domain.variantId,
+      variant_name: domain.variantName,
+      variant_attributes: domain.variantAttributes,
     };
   }
 
@@ -84,10 +92,14 @@ export class SaleMapper {
       clientId: domain.clientId,
       client: domain.client,
       userId: domain.userId,
+      invoiceId: domain.invoiceId,
+      invoice: domain.invoice,
       items: domain.items.map(i => ({
         id: i.id, productId: i.productId, productName: i.productName,
         sku: i.sku, quantity: i.quantity, unitPrice: i.unitPrice,
         discount: i.discount, total: i.total,
+        variantId: i.variantId, variantName: i.variantName,
+        variantAttributes: i.variantAttributes,
       })),
       subtotal: domain.subtotal,
       discount: domain.discount,
@@ -132,6 +144,9 @@ export class CartMapper {
       unitPrice: raw.unit_price,
       discount: raw.discount || 0,
       createdAt: raw.created_at ? new Date(raw.created_at) : undefined,
+      variantId: raw.variant_id,
+      variantName: raw.variant_name,
+      variantAttributes: raw.variant_attributes,
     });
   }
 
@@ -143,6 +158,9 @@ export class CartMapper {
         id: i.id, productId: i.productId, product: i.product,
         quantity: i.quantity, unitPrice: i.unitPrice,
         discount: i.discount, subtotal: i.subtotal,
+        variantId: i.variantId,
+        variantName: i.variantName,
+        variantAttributes: i.variantAttributes,
       })),
       subtotal: domain.subtotal,
       discount: domain.discount,

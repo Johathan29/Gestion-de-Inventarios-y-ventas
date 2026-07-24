@@ -1,65 +1,72 @@
 <template>
-  <section class="py-8 px-4 bg-surface-container-lowest/30">
+  <section class="py-16 px-4 relative overflow-hidden">
+    <!-- Aurora subtle bg -->
+    <div class="absolute inset-0 -z-10 opacity-10">
+      <div class="absolute top-1/3 left-1/4 w-96 h-96 bg-primary/30 rounded-full blur-[120px] animate-pulse" />
+      <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-secondary/20 rounded-full blur-[100px] animate-pulse" style="animation-delay: 2s" />
+    </div>
+
     <div class="max-w-7xl mx-auto">
-      <div class="flex md:flex-row flex-col justify-between items-end mb-20" data-gsap="section-title">
-        <div>
-          <h2 class="font-bold text-[1.7rem] text-on-surface mb-4">{{ title }}</h2>
-          <p class="font-body-md text-body-md text-on-surface-variant max-w-md">{{ subtitle }}</p>
+      <div class="flex md:flex-row flex-col justify-between items-end mb-14" data-gsap="section-title">
+        <div class="entrance-reveal">
+          <span class="inline-block px-4 py-1.5 text-sm font-semibold bg-primary/20 text-primary rounded-full border border-primary/30 mb-4">Nuestros Productos</span>
+          <h2 class="text-3xl md:text-4xl font-bold text-white mb-3">{{ title }}</h2>
+          <p class="text-white/60 max-w-md">{{ subtitle }}</p>
         </div>
         <button
           v-if="showViewAll"
           @click="$emit('view-all')"
-          class="text-primary !cursor-pointer font-headline-md text-headline-md flex items-center gap-2 group"
+          class="text-primary !cursor-pointer font-headline-md text-headline-md flex items-center gap-2 group mt-4 md:mt-0"
         >
-          View All
+          Ver Todo
           <span class="material-symbols-outlined group-hover:translate-x-2 transition-transform" data-icon="chevron_right">chevron_right</span>
         </button>
       </div>
 
       <!-- Loading State -->
       <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div v-for="n in 3" :key="'skeleton-' + n" class="glass-card rounded-[32px] p-6 h-full animate-pulse">
-          <div class="aspect-square mb-8 overflow-hidden rounded-2xl bg-white/5"></div>
-          <div class="h-6 bg-white/5 rounded w-3/4 mb-4"></div>
-          <div class="h-4 bg-white/5 rounded w-1/4 mb-4"></div>
-          <div class="h-4 bg-white/5 rounded w-full mb-2"></div>
-          <div class="h-4 bg-white/5 rounded w-2/3 mb-8"></div>
-          <div class="h-12 bg-white/5 rounded-xl w-full"></div>
+        <div v-for="n in 3" :key="'skeleton-' + n" class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[24px] p-6 h-full animate-pulse">
+          <div class="aspect-square mb-6 overflow-hidden rounded-2xl bg-white/5"></div>
+          <div class="h-5 bg-white/5 rounded w-3/4 mb-3"></div>
+          <div class="h-4 bg-white/5 rounded w-1/4 mb-3"></div>
+          <div class="h-3 bg-white/5 rounded w-full mb-2"></div>
+          <div class="h-3 bg-white/5 rounded w-2/3 mb-6"></div>
+          <div class="h-11 bg-white/5 rounded-xl w-full"></div>
         </div>
       </div>
 
       <!-- Error State -->
-      <div v-else-if="error" class="text-center py-12">
-        <span class="material-symbols-outlined text-5xl text-on-surface-variant mb-4" data-icon="error_outline">error_outline</span>
-        <p class="text-on-surface-variant font-body-lg text-body-lg">{{ error }}</p>
+      <div v-else-if="error" class="text-center py-16">
+        <span class="material-symbols-outlined text-5xl text-white/40 mb-4" data-icon="error_outline">error_outline</span>
+        <p class="text-white/60 font-body-lg text-body-lg mb-6">{{ error }}</p>
         <button
           @click="fetchProducts"
-          class="mt-6 px-6 py-3 bg-primary text-on-primary rounded-full font-label-sm text-label-sm !cursor-pointer"
+          class="px-6 py-3 bg-primary text-white rounded-full font-label-sm text-label-sm !cursor-pointer hover:brightness-110 transition-all"
         >
-          Try Again
+          Intentar de nuevo
         </button>
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="products.length === 0" class="text-center py-12">
-        <span class="material-symbols-outlined text-5xl text-on-surface-variant mb-4" data-icon="inventory_2">inventory_2</span>
-        <p class="text-on-surface-variant font-body-lg text-body-lg">No products available at the moment.</p>
+      <div v-else-if="products.length === 0" class="text-center py-16">
+        <span class="material-symbols-outlined text-5xl text-white/40 mb-4" data-icon="inventory_2">inventory_2</span>
+        <p class="text-white/60 font-body-lg text-body-lg">No hay productos disponibles en este momento.</p>
       </div>
 
       <!-- Product Grid -->
       <div data-gsap="stagger" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div
-  v-for="product in products"
-  :key="product.id"
-  class="perspective"
-  data-gsap="item"
->
-    <div
-      class="glass-card rounded-[32px] p-6 h-full flex flex-col group cursor-pointer overflow-hidden product-card"
-      @mousemove="handleMouseMove"
-      @mouseleave="resetCard"
-    >
-            <div class="relative aspect-square mb-8 overflow-hidden rounded-2xl">
+        <div
+          v-for="product in products"
+          :key="product.id"
+          class="perspective"
+          data-gsap="item"
+        >
+          <div
+            class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[24px] p-6 h-full flex flex-col group cursor-pointer overflow-hidden product-card hover:border-primary/30"
+            @mousemove="handleMouseMove"
+            @mouseleave="resetCard"
+          >
+            <div class="relative aspect-square mb-5 overflow-hidden rounded-2xl bg-white/5">
               <img
                 class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 :src="productImage(product)"
@@ -68,30 +75,38 @@
               />
               <div
                 v-if="productBadge(product)"
-                class="absolute top-4 right-4 glass-card px-4 py-2 rounded-full font-label-sm text-label-sm text-on-surface"
+                class="absolute top-3 left-3 bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-full"
               >
                 {{ productBadge(product) }}
               </div>
+              <div
+                v-if="discountPercent(product) > 0"
+                class="absolute top-3 right-3 bg-secondary text-white text-xs font-bold px-3 py-1.5 rounded-full"
+              >
+                -{{ discountPercent(product) }}%
+              </div>
             </div>
-            <div class="flex justify-between items-start mb-4">
-              <h3 class="font-headline-md text-headline-md text-on-surface">{{ product.name }}</h3>
-              <span class="font-headline-md text-headline-md text-secondary">${{ formatPrice(product.price) }}</span>
+            <div class="flex justify-between items-start mb-3 gap-3">
+              <h3 class="font-headline-md text-headline-md text-white line-clamp-1">{{ product.name }}</h3>
+              <span class="font-headline-md text-headline-md text-secondary shrink-0">${{ formatPrice(product.price) }}</span>
             </div>
-            <p class="font-body-md text-body-md text-on-surface-variant mb-8">{{ product.description || '' }}</p>
-            <button
-              @click="addToCart(product)"
-              :disabled="addingToCart === product.id"
-              class="mt-auto w-full py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-primary hover:text-on-primary disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 font-label-sm text-label-sm flex items-center justify-center gap-2"
-            >
-              <template v-if="addingToCart === product.id">
-                <span class="material-symbols-outlined animate-spin" data-icon="progress_activity">progress_activity</span>
-                Adding...
-              </template>
-              <template v-else>
-                <span class="material-symbols-outlined" data-icon="shopping_bag">shopping_bag</span>
-                Add to Collection
-              </template>
-            </button>
+            <p class="font-body-md text-body-md text-white/50 mb-5 line-clamp-2 text-sm">{{ product.description || '' }}</p>
+            <div class="mt-auto border-t border-white/10 pt-4">
+              <button
+                @click="addToCart(product)"
+                :disabled="addingToCart === product.id"
+                class="w-full py-3.5 rounded-full bg-primary text-white font-bold text-sm hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2"
+              >
+                <template v-if="addingToCart === product.id">
+                  <span class="material-symbols-outlined animate-spin text-base" data-icon="progress_activity">progress_activity</span>
+                  Agregando...
+                </template>
+                <template v-else>
+                  <span class="material-symbols-outlined text-base" data-icon="shopping_bag">shopping_bag</span>
+                  Agregar al carrito
+                </template>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -107,11 +122,11 @@ import { useRouter } from 'vue-router';
 const props = defineProps({
   title: {
     type: String,
-    default: 'Curated Essentials'
+    default: 'Productos Destacados'
   },
   subtitle: {
     type: String,
-    default: 'Precision-engineered care products designed for the modern sanctuary.'
+    default: 'Descubre nuestra selección de productos premium para el cuidado y bienestar de tus mascotas.'
   },
   limit: {
     type: Number,

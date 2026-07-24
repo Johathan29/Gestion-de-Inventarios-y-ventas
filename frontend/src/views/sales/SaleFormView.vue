@@ -1,66 +1,61 @@
 <template>
   <div class="max-w-5xl mx-auto">
     <!-- Form Header -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between" style="gap: var(--aurora-base); margin-bottom: var(--aurora-md);">
       <div class="flex items-start gap-3">
         <button @click="$router.push('/app/sales')"
-          class="p-2 rounded-xl transition-all duration-200 active:scale-95" style="color: #624200;"
-          @mouseenter="e => e.currentTarget.style.background = 'rgba(98,66,0,0.05)'"
+          class="aurora-btn-icon"
+          @mouseenter="e => e.currentTarget.style.background = 'rgba(124,58,237,0.05)'"
           @mouseleave="e => e.currentTarget.style.background = 'transparent'">
-          <span class="material-icons-outlined">arrow_back</span>
+          <span class="material-symbols-outlined">arrow_back</span>
         </button>
         <div>
-          <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: clamp(1.25rem, 3vw, 1.5rem); line-height: 1.3; font-weight: 700; color: #0b1c30;">Nueva Venta</h2>
-          <p style="font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5; color: #4f4539; margin-top: 0.25rem;">
+          <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: clamp(1.25rem, 3vw, 1.5rem); line-height: 1.3; font-weight: 700; color: var(--aurora-on-surface);">Nueva Venta</h2>
+          <p style="font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5; color: var(--aurora-on-surface-variant); margin-top: 0.25rem;">
             Registra una nueva venta y selecciona los productos
           </p>
         </div>
       </div>
       <div class="flex items-center gap-3">
-        <router-link to="/app/sales"
-          class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
-          style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
-          @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-          @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
+        <router-link to="/app/sales" class="aurora-btn-secondary">
           Cancelar
         </router-link>
         <button type="submit" form="sale-form" :disabled="loading || !form.items.length"
-          class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
-          style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
-          <span class="material-icons-outlined" style="font-size: 1.125rem;">shopping_cart</span>
+          class="aurora-btn-primary">
+          <span class="material-symbols-outlined" style="font-size: 1.125rem;">shopping_cart</span>
           {{ loading ? 'Creando...' : 'Completar Venta' }}
         </button>
       </div>
     </div>
 
-    <Alert v-if="errorMsg" type="error" :message="errorMsg" :show="!!errorMsg" dismissible @close="errorMsg = ''" class="mb-4" />
+    <Alert v-if="errorMsg" type="error" :message="errorMsg" :show="!!errorMsg" dismissible @close="errorMsg = ''" style="margin-bottom: var(--aurora-base);" />
 
-    <form id="sale-form" @submit.prevent="handleSubmit" class="flex flex-col gap-5">
+    <form id="sale-form" @submit.prevent="handleSubmit" style="display: flex; flex-direction: column; gap: 1.25rem;">
       <!-- Información de la Venta -->
-      <div class="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/30 p-5 md:p-6">
-        <h3 class="font-semibold pb-2 mb-4 flex items-center gap-2" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; color: #0b1c30; border-bottom: 1px solid #d2c4b4;">
-          <span class="material-icons-outlined" style="color: #624200;">point_of_sale</span>
+      <div class="aurora-raised-card">
+        <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; font-weight: 600; color: var(--aurora-on-surface); padding-bottom: 0.5rem; margin-bottom: var(--aurora-md); display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--aurora-outline-variant);">
+          <span class="material-symbols-outlined" style="color: var(--aurora-primary);">point_of_sale</span>
           Información de la Venta
         </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2" style="gap: var(--aurora-base);">
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Cliente</label>
+            <label style="display: block; margin-bottom: 0.25rem; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 0.875rem; color: var(--aurora-on-surface);">Cliente</label>
             <select v-model="form.client_id"
-              class="w-full rounded-lg px-3 py-2.5 appearance-none transition-all"
-              :style="{ fontFamily: 'Inter, sans-serif', fontSize: '0.875rem', color: '#0b1c30', background: `#ffffff url(${selectBgSvg}) no-repeat right 0.75rem center`, border: '1.5px solid #E5E7EB', paddingRight: '2.5rem' }"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }">
+              class="aurora-select"
+              :style="{ background: `var(--aurora-surface-bright) url(${selectBgSvg}) no-repeat right 0.75rem center` }"
+              @focus="e => { e.currentTarget.style.borderColor = 'var(--aurora-primary)'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(119,56,193,0.15)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = 'var(--aurora-outline-variant)'; e.currentTarget.style.boxShadow = 'none'; }">
               <option value="">Cliente General</option>
               <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.name }} - {{ c.document_id }}</option>
             </select>
           </div>
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Tipo de Pago <span style="color: #ba1a1a;">*</span></label>
+            <label style="display: block; margin-bottom: 0.25rem; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 0.875rem; color: var(--aurora-on-surface);">Tipo de Pago <span style="color: #ba1a1a;">*</span></label>
             <select v-model="form.payment_type" required
-              class="w-full rounded-lg px-3 py-2.5 appearance-none transition-all"
-              :style="{ fontFamily: 'Inter, sans-serif', fontSize: '0.875rem', color: '#0b1c30', background: `#ffffff url(${selectBgSvg}) no-repeat right 0.75rem center`, border: '1.5px solid #E5E7EB', paddingRight: '2.5rem' }"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }">
+              class="aurora-select"
+              :style="{ background: `var(--aurora-surface-bright) url(${selectBgSvg}) no-repeat right 0.75rem center` }"
+              @focus="e => { e.currentTarget.style.borderColor = 'var(--aurora-primary)'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(119,56,193,0.15)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = 'var(--aurora-outline-variant)'; e.currentTarget.style.boxShadow = 'none'; }">
               <option value="cash">Efectivo</option>
               <option value="card">Tarjeta</option>
               <option value="transfer">Transferencia</option>
@@ -71,70 +66,73 @@
       </div>
 
       <!-- Productos -->
-      <div class="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/30 p-5 md:p-6">
-        <h3 class="font-semibold pb-2 mb-4 flex items-center gap-2" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; color: #0b1c30; border-bottom: 1px solid #d2c4b4;">
-          <span class="material-icons-outlined" style="color: #624200;">inventory_2</span>
+      <div class="aurora-raised-card">
+        <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; font-weight: 600; color: var(--aurora-on-surface); padding-bottom: 0.5rem; margin-bottom: var(--aurora-md); display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--aurora-outline-variant);">
+          <span class="material-symbols-outlined" style="color: var(--aurora-primary);">inventory_2</span>
           Productos
         </h3>
-        <div class="flex items-center justify-between mb-3">
-          <span style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #4f4539;">Agrega los productos a la venta</span>
+        <div class="flex items-center justify-between" style="margin-bottom: 0.75rem;">
+          <span style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: var(--aurora-on-surface-variant);">Agrega los productos a la venta</span>
           <button type="button" @click="addItem"
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all border"
-            style="background: #ffffff; color: #624200; border-color: #d2c4b4; font-family: 'Inter', sans-serif; font-size: 0.8125rem;"
-            @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-            @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = '#ffffff'; }">
-            <span class="material-icons-outlined" style="font-size: 1rem;">add</span> Agregar Producto
+            class="aurora-btn-secondary">
+            <span class="material-symbols-outlined" style="font-size: 1rem;">add</span> Agregar Producto
           </button>
         </div>
 
-        <div class="space-y-2" v-if="form.items.length">
+        <div v-if="form.items.length" style="display: flex; flex-direction: column; gap: 0.5rem;">
           <div v-for="(item, idx) in form.items" :key="idx"
-               class="flex items-center gap-3 p-3 rounded-xl" style="background: rgba(98,66,0,0.03);">
-            <select v-model="item.product_id" @change="selectProduct(idx)" required
-              class="flex-1 rounded-lg px-3 py-2.5 appearance-none transition-all"
-              :style="{ fontFamily: 'Inter, sans-serif', fontSize: '0.875rem', color: '#0b1c30', background: `#ffffff url(${selectBgSvg}) no-repeat right 0.75rem center`, border: '1.5px solid #E5E7EB', paddingRight: '2.5rem' }"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }">
-              <option value="">Seleccionar...</option>
-              <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }} - {{ formatTable(p.price) }} (Stock: {{ p.stock }})</option>
-            </select>
+               class="flex items-center gap-3 p-3 rounded-xl" style="background: var(--aurora-surface-container);">
+            <div class="flex-1 flex gap-2">
+              <select v-model="item.product_id" @change="selectProduct(idx)" required
+                class="aurora-select flex-1"
+                :style="{ background: `var(--aurora-surface-bright) url(${selectBgSvg}) no-repeat right 0.75rem center` }"
+                @focus="e => { e.currentTarget.style.borderColor = 'var(--aurora-primary)'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(119,56,193,0.15)'; }"
+                @blur="e => { e.currentTarget.style.borderColor = 'var(--aurora-outline-variant)'; e.currentTarget.style.boxShadow = 'none'; }">
+                <option value="">Seleccionar...</option>
+                <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }} - {{ formatTable(p.price) }} (Stock: {{ p.stock }})</option>
+              </select>
+              <select v-if="item.variants && item.variants.length > 0" v-model="item.variant_id" @change="selectVariant(idx)" required
+                class="aurora-select" style="width: 12rem;"
+                :style="{ background: `var(--aurora-surface-bright) url(${selectBgSvg}) no-repeat right 0.75rem center` }">
+                <option value="">Variante...</option>
+                <option v-for="v in item.variants" :key="v.id" :value="v.id">{{ v.name }} - {{ formatTable(v.price || item.price) }} (Stock: {{ v.stock }})</option>
+              </select>
+            </div>
             <input v-model.number="item.quantity" type="number" min="1" placeholder="Cant"
-              class="w-20 text-center rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" required />
-            <span class="dt-financial" style="width: 6rem; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem;">{{ formatTable(item.subtotal) }}</span>
+              class="aurora-input" style="width: 5rem; text-align: center; font-family: 'JetBrains Mono', monospace;"
+              @focus="e => { e.currentTarget.style.borderColor = 'var(--aurora-primary)'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(119,56,193,0.15)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = 'var(--aurora-outline-variant)'; e.currentTarget.style.boxShadow = 'none'; }" required />
+            <span style="width: 6rem; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600; color: var(--aurora-primary);">{{ formatTable(item.subtotal) }}</span>
             <button type="button" @click="removeItem(idx)"
-              class="p-1.5 rounded-lg transition-all hover:scale-110 active:scale-95"
-              style="color: #ba1a1a;"
-              @mouseenter="e => e.currentTarget.style.background = 'rgba(186,26,26,0.08)'"
+              class="aurora-btn-icon danger"
+              @mouseenter="e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'"
               @mouseleave="e => e.currentTarget.style.background = 'transparent'">
-              <span class="material-icons-outlined" style="font-size: 1.25rem;">delete</span>
+              <span class="material-symbols-outlined" style="font-size: 1.25rem;">delete</span>
             </button>
           </div>
         </div>
-        <p v-else class="text-center py-4" style="color: #4f4539; font-family: 'Inter', sans-serif; font-size: 0.875rem;">Agrega productos a la venta</p>
+        <p v-else style="text-align: center; padding: 1rem 0; color: var(--aurora-outline); font-family: 'Inter', sans-serif; font-size: 0.875rem;">Agrega productos a la venta</p>
       </div>
 
       <!-- Totales -->
-      <div class="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/30 p-5 md:p-6">
-        <h3 class="font-semibold pb-2 mb-4 flex items-center gap-2" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; color: #0b1c30; border-bottom: 1px solid #d2c4b4;">
-          <span class="material-icons-outlined" style="color: #624200;">receipt_long</span>
+      <div class="aurora-raised-card">
+        <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; font-weight: 600; color: var(--aurora-on-surface); padding-bottom: 0.5rem; margin-bottom: var(--aurora-md); display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--aurora-outline-variant);">
+          <span class="material-symbols-outlined" style="color: var(--aurora-primary);">receipt_long</span>
           Resumen de Totales
         </h3>
         <div class="flex justify-end">
-          <div class="w-64 space-y-2">
+          <div style="width: 16rem; display: flex; flex-direction: column; gap: 0.5rem;">
             <div class="flex justify-between text-sm">
-              <span style="color: #817567; font-family: 'Inter', sans-serif;">Subtotal</span>
-              <span class="dt-financial" style="font-family: 'JetBrains Mono', monospace;">{{ format(subtotal) }}</span>
+              <span style="color: var(--aurora-on-surface-variant); font-family: 'Inter', sans-serif;">Subtotal</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--aurora-primary);">{{ format(subtotal) }}</span>
             </div>
             <div class="flex justify-between text-sm">
-              <span style="color: #817567; font-family: 'Inter', sans-serif;">IVA ({{ taxRate }}%)</span>
-              <span class="dt-financial" style="font-family: 'JetBrains Mono', monospace;">{{ format(tax) }}</span>
+              <span style="color: var(--aurora-on-surface-variant); font-family: 'Inter', sans-serif;">IVA ({{ taxRate }}%)</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--aurora-primary);">{{ format(tax) }}</span>
             </div>
-            <div class="flex justify-between text-lg font-bold pt-2" style="border-top: 1px solid #d2c4b4;">
-              <span style="color: #0b1c30; font-family: 'Inter', sans-serif;">Total</span>
-              <span style="color: #624200; font-family: 'JetBrains Mono', monospace;">{{ format(total) }}</span>
+            <div class="flex justify-between text-lg font-bold pt-2" style="border-top: 1px solid var(--aurora-outline-variant);">
+              <span style="color: var(--aurora-on-surface); font-family: 'Inter', sans-serif;">Total</span>
+              <span style="color: var(--aurora-primary); font-family: 'JetBrains Mono', monospace;">{{ format(total) }}</span>
             </div>
           </div>
         </div>
@@ -162,13 +160,43 @@ const products = ref([]);
 const loading = ref(false);
 const errorMsg = ref('');
 
+// Product variants map for quick lookup
+const productVariantsMap = ref({});
+
 const form = reactive({ client_id: '', payment_type: 'cash', items: [] });
 
-const addItem = () => { form.items.push({ product_id: '', quantity: 1, price: 0, subtotal: 0 }); };
+const addItem = () => { form.items.push({ product_id: '', quantity: 1, price: 0, subtotal: 0, variant_id: '', variants: [] }); };
 const removeItem = (idx) => { form.items.splice(idx, 1); };
-const selectProduct = (idx) => {
+
+const selectProduct = async (idx) => {
   const product = products.value.find(p => p.id == form.items[idx].product_id);
-  if (product) { form.items[idx].price = product.price; form.items[idx].subtotal = product.price; }
+  if (product) {
+    form.items[idx].price = product.price;
+    form.items[idx].subtotal = product.price;
+    form.items[idx].variant_id = '';
+    // Check if product has variants
+    let variants = productVariantsMap.value[product.id];
+    if (!variants) {
+      try {
+        const vRes = await productsAPI.getVariants(product.id);
+        variants = (vRes.data || []).filter(v => v.is_active !== false);
+        productVariantsMap.value[product.id] = variants;
+      } catch (e) { variants = []; }
+    }
+    form.items[idx].variants = variants || [];
+    if (variants && variants.length > 0) {
+      form.items[idx].variant_id = '';
+    }
+  }
+};
+
+const selectVariant = (idx) => {
+  const item = form.items[idx];
+  const variant = item.variants.find(v => v.id == item.variant_id);
+  if (variant) {
+    item.price = variant.price || item.price;
+    item.subtotal = item.price * item.quantity;
+  }
 };
 
 const subtotal = computed(() => form.items.reduce((s, i) => s + (i.price * i.quantity), 0));
@@ -189,7 +217,12 @@ const handleSubmit = async () => {
       clientId: form.client_id || null,
       paymentMethod: form.payment_type,
       source: 'pos',
-      items: form.items.map(i => ({ productId: i.product_id, quantity: i.quantity, unitPrice: i.price }))
+      items: form.items.map(i => ({
+        productId: i.product_id,
+        quantity: i.quantity,
+        unitPrice: i.price,
+        variantId: i.variant_id || undefined,
+      }))
     });
     router.push('/app/sales');
   } catch (err) {

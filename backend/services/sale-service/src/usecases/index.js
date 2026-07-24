@@ -10,7 +10,60 @@ import { SaleCreatedEvent, SaleCancelledEvent, SaleCompletedEvent, CheckoutCompl
  */
 async function updateInventoryStock(supabase, items, saleId, userId, isRestore = false) {
   for (const item of items) {
-    // Get current inventory record
+    if (item.variantId) {
+      // Handle variant items
+      if (isRestore) {
+        // DB revert trigger may not fire, so restore variant stock at app level
+        const { data: variant, error: findErr } = await supabase
+          .from('product_variants')
+          .select('stock')
+          .eq('id', item.variantId)
+          .maybeSingle();
+
+        if (findErr || !variant) continue;
+
+        const newStock = variant.stock + item.quantity;
+
+        await supabase
+          .from('product_variants')
+          .update({ stock: newStock, updated_at: new Date().toISOString() })
+          .eq('id', item.variantId);
+
+        // Also restore main inventory stock for consistency
+        const { data: inv } = await supabase
+          .from('inventory')
+          .select('id, stock')
+          .eq('product_id', item.productId)
+          .maybeSingle();
+
+        if (inv) {
+          await supabase
+            .from('inventory')
+            .update({ stock: inv.stock + item.quantity, updated_at: new Date().toISOString() })
+            .eq('id', inv.id);
+        }
+
+        await supabase
+          .from('inventory_movements')
+          .insert({
+            product_id: item.productId,
+            type: 'entry',
+            quantity: item.quantity,
+            previous_stock: variant.stock,
+            new_stock: newStock,
+            reference_type: 'sale_cancel',
+            reference_id: saleId,
+            reason: 'Venta anulada - reversión de inventario (variante: ' + (item.variantName || '') + ')',
+            user_id: userId || null,
+            variant_id: item.variantId,
+          });
+      }
+      // On sale creation, the DB trigger decrease_stock_from_sale() handles variant stock
+      // AND inventory stock (updated in migration 025)
+      continue;
+    }
+
+    // Non-variant item: update main inventory
     const { data: inv, error: findError } = await supabase
       .from('inventory')
       .select('id, stock')
@@ -85,6 +138,18 @@ async function autoCreateInvoice(supabase, sale, userId, source) {
       .maybeSingle();
     if (clientByUser) {
       clientId = clientByUser.id;
+    }
+  }
+
+  // If still no client, use generic "Consumidor Final" for POS
+  if (!clientId) {
+    const { data: genericClient } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('document_number', '0000000000')
+      .maybeSingle();
+    if (genericClient) {
+      clientId = genericClient.id;
     }
   }
 
@@ -231,6 +296,7 @@ export class CreateSaleUseCase {
       unitPrice: i.unitPrice || 0,
       discount: i.discount || 0,
       total: i.quantity * (i.unitPrice || 0) - (i.discount || 0),
+      variantId: i.variantId || null,
     }));
 
     sale.setItems(saleItems);
@@ -324,13 +390,41 @@ export class GetCartUseCase {
 }
 
 export class AddCartItemUseCase {
-  constructor({ cartRepository }) {
+  constructor({ cartRepository, supabase }) {
     this._cartRepository = cartRepository;
+    this._supabase = supabase;
   }
 
-  async execute({ productId, quantity, unitPrice, userId }) {
+  async execute({ productId, quantity, unitPrice, userId, variantId }) {
+    // If unitPrice not provided, check for active offers first
+    if (!unitPrice && !variantId) {
+      try {
+        const { data: offer } = await this._supabase
+          .from('offers')
+          .select('discount_percent')
+          .eq('product_id', productId)
+          .eq('active', true)
+          .or(`end_date.gte.${new Date().toISOString()},end_date.is.null`)
+          .maybeSingle();
+
+        if (offer) {
+          const { data: product } = await this._supabase
+            .from('products')
+            .select('price')
+            .eq('id', productId)
+            .single();
+
+          if (product) {
+            unitPrice = product.price * (1 - Number(offer.discount_percent) / 100);
+          }
+        }
+      } catch (err) {
+        console.warn(`[AddCartItem] Error checking offers: ${err.message}`);
+      }
+    }
+
     const cart = await this._cartRepository.findOrCreate(userId);
-    await this._cartRepository.addItem(cart.id, productId, quantity, unitPrice);
+    await this._cartRepository.addItem(cart.id, productId, quantity, unitPrice, variantId);
     return this._cartRepository.findByUser(userId);
   }
 }
@@ -414,6 +508,9 @@ export class CheckoutUseCase {
       quantity: i.quantity,
       unitPrice: i.unitPrice,
       total: i.quantity * i.unitPrice,
+      variantId: i.variantId || null,
+      variantName: i.variantName || null,
+      variantAttributes: i.variantAttributes || null,
     }));
 
     sale.setItems(saleItems);

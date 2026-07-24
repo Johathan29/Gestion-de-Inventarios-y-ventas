@@ -96,11 +96,27 @@ const routes = [
         name: 'AccountNotifications',
         component: () => import('../views/account/NotificationsView.vue'),
         meta: { title: 'Notificaciones' }
+      },
+      {
+        path: 'wishlist',
+        name: 'AccountWishlist',
+        component: () => import('../views/account/WishlistView.vue'),
+        meta: { title: 'Lista de Deseos' }
+      },
+      {
+        path: 'cards',
+        name: 'AccountCards',
+        component: () => import('../views/account/CardsView.vue'),
+        meta: { title: 'Mis Tarjetas' }
+      },
+      {
+        path: 'checkout',
+        name: 'AccountCheckout',
+        component: () => import('../views/account/CheckoutView.vue'),
+        meta: { title: 'Finalizar Compra' }
       }
     ]
   },
-
-  // Main layout routes (dashboard and protected pages)
   {
     path: '/app',
     component: () => import('../components/layout/AppLayout.vue'),
@@ -130,6 +146,12 @@ const routes = [
         name: 'Notifications',
         component: () => import('../views/dashboard/NotificationsView.vue'),
         meta: { title: 'Notificaciones', icon: 'notifications' }
+      },
+      {
+        path: 'notifications/:id',
+        name: 'NotificationDetail',
+        component: () => import('../views/notifications/NotificationDetailView.vue'),
+        meta: { title: 'Detalle de Notificación' }
       },
 
       // Products
@@ -174,6 +196,12 @@ const routes = [
         meta: { title: 'Inventario', icon: 'warehouse' }
       },
       {
+        path: 'inventory/product/:id',
+        name: 'InventoryProductDetail',
+        component: () => import('../views/inventory/InventoryDetailView.vue'),
+        meta: { title: 'Detalle de Producto' }
+      },
+      {
         path: 'inventory/movements',
         name: 'InventoryMovements',
         component: () => import('../views/inventory/MovementsView.vue'),
@@ -196,6 +224,12 @@ const routes = [
         name: 'InventoryTransfers',
         component: () => import('../views/inventory/TransfersView.vue'),
         meta: { title: 'Transferencias' }
+      },
+      {
+        path: 'inventory/verification',
+        name: 'InventoryVerification',
+        component: () => import('../views/inventory/VerificationView.vue'),
+        meta: { title: 'Verificación de Inventario' }
       },
 
       // Sales
@@ -224,6 +258,12 @@ const routes = [
         name: 'POS',
         component: () => import('../views/sales/POSView.vue'),
         meta: { title: 'Punto de Venta', icon: 'point_of_sale' }
+      },
+      {
+        path: 'cash-register',
+        name: 'CashRegister',
+        component: () => import('../views/sales/CashRegisterView.vue'),
+        meta: { title: 'Punto de Venta - Turnos', icon: 'account_balance' }
       },
 
       // Purchases
@@ -285,35 +325,46 @@ const routes = [
       // Reports
       {
         path: 'reports',
-        name: 'Reports',
+        component: () => import('../views/reports/reporthomeview.vue'),
+        meta: { title: 'Reportes', icon: 'bar_chart' },
+        children: [
+    {
+        path: '',
+        name: 'reports',
         component: () => import('../views/reports/ReportsView.vue'),
-        meta: { title: 'Reportes', icon: 'bar_chart' }
+        meta: { title: 'Reporte de Ventas' }
       },
       {
-        path: 'reports/sales',
+        path: 'sales',
         name: 'SalesReport',
         component: () => import('../views/reports/SalesReportView.vue'),
         meta: { title: 'Reporte de Ventas' }
       },
       {
-        path: 'reports/inventory',
+        path: 'inventory',
         name: 'InventoryReport',
         component: () => import('../views/reports/InventoryReportView.vue'),
         meta: { title: 'Reporte de Inventario' }
       },
       {
-        path: 'reports/top-products',
+        path: 'top-products',
         name: 'TopProductsReport',
         component: () => import('../views/reports/TopProductsView.vue'),
         meta: { title: 'Productos Más Vendidos' }
       },
       {
-        path: 'reports/clients',
+        path: 'clients',
         name: 'ClientsReport',
         component: () => import('../views/reports/ClientsReportView.vue'),
         meta: { title: 'Reporte de Clientes' }
       },
-
+      {
+        path: 'cash-register',
+        name: 'CashRegisterReport',
+        component: () => import('../views/reports/CashRegisterReportView.vue'),
+        meta: { title: 'Reporte de Caja' }
+      },]
+    },
       // Ecommerce (con tabs siempre visibles gracias a nested routes)
       {
         path: 'ecommerce',
@@ -363,6 +414,18 @@ const routes = [
             meta: { title: 'Moderación Reseñas' }
           },
           {
+            path: 'coupons',
+            name: 'EcommerceCoupons',
+            component: () => import('../views/ecommerce/CouponsView.vue'),
+            meta: { title: 'Cupones' }
+          },
+          {
+            path: 'promotions',
+            name: 'EcommercePromotions',
+            component: () => import('../views/ecommerce/PromotionsView.vue'),
+            meta: { title: 'Promociones' }
+          },
+          {
             path: 'settings',
             name: 'EcommerceSettings',
             component: () => import('../views/ecommerce/SettingsView.vue'),
@@ -395,6 +458,12 @@ const routes = [
         name: 'AdminAudit',
         component: () => import('../views/admin/AuditLogView.vue'),
         meta: { title: 'Auditoría' }
+      },
+      {
+        path: 'admin/audit/:id',
+        name: 'AdminAuditDetail',
+        component: () => import('../views/admin/AuditDetailView.vue'),
+        meta: { title: 'Detalle de Auditoría' }
       },
       {
         path: 'admin/config',

@@ -7,7 +7,7 @@ const supabase = getSupabaseClient();
  */
 const getPurchases = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, status, supplier_id, from_date, to_date } = req.query;
+    const { page = 1, limit = 10, status, verification_status, supplier_id, from_date, to_date, search } = req.query;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
@@ -16,9 +16,13 @@ const getPurchases = async (req, res, next) => {
       .select('*, suppliers(*), users!purchases_user_id_fkey(name)', { count: 'exact' });
 
     if (status) query = query.eq('status', status);
+    if (verification_status) query = query.eq('verification_status', verification_status);
     if (supplier_id) query = query.eq('supplier_id', supplier_id);
     if (from_date) query = query.gte('created_at', from_date);
     if (to_date) query = query.lte('created_at', to_date);
+    if (search) {
+      query = query.or(`purchase_number.ilike.%${search}%,notes.ilike.%${search}%`);
+    }
 
     query = query.range(from, to).order('created_at', { ascending: false });
 
@@ -50,7 +54,7 @@ const getPurchaseById = async (req, res, next) => {
 
     const { data: purchase, error } = await supabase
       .from('purchases')
-      .select('*, suppliers(*), users(name), purchase_items(*, products(name, sku, barcode, images))')
+      .select('*, suppliers(*), users!purchases_user_id_fkey(name), purchase_items(*, products!purchase_items_product_id_fkey(name, sku, barcode, images))')
       .eq('id', id)
       .single();
 
@@ -127,7 +131,7 @@ const createPurchase = async (req, res, next) => {
     const tax = subtotal * 0.19; // IVA 19%
     const total = subtotal + tax;
 
-    // Crear compra
+    // Crear compra con verification_status = 'pending'
     const { data: purchase, error } = await supabase
       .from('purchases')
       .insert({
@@ -135,6 +139,7 @@ const createPurchase = async (req, res, next) => {
         supplier_id,
         subtotal, tax, total,
         status: 'received',
+        verification_status: 'pending',
         notes,
         user_id: req.user.id
       })
@@ -167,7 +172,8 @@ const createPurchase = async (req, res, next) => {
       const qty = item.quantity || 1;
       const unitCost = item.unit_cost || 0;
 
-      // Actualizar/crear registro en inventory
+      // Actualizar/crear registro en inventory con status='pending'
+      // El stock se registra pero no está disponible para venta hasta verificación
       const { data: existingStock } = await supabase
         .from('inventory')
         .select('id, stock')
@@ -181,6 +187,7 @@ const createPurchase = async (req, res, next) => {
           .from('inventory')
           .update({
             stock: currentQty + qty,
+            status: 'pending',
             updated_at: new Date().toISOString()
           })
           .eq('id', existingStock.id);
@@ -190,7 +197,8 @@ const createPurchase = async (req, res, next) => {
           .insert({
             product_id: item.product_id,
             warehouse: 'principal',
-            stock: qty
+            stock: qty,
+            status: 'pending'
           });
       }
 
@@ -206,7 +214,7 @@ const createPurchase = async (req, res, next) => {
           new_stock: currentQty + qty,
           reference_type: 'purchase',
           reference_id: purchase.id,
-          reason: `Entrada por compra #${purchaseNumber}`,
+          reason: `Entrada por compra #${purchaseNumber} (pendiente de verificación)`,
           user_id: req.user.id,
           created_at: new Date().toISOString()
         });
@@ -456,7 +464,7 @@ const sendToInventory = async (req, res, next) => {
         }
       }
 
-      // 1. Actualizar/crear registro en inventory
+      // 1. Actualizar/crear registro en inventory con status='pending'
       const { data: existingStock } = await supabase
         .from('inventory')
         .select('id, stock')
@@ -470,6 +478,7 @@ const sendToInventory = async (req, res, next) => {
           .from('inventory')
           .update({
             stock: currentQty + qty,
+            status: 'pending',
             updated_at: new Date().toISOString()
           })
           .eq('id', existingStock.id);
@@ -479,7 +488,8 @@ const sendToInventory = async (req, res, next) => {
           .insert({
             product_id: productId,
             warehouse: 'principal',
-            stock: qty
+            stock: qty,
+            status: 'pending'
           });
       }
 
@@ -663,8 +673,126 @@ const deletePurchaseItem = async (req, res, next) => {
   }
 };
 
+/**
+ * Verificar una compra y marcar productos como disponibles para venta
+ * Acepta verificación a nivel de items (cantidades verificadas/rechazadas)
+ */
+const verifyPurchase = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { items: verificationItems } = req.body;
+
+    // Obtener compra con items
+    const { data: purchase, error: fetchError } = await supabase
+      .from('purchases')
+      .select('*, purchase_items(*)')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !purchase) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Compra no encontrada' }
+      });
+    }
+
+    if (purchase.verification_status === 'verified') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'ALREADY_VERIFIED', message: 'La compra ya está verificada' }
+      });
+    }
+
+    if (purchase.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STATUS', message: 'No se puede verificar una compra cancelada' }
+      });
+    }
+
+    const now = new Date().toISOString();
+
+    // Si se enviaron items de verificación, procesar cada uno
+    if (verificationItems && verificationItems.length > 0) {
+      for (const vi of verificationItems) {
+        const purchaseItem = purchase.purchase_items.find(pi => pi.id === vi.item_id);
+        if (!purchaseItem) continue;
+
+        const verifiedQty = vi.verified_qty || 0;
+        const rejectedQty = vi.rejected_qty || 0;
+
+        await supabase
+          .from('purchase_items')
+          .update({
+            verified_qty: verifiedQty,
+            rejected_qty: rejectedQty,
+            rejected_reason: vi.rejected_reason || null,
+            verified_at: now,
+            verified_by: req.user.id
+          })
+          .eq('id', vi.item_id);
+      }
+    } else {
+      // Si no se enviaron items, verificar todo como aceptado
+      for (const item of purchase.purchase_items) {
+        await supabase
+          .from('purchase_items')
+          .update({
+            verified_qty: item.quantity,
+            rejected_qty: 0,
+            verified_at: now,
+            verified_by: req.user.id
+          })
+          .eq('id', item.id);
+      }
+    }
+
+    // Actualizar verification_status de la compra
+    await supabase
+      .from('purchases')
+      .update({
+        verification_status: 'verified',
+        verified_at: now,
+        verified_by: req.user.id
+      })
+      .eq('id', id);
+
+    // Actualizar inventory.status a 'available' para cada producto
+    for (const item of purchase.purchase_items) {
+      const { data: invRecord } = await supabase
+        .from('inventory')
+        .select('id, status')
+        .eq('product_id', item.product_id)
+        .maybeSingle();
+
+      if (invRecord && invRecord.status === 'pending') {
+        await supabase
+          .from('inventory')
+          .update({ status: 'available', updated_at: now })
+          .eq('id', invRecord.id);
+      }
+    }
+
+    // Obtener compra actualizada
+    const { data: updated } = await supabase
+      .from('purchases')
+      .select('*, purchase_items(*), suppliers(*), users!purchases_user_id_fkey(name)')
+      .eq('id', id)
+      .single();
+
+    res.json({
+      success: true,
+      message: 'Compra verificada correctamente. Productos disponibles para venta.',
+      data: updated
+    });
+  } catch (error) {
+    console.error('[PurchaseService] verifyPurchase error:', error);
+    next(error);
+  }
+};
+
 module.exports = {
   getPurchases, getPurchaseById, createPurchase, getNextPurchaseNumber,
   updatePurchaseStatus, cancelPurchase, sendToInventory,
-  updatePurchaseItem, deletePurchaseItem
+  updatePurchaseItem, deletePurchaseItem, verifyPurchase
 };

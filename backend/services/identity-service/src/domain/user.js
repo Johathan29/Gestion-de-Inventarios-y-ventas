@@ -2,13 +2,13 @@
 // Identity Domain — User, Role Aggregates
 // ============================================================
 
-import { AggregateRoot, Email, ValueObject } from '@erp/shared-kernel';
+import { AggregateRoot, Entity, Email, ValueObject } from '@erp/shared-kernel';
 
 /**
  * User Aggregate Root
  */
 export class User extends AggregateRoot {
-  constructor({ id, email, name, passwordHash, role, isActive, companyId, phone, lastLogin }) {
+  constructor({ id, email, name, passwordHash, role, isActive, companyId, phone, lastLogin, permissions }) {
     super(id);
     this._email = email instanceof Email ? email : new Email(email);
     this._name = name;
@@ -18,7 +18,7 @@ export class User extends AggregateRoot {
     this._companyId = companyId || null;
     this._phone = phone || '';
     this._lastLogin = lastLogin || null;
-    this._permissions = [];
+    this._permissions = Array.isArray(permissions) ? permissions : [];
     this._createdAt = new Date();
     this._updatedAt = new Date();
   }

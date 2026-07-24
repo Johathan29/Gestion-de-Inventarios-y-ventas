@@ -66,8 +66,18 @@ export class SupabaseCategoryRepository {
   #supabase;
   constructor(supabase) { this.#supabase = supabase; }
 
-  async findAll() {
-    const { data } = await this.#supabase.from('categories').select('*, parent:categories!parent_id(name)').order('sort_order');
+  async findAll({ page, limit, search } = {}) {
+    let query = this.#supabase.from('categories').select('*, parent:categories!parent_id(name)', { count: 'exact' });
+
+    if (search) query = query.or(`name.ilike.%${search}%,slug.ilike.%${search}%`);
+
+    if (page && limit) {
+      const from = (page - 1) * limit;
+      const { data, count } = await query.order('sort_order').range(from, from + limit - 1);
+      return { data: CategoryMapper.toDomainList(data), total: count || 0, page, limit };
+    }
+
+    const { data } = await query.order('sort_order');
     return CategoryMapper.toDomainList(data);
   }
 

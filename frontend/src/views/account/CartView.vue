@@ -7,6 +7,10 @@
           Animal Store
         </router-link>
         <div class="flex items-center gap-4">
+          <button @click="goBack" class="text-gray-600 hover:text-primary transition-colors flex items-center gap-1 text-sm">
+            <span class="material-symbols-outlined">arrow_back</span>
+            Volver
+          </button>
           <router-link v-if="isClient" to="/account/profile" class="text-gray-600 hover:text-primary transition-colors">
             <span class="material-symbols-outlined">account_circle</span>
           </router-link>
@@ -18,8 +22,14 @@
     </nav>
 
     <!-- Contenido -->
-    <div class="max-w-4xl mx-auto px-4 pt-20 pb-10">
-      <h1 class="text-3xl font-bold text-gray-900 mb-8">Carrito de Compras</h1>
+    <div class="max-w-7xl mx-auto px-4 pt-20 pb-10">
+      <div class="flex items-center justify-between mb-8">
+        <h1 class="text-[2.5rem] font-bold tracking-tight" style="color: rgb(126, 63, 238); font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;">Carrito de Compras</h1>
+        <button @click="goBackToSession" class="flex items-center gap-2 px-4 py-2 bg-white/80 border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition-all text-sm shadow-sm">
+          <span class="material-symbols-outlined text-lg">history</span>
+          Volver a sesión anterior
+        </button>
+      </div>
 
       <!-- Loading -->
       <div v-if="loading" class="flex justify-center py-20">
@@ -47,19 +57,25 @@
       </div>
 
       <!-- Items del carrito -->
-      <div v-else class="space-y-6">
+      <div v-else class="flex flex-col lg:flex-row gap-6">
         <!-- Lista de items -->
-        <div class="space-y-4">
+        <div class="flex-1 space-y-4">
           <div
             v-for="item in items"
             :key="item.id"
             class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/30 p-4 md:p-6"
           >
-            <div class="flex items-center gap-4">
-              <!-- Imagen del producto -->
-              <div class="w-20 h-20 md:w-24 md:h-24 rounded-xl bg-gray-100 overflow-hidden shrink-0">
+            <div class="flex md:items-center md:flex-row flex-col gap-4">
+              <!-- Imagen del producto (variante si existe) -->
+              <div class="w-full md:w-28 h-28 rounded-xl bg-gray-100 overflow-hidden shrink-0">
                 <img
-                  v-if="item.product?.images?.[0]"
+                  v-if="item.variantImage"
+                  :src="item.variantImage"
+                  :alt="item.variantName || item.product?.name"
+                  class="w-full h-full object-cover"
+                />
+                <img
+                  v-else-if="item.product?.images?.[0]"
                   :src="item.product.images[0]"
                   :alt="item.product.name"
                   class="w-full h-full object-cover"
@@ -73,16 +89,29 @@
               <div class="flex-1 min-w-0">
                 <h3 class="font-semibold text-gray-900 truncate">{{ item.product?.name || 'Producto' }}</h3>
                 <p class="text-sm text-gray-500 mt-0.5">SKU: {{ item.product?.sku || '—' }}</p>
-                <p class="text-sm md:hidden mt-1 font-bold text-primary">${{ formatPrice(item.unit_price) }}</p>
+                <div v-if="item.variantName || item.variantAttributes" class="mt-1.5">
+                  <p v-if="item.variantName" class="text-xs font-medium text-primary">{{ item.variantName }}</p>
+                  <div v-if="item.variantAttributes" class="flex flex-wrap gap-1.5 mt-1">
+                    <span
+                      v-for="(value, key) in item.variantAttributes"
+                      :key="key"
+                      class="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 rounded-md text-xs text-gray-600"
+                    >
+                      <span class="font-medium capitalize">{{ key }}:</span>
+                      <span>{{ value }}</span>
+                    </span>
+                  </div>
+                </div>
+                <p class="text-sm md:hidden mt-1 font-bold text-primary">${{ formatPrice(item.unitPrice) }}</p>
               </div>
 
               <!-- Precio unitario (desktop) -->
               <div class="hidden md:block text-right">
                 <p class="text-sm text-gray-500">Precio</p>
-                <p class="font-semibold text-gray-900">${{ formatPrice(item.unit_price) }}</p>
+                <p class="font-semibold text-gray-900">${{ formatPrice(item.unitPrice) }}</p>
               </div>
 
-              <!-- Cantidad +/ -->
+              <!-- Cantidad +/- -->
               <div class="flex items-center gap-1">
                 <button
                   @click="decrementQuantity(item)"
@@ -103,7 +132,7 @@
               <!-- Subtotal -->
               <div class="text-right min-w-[80px]">
                 <p class="text-sm text-gray-500">Subtotal</p>
-                <p class="font-bold text-primary text-lg">${{ formatPrice(item.unit_price * item.quantity) }}</p>
+                <p class="font-bold text-primary text-lg">${{ formatPrice(item.unitPrice * item.quantity) }}</p>
               </div>
 
               <!-- Eliminar -->
@@ -119,7 +148,8 @@
         </div>
 
         <!-- Resumen y checkout -->
-        <div class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/30 p-6 md:p-8">
+        <div class="lg:w-96 w-full">
+          <div class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/30 p-6 md:p-8 lg:sticky lg:top-24">
           <h3 class="text-xl font-bold text-gray-900 mb-4">Resumen de Compra</h3>
 
           <div class="space-y-2 text-sm md:text-base">
@@ -147,7 +177,7 @@
               v-model="couponCode"
               type="text"
               placeholder="Código de cupón"
-              class="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+              class="flex-1 px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
             />
             <button
               @click="applyCoupon"
@@ -159,14 +189,30 @@
 
           <!-- Checkout form -->
           <div v-if="isClient" class="mt-6 space-y-4">
+            <router-link
+              to="/account/checkout"
+              class="block w-full py-3.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors shadow-lg font-semibold text-lg text-center"
+            >
+              Ir a Pago Completo
+            </router-link>
+
+            <div class="relative my-4">
+              <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-gray-200"></div>
+              </div>
+              <div class="relative flex justify-center text-xs uppercase">
+                <span class="bg-white px-2 text-gray-400">o pago rápido</span>
+              </div>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Compra</label>
-                <input v-model="checkoutDate" type="date" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent" />
+                <input v-model="checkoutDate" type="date" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent" />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Entrega</label>
-                <input v-model="deliveryDate" type="date" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent" />
+                <input v-model="deliveryDate" type="date" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent" />
               </div>
             </div>
 
@@ -189,6 +235,9 @@
             </router-link>
           </div>
         </div>
+
+          </div><!-- /sticky resumen -->
+        </div><!-- /lg:w-96 -->
 
         <!-- Mensaje de éxito -->
         <transition name="fade">
@@ -224,7 +273,7 @@
         </transition>
       </div>
     </div>
-  </div>
+
 </template>
 
 <script setup>
@@ -255,7 +304,7 @@ const checkoutDate = ref(today);
 const deliveryDate = ref('');
 
 // Calcular totales
-const subtotal = computed(() => items.value.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0));
+const subtotal = computed(() => items.value.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0));
 const discount = computed(() => items.value.reduce((sum, item) => sum + (item.discount || 0), 0));
 const tax = computed(() => {
   const rate = taxRate.value / 100;
@@ -275,6 +324,23 @@ const total = computed(() => {
 const itemCount = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0));
 
 const isClient = computed(() => authStore.isAuthenticated && authStore.user?.role === 'cliente');
+
+function goBack() {
+  router.back();
+}
+
+function goBackToSession() {
+  // Intentar recuperar la última sesión de compras
+  const lastSession = sessionStorage.getItem('lastCheckoutSession');
+  if (lastSession) {
+    try {
+      const session = JSON.parse(lastSession);
+      router.push({ name: 'ProductPublicDetail', params: { id: session.productId } });
+      return;
+    } catch (e) { /* ignore */ }
+  }
+  router.push({ name: 'ProductsCatalog' });
+}
 
 async function fetchCart() {
   loading.value = true;

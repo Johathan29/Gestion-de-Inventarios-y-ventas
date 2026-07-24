@@ -8,7 +8,7 @@ export const useCartStore = defineStore('cart', () => {
   const error = ref(null);
 
   const totalItems = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0));
-  const subtotal = computed(() => items.value.reduce((sum, item) => sum + (Number(item.unit_price) * item.quantity), 0));
+  const subtotal = computed(() => items.value.reduce((sum, item) => sum + (Number(item.unitPrice) * item.quantity), 0));
   const tax = computed(() => subtotal.value * 0.19);
   const total = computed(() => subtotal.value + tax.value);
 
@@ -28,9 +28,9 @@ export const useCartStore = defineStore('cart', () => {
     try {
       loading.value = true;
       await cartAPI.addItem({
-        product_id: product.id,
+        productId: product.id,
         quantity: product.quantity || 1,
-        unit_price: product.price
+        variantId: product.variantId || undefined
       });
       await fetchCart();
     } catch (err) {

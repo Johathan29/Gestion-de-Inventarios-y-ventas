@@ -1,55 +1,51 @@
 <template>
   <div class="max-w-5xl mx-auto">
     <!-- Form Header -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between" style="gap: var(--aurora-base); margin-bottom: var(--aurora-md);">
       <div class="flex items-start gap-3">
         <button @click="$router.push('/app/purchases')"
-          class="p-2 rounded-xl transition-all duration-200 active:scale-95" style="color: #624200;"
-          @mouseenter="e => e.currentTarget.style.background = 'rgba(98,66,0,0.05)'"
+          class="aurora-btn-icon"
+          @mouseenter="e => e.currentTarget.style.background = 'rgba(119,56,193,0.05)'"
           @mouseleave="e => e.currentTarget.style.background = 'transparent'">
-          <span class="material-icons-outlined">arrow_back</span>
+          <span class="material-symbols-outlined">arrow_back</span>
         </button>
         <div>
-          <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: clamp(1.25rem, 3vw, 1.5rem); line-height: 1.3; font-weight: 700; color: #0b1c30;">Nueva Compra</h2>
-          <p style="font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5; color: #4f4539; margin-top: 0.25rem;">
-            N° de orden: <strong style="font-family: 'JetBrains Mono', monospace; color: #624200;">{{ purchaseNumberPreview || 'Generado automáticamente' }}</strong>
+          <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: clamp(1.25rem, 3vw, 1.5rem); line-height: 1.3; font-weight: 700; color: var(--aurora-on-surface);">Nueva Compra</h2>
+          <p style="font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5; color: var(--aurora-on-surface-variant); margin-top: 0.25rem;">
+            N° de orden: <strong style="font-family: 'JetBrains Mono', monospace; color: var(--aurora-primary);">{{ purchaseNumberPreview || 'Generado automáticamente' }}</strong>
           </p>
         </div>
       </div>
       <div class="flex items-center gap-3">
         <router-link to="/app/purchases"
-          class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
-          style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
-          @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-          @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
+          class="aurora-btn-secondary">
           Cancelar
         </router-link>
         <button type="submit" form="purchase-form" :disabled="loading || !form.supplier_id || !form.items.length"
-          class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
-          style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
-          <span class="material-icons-outlined" style="font-size: 1.125rem;">add_shopping_cart</span>
+          class="aurora-btn-primary">
+          <span class="material-symbols-outlined" style="font-size: 1.125rem;">add_shopping_cart</span>
           {{ loading ? 'Creando...' : 'Crear Compra' }}
         </button>
       </div>
     </div>
 
-    <Alert v-if="errorMsg" type="error" :message="String(errorMsg)" :show="!!errorMsg" dismissible @close="errorMsg = ''" class="mb-4" />
+    <Alert v-if="errorMsg" type="error" :message="String(errorMsg)" :show="!!errorMsg" dismissible @close="errorMsg = ''" style="margin-bottom: var(--aurora-base);" />
 
-    <form id="purchase-form" @submit.prevent="handleSubmit" class="flex flex-col gap-5">
+    <form id="purchase-form" @submit.prevent="handleSubmit" style="display: flex; flex-direction: column; gap: 1.25rem;">
       <!-- Información de la Compra -->
-      <div class="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/30 p-5 md:p-6">
-        <h3 class="font-semibold pb-2 mb-4 flex items-center gap-2" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; color: #0b1c30; border-bottom: 1px solid #d2c4b4;">
-          <span class="material-icons-outlined" style="color: #624200;">assignment</span>
+      <div class="aurora-raised-card">
+        <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; font-weight: 600; color: var(--aurora-on-surface); padding-bottom: 0.5rem; margin-bottom: var(--aurora-md); display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--aurora-outline-variant);">
+          <span class="material-symbols-outlined" style="color: var(--aurora-primary);">assignment</span>
           Información de la Compra
         </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2" style="gap: var(--aurora-base);">
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Proveedor <span style="color: #ba1a1a;">*</span></label>
+            <label style="display: block; margin-bottom: 0.25rem; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 0.875rem; color: var(--aurora-on-surface);">Proveedor <span style="color: #ba1a1a;">*</span></label>
             <select v-model="form.supplier_id" required
-              class="w-full rounded-lg px-3 py-2.5 appearance-none transition-all"
-              :style="{ fontFamily: 'Inter, sans-serif', fontSize: '0.875rem', color: '#0b1c30', background: `#ffffff url(${selectBgSvg}) no-repeat right 0.75rem center`, border: '1.5px solid #E5E7EB', paddingRight: '2.5rem' }"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }">
+              class="aurora-select"
+              :style="{ background: `var(--aurora-surface-bright) url(${selectBgSvg}) no-repeat right 0.75rem center` }"
+              @focus="e => { e.currentTarget.style.borderColor = 'var(--aurora-primary)'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(119,56,193,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = 'var(--aurora-outline-variant)'; e.currentTarget.style.boxShadow = 'none'; }">
               <option value="" disabled>Seleccionar proveedor</option>
               <option v-for="s in suppliers" :key="s.id" :value="s.id">
                 {{ s.name }}<template v-if="s.tax_id"> - {{ s.tax_id }}</template>
@@ -57,34 +53,30 @@
             </select>
           </div>
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Notas (opcional)</label>
+            <label style="display: block; margin-bottom: 0.25rem; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 0.875rem; color: var(--aurora-on-surface);">Notas (opcional)</label>
             <input v-model="form.notes" placeholder="Observaciones de la compra"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+              class="aurora-input"
+              @focus="e => { e.currentTarget.style.borderColor = 'var(--aurora-primary)'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(119,56,193,0.1)'; }"
+              @blur="e => { e.currentTarget.style.borderColor = 'var(--aurora-outline-variant)'; e.currentTarget.style.boxShadow = 'none'; }" />
           </div>
         </div>
       </div>
 
       <!-- Productos -->
-      <div class="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/30 p-5 md:p-6">
-        <h3 class="font-semibold pb-2 mb-4 flex items-center gap-2" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; color: #0b1c30; border-bottom: 1px solid #d2c4b4;">
-          <span class="material-icons-outlined" style="color: #624200;">inventory_2</span>
+      <div class="aurora-raised-card">
+        <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; font-weight: 600; color: var(--aurora-on-surface); padding-bottom: 0.5rem; margin-bottom: var(--aurora-md); display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--aurora-outline-variant);">
+          <span class="material-symbols-outlined" style="color: var(--aurora-primary);">inventory_2</span>
           Productos
         </h3>
-        <div class="flex items-center justify-between mb-3">
-          <span style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #4f4539;">Agrega los productos a la compra</span>
+        <div class="flex items-center justify-between" style="margin-bottom: 0.75rem;">
+          <span style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: var(--aurora-on-surface-variant);">Agrega los productos a la compra</span>
           <button type="button" @click="addItem"
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all border"
-            style="background: #ffffff; color: #624200; border-color: #d2c4b4; font-family: 'Inter', sans-serif; font-size: 0.8125rem;"
-            @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-            @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = '#ffffff'; }">
-            <span class="material-icons-outlined" style="font-size: 1rem;">add</span> Agregar
+            class="aurora-btn-secondary" style="font-family: 'Inter', sans-serif; font-size: 0.8125rem;">
+            <span class="material-symbols-outlined" style="font-size: 1rem;">add</span> Agregar
           </button>
         </div>
 
-        <div v-for="(item, idx) in form.items" :key="idx" class="rounded-[12px] p-4 mb-3 border" style="background: rgba(98,66,0,0.02); border-color: #d2c4b4;">
+        <div v-for="(item, idx) in form.items" :key="idx" class="aurora-raised-card" style="padding: var(--aurora-md); margin-bottom: 0.75rem;">
           <div class="flex flex-wrap gap-2 items-start">
             <!-- Selector producto con búsqueda -->
             <div class="relative flex-1 min-w-[220px]">
@@ -93,107 +85,118 @@
                 @input="onSearchProduct(idx)"
                 @focus="onSearchFocus(idx, $event)"
                 @blur="onBlurProduct(idx, $event)"
-                class="w-full rounded-lg px-3 py-2.5 transition-all"
-                style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
+                class="aurora-input w-full"
                 :placeholder="item.product_id ? item.product_name : 'Buscar producto...'"
                 autocomplete="off" />
-              <div v-if="item.showResults && item.results.length" class="absolute z-50 top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto mt-1" style="box-shadow: 0px 8px 32px rgba(98, 66, 0, 0.12);">
+              <div v-if="item.showResults && item.results.length" class="absolute z-50 top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto" style="background: var(--aurora-surface-bright); border: 1px solid var(--aurora-outline-variant); border-radius: var(--aurora-radius-lg); box-shadow: 0px 8px 32px rgba(119,56,193,0.12);">
                 <div
                   v-for="prod in item.results"
                   :key="prod.id"
                   @mousedown.prevent="selectProduct(idx, prod)"
-                  class="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer flex items-center gap-3"
+                  class="px-3 py-2 text-sm flex items-center gap-3 cursor-pointer transition-colors"
+                  style="color: var(--aurora-on-surface);"
+                  @mouseenter="e => e.currentTarget.style.background = 'var(--aurora-surface-container)'"
+                  @mouseleave="e => e.currentTarget.style.background = 'transparent'"
                 >
-                  <img v-if="prod.images && prod.images.length" :src="getImageUrl(prod.images)" class="w-8 h-8 rounded object-cover bg-gray-100" alt="" />
-                  <span v-else class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center">
-                    <span class="material-icons-outlined text-gray-400 text-sm">inventory_2</span>
+                  <img v-if="prod.images && prod.images.length" :src="getImageUrl(prod.images)" class="w-8 h-8 rounded object-cover" style="background: var(--aurora-surface-container);" alt="" />
+                  <span v-else class="w-8 h-8 rounded flex items-center justify-center" style="background: var(--aurora-surface-container);">
+                    <span class="material-symbols-outlined" style="color: var(--aurora-outline); font-size: 0.875rem;">inventory_2</span>
                   </span>
                   <div class="flex-1 min-w-0">
                     <span class="font-medium block truncate">{{ prod.name }}</span>
-                    <span class="text-gray-400 text-xs">{{ prod.sku }}<template v-if="prod.barcode"> | {{ prod.barcode }}</template></span>
+                    <span style="color: var(--aurora-outline); font-size: 0.75rem;">{{ prod.sku }}<template v-if="prod.barcode"> | {{ prod.barcode }}</template></span>
                   </div>
-                  <span class="text-xs text-gray-400 shrink-0">${{ prod.cost_price || prod.price || 0 }}</span>
+                  <span style="font-size: 0.75rem; color: var(--aurora-outline); flex-shrink: 0;">${{ prod.cost_price || prod.price || 0 }}</span>
                 </div>
-                <div v-if="!item.results.length && item.searchTerm" class="px-3 py-2 text-sm text-gray-400">Sin resultados</div>
+                <div v-if="!item.results.length && item.searchTerm" style="padding: 0.75rem; font-size: 0.875rem; color: var(--aurora-outline);">
+                  <div class="flex flex-col items-center gap-2 py-2">
+                    <span style="color: var(--aurora-outline);">Sin resultados</span>
+                    <button type="button" @mousedown.prevent="addAsNewProduct(idx)"
+                      class="aurora-btn-secondary" style="font-size: 0.75rem; padding: 0.375rem 0.75rem;">
+                      <span class="material-symbols-outlined" style="font-size: 0.875rem; vertical-align: middle;">add</span>
+                      Agregar como producto nuevo
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
             <!-- Cantidad -->
-            <div class="w-20">
-              <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; color: #4f4539;">Cant.</label>
+            <div style="width: 5rem;">
+              <label style="display: block; margin-bottom: 0.25rem; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 0.75rem; color: var(--aurora-on-surface-variant);">Cant.</label>
               <input v-model.number="item.quantity" type="number" min="1"
-                class="w-full rounded-lg px-3 py-2.5 text-center transition-all"
-                style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-                @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-                @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" required />
+                class="aurora-input w-full text-center"
+                style="font-family: 'JetBrains Mono', monospace;"
+                @focus="e => { e.currentTarget.style.borderColor = 'var(--aurora-primary)'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(119,56,193,0.1)'; }"
+                @blur="e => { e.currentTarget.style.borderColor = 'var(--aurora-outline-variant)'; e.currentTarget.style.boxShadow = 'none'; }" required />
             </div>
 
             <!-- Costo unitario -->
-            <div class="w-28">
-              <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; color: #4f4539;">Costo U.</label>
+            <div style="width: 7rem;">
+              <label style="display: block; margin-bottom: 0.25rem; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 0.75rem; color: var(--aurora-on-surface-variant);">Costo U.</label>
               <input v-model.number="item.unit_cost" type="number" step="0.01" min="0"
-                class="w-full rounded-lg px-3 py-2.5 transition-all text-right"
-                style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-                @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-                @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" required />
+                class="aurora-input w-full text-right"
+                style="font-family: 'JetBrains Mono', monospace;"
+                @focus="e => { e.currentTarget.style.borderColor = 'var(--aurora-primary)'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(119,56,193,0.1)'; }"
+                @blur="e => { e.currentTarget.style.borderColor = 'var(--aurora-outline-variant)'; e.currentTarget.style.boxShadow = 'none'; }" required />
             </div>
 
             <!-- Total x item -->
-            <div class="w-28 pt-5">
-              <span class="dt-financial" style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #624200; font-weight: 600;">
+            <div style="width: 7rem; padding-top: 1.25rem;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: var(--aurora-primary); font-weight: 600;">
                 {{ formatTable((item.quantity || 0) * (item.unit_cost || 0)) }}
               </span>
             </div>
 
             <button type="button" @click="form.items.splice(idx, 1)"
-              class="pt-5 p-1.5 rounded-lg transition-all hover:scale-110 active:scale-95"
-              style="color: #ba1a1a;"
+              class="aurora-btn-icon danger"
+              style="margin-top: 1.25rem;"
               @mouseenter="e => e.currentTarget.style.background = 'rgba(186,26,26,0.08)'"
               @mouseleave="e => e.currentTarget.style.background = 'transparent'">
-              <span class="material-icons-outlined" style="font-size: 1.25rem;">delete</span>
+              <span class="material-symbols-outlined" style="font-size: 1.25rem;">delete</span>
             </button>
           </div>
 
           <!-- Thumbnail + Barcode del producto seleccionado -->
-          <div v-if="item.product_id" class="flex items-center gap-3 mt-2 pt-2 border-t" style="border-color: #d2c4b4;">
-            <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+          <div v-if="item.product_id" class="flex items-center gap-3 mt-2 pt-2" style="border-top: 1px solid var(--aurora-outline-variant);">
+            <div class="w-10 h-10 rounded-lg overflow-hidden shrink-0" style="background: var(--aurora-surface-container);">
               <img v-if="item.product_image" :src="item.product_image" class="w-full h-full object-cover" alt="" />
-              <span v-else class="flex items-center justify-center h-full text-gray-400">
-                <span class="material-icons-outlined text-lg">image</span>
+              <span v-else class="flex items-center justify-center h-full" style="color: var(--aurora-outline);">
+                <span class="material-symbols-outlined text-lg">image</span>
               </span>
             </div>
-            <div v-if="item.barcode" class="flex items-center gap-2 text-xs font-mono" style="color: #4f4539;">
-              <span class="material-icons-outlined text-sm">qr_code_scanner</span>
+            <div v-if="item.barcode" class="flex items-center gap-2 text-xs font-mono" style="color: var(--aurora-on-surface-variant);">
+              <span class="material-symbols-outlined" style="font-size: 0.875rem;">qr_code_scanner</span>
               <span>{{ item.barcode }}</span>
             </div>
-            <div v-if="item.sku" class="text-xs font-mono" style="color: #4f4539;">SKU: {{ item.sku }}</div>
+            <div v-if="item.sku" style="font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; color: var(--aurora-on-surface-variant);">SKU: {{ item.sku }}</div>
           </div>
         </div>
 
-        <p v-if="!form.items.length" class="text-center py-4" style="color: #4f4539; font-family: 'Inter', sans-serif; font-size: 0.875rem; font-style: italic;">
+        <p v-if="!form.items.length" style="text-align: center; padding: 1rem 0; color: var(--aurora-on-surface-variant); font-family: 'Inter', sans-serif; font-size: 0.875rem; font-style: italic;">
           Agregue al menos un producto para crear la compra
         </p>
       </div>
 
       <!-- Totales -->
-      <div class="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/30 p-5 md:p-6">
-        <h3 class="font-semibold pb-2 mb-4 flex items-center gap-2" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; color: #0b1c30; border-bottom: 1px solid #d2c4b4;">
-          <span class="material-icons-outlined" style="color: #624200;">receipt_long</span>
+      <div class="aurora-raised-card">
+        <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; font-weight: 600; color: var(--aurora-on-surface); padding-bottom: 0.5rem; margin-bottom: var(--aurora-md); display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--aurora-outline-variant);">
+          <span class="material-symbols-outlined" style="color: var(--aurora-primary);">receipt_long</span>
           Resumen de Totales
         </h3>
         <div class="flex flex-col items-end">
-          <div class="text-right space-y-1 w-64">
+          <div style="text-align: right; width: 16rem; display: flex; flex-direction: column; gap: 0.25rem;">
             <div class="flex justify-between text-sm">
-              <span style="color: #817567; font-family: 'Inter', sans-serif;">Subtotal</span>
-              <span style="font-family: 'JetBrains Mono', monospace; color: #0b1c30;">{{ format(subtotal) }}</span>
+              <span style="color: var(--aurora-on-surface-variant); font-family: 'Inter', sans-serif;">Subtotal</span>
+              <span style="font-family: 'JetBrains Mono', monospace; color: var(--aurora-on-surface);">{{ format(subtotal) }}</span>
             </div>
             <div class="flex justify-between text-sm">
-              <span style="color: #817567; font-family: 'Inter', sans-serif;">IVA (19%)</span>
-              <span style="font-family: 'JetBrains Mono', monospace; color: #0b1c30;">{{ format(taxAmount) }}</span>
+              <span style="color: var(--aurora-on-surface-variant); font-family: 'Inter', sans-serif;">IVA (19%)</span>
+              <span style="font-family: 'JetBrains Mono', monospace; color: var(--aurora-on-surface);">{{ format(taxAmount) }}</span>
             </div>
-            <div class="flex justify-between text-lg font-bold pt-2" style="border-top: 1px solid #d2c4b4;">
-              <span style="color: #0b1c30; font-family: 'Inter', sans-serif;">Total</span>
-              <span class="dt-financial" style="font-family: 'JetBrains Mono', monospace; font-size: 1.125rem; color: #624200;">{{ format(total) }}</span>
+            <div class="flex justify-between text-lg font-bold pt-2" style="border-top: 1px solid var(--aurora-outline-variant);">
+              <span style="color: var(--aurora-on-surface); font-family: 'Inter', sans-serif;">Total</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 1.125rem; color: var(--aurora-primary);">{{ format(total) }}</span>
             </div>
           </div>
         </div>
@@ -293,6 +296,22 @@ const selectProduct = (idx, prod) => {
   item.results = [];
   item.showResults = false;
   item._selected = true;
+};
+
+const addAsNewProduct = (idx) => {
+  const item = form.items[idx];
+  if (!item) return;
+  // Marcar como nuevo producto sin ID (se creará al guardar la compra)
+  item.product_id = null;
+  item.product_name = item.searchTerm?.split(' (')[0]?.trim() || item.searchTerm?.trim() || 'Nuevo Producto';
+  item.sku = item.sku || '';
+  item.barcode = item.barcode || '';
+  item._selected = true;
+  item.showResults = false;
+  item.is_new = true;
+  item.results = [];
+  // Si no tiene costo, sugerir 0
+  if (!item.unit_cost) item.unit_cost = 0;
 };
 
 const onBlurProduct = (idx, event) => {

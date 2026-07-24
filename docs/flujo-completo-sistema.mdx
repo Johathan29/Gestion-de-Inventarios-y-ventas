@@ -233,19 +233,20 @@ Layout padre: `AppLayout.vue` (requiere autenticación)
 
 ### 3.15 Módulo de Reportes
 
+Layout padre: `reporthomeview.vue` (wrapper con `<router-view>`).
+
 | Path | Nombre | Componente | Descripción |
 |---|---|---|---|
-| `/app/reports` | `Reports` | `ReportsView.vue` | Menú selector de reportes |
+| `/app/reports` | `reports` | `ReportsView.vue` | Menú selector de reportes con tarjetas de navegación |
 | `/app/reports/sales` | `SalesReport` | `SalesReportView.vue` | Ventas diarias, mensuales, por vendedor, sucursal, categoría |
 | `/app/reports/inventory` | `InventoryReport` | `InventoryReportView.vue` | Stock, rotación, agotados, mínimos, vencidos, kardex |
 | `/app/reports/top-products` | `TopProductsReport` | `TopProductsView.vue` | Top productos + utilidad + margen |
 | `/app/reports/clients` | `ClientsReport` | `ClientsReportView.vue` | Clientes nuevos, frecuentes, inactivos, crédito |
-| `/app/reports/purchases` | `PurchasesReport` | `PurchasesReportView.vue` | **NUEVO:** Compras por proveedor, fecha, categoría |
-| `/app/reports/financial` | `FinancialReport` | `FinancialReportView.vue` | **NUEVO:** Ingresos, egresos, ITBIS, balance, flujo caja |
+| `/app/reports/cash-register` | `CashRegisterReport` | `CashRegisterReportView.vue` | Turnos de caja, movimientos, resumen por período |
 
 ### 3.16 Módulo de Ecommerce (Admin)
 
-Layout padre: `EcommerceView.vue`.
+Layout padre: `EcommerceView.vue` (tabs siempre visibles con nested routes).
 
 | Path | Nombre | Componente | Descripción |
 |---|---|---|---|
@@ -256,6 +257,8 @@ Layout padre: `EcommerceView.vue`.
 | `/app/ecommerce/hero-slides` | `EcommerceHeroSlides` | `HeroSlidesView.vue` | Carrusel de slides |
 | `/app/ecommerce/floating-banners` | `EcommerceFloatingBanners` | `FloatingBannersView.vue` | Banners flotantes |
 | `/app/ecommerce/reviews` | `EcommerceReviews` | `ReviewsModerationView.vue` | Moderación de reseñas |
+| `/app/ecommerce/coupons` | `EcommerceCoupons` | `CouponsView.vue` | Cupones de descuento |
+| `/app/ecommerce/promotions` | `EcommercePromotions` | `PromotionsView.vue` | Promociones activas |
 | `/app/ecommerce/settings` | `EcommerceSettings` | `SettingsView.vue` | Configuración tienda |
 
 ### 3.17 Módulo de Administración
@@ -266,6 +269,7 @@ Layout padre: `EcommerceView.vue`.
 | `/app/admin/users` | `AdminUsers` | `UsersView.vue` | Gestión de usuarios |
 | `/app/admin/users/:id` | `AdminUserDetail` | `UserDetailView.vue` | Detalle de usuario |
 | `/app/admin/audit` | `AdminAudit` | `AuditLogView.vue` | Registro de auditoría completo |
+| `/app/admin/audit/:id` | `AdminAuditDetail` | `AuditDetailView.vue` | Detalle de evento de auditoría |
 | `/app/admin/config` | `AdminConfig` | `ConfigView.vue` | Configuración global |
 
 ### 3.18 Ruta Catch-all
@@ -274,7 +278,7 @@ Layout padre: `EcommerceView.vue`.
 |---|---|---|---|
 | `/:pathMatch(.*)*` | `NotFound` | `NotFoundView.vue` | Página 404 |
 
-**Total: ~65 rutas definidas** (+10 nuevas respecto a la versión anterior)
+**Total: ~70 rutas definidas**
 
 ---
 

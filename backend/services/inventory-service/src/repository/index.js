@@ -9,7 +9,7 @@ export class SupabaseInventoryRepository {
     this._supabase = supabase;
   }
 
-  async findStock({ page = 1, limit = 20, warehouse, search, categoryId } = {}) {
+  async findStock({ page = 1, limit = 20, warehouse, search, categoryId, status } = {}) {
     const from = (page - 1) * limit;
     const toVal = from + limit - 1;
 
@@ -19,7 +19,8 @@ export class SupabaseInventoryRepository {
 
     if (warehouse) query = query.eq('warehouse', warehouse);
     if (categoryId) query = query.eq('products.category_id', categoryId);
-    if (search) query = query.or(`products.name.ilike.%${search}%,products.sku.ilike.%${search}%`);
+    if (status) query = query.eq('status', status);
+    if (search) query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%`, { referencedTable: 'products' });
 
     const { data, count, error } = await query
       .range(from, toVal)
@@ -100,7 +101,7 @@ export class SupabaseInventoryRepository {
   async getSummary() {
     const { data, error } = await this._supabase
       .from('inventory')
-      .select('product_id, stock, products(name, sku, price, cost_price, min_stock)')
+      .select('product_id, stock, status, products(name, sku, price, cost_price, min_stock)')
       .order('product_id');
 
     if (error) throw error;
@@ -111,8 +112,10 @@ export class SupabaseInventoryRepository {
     const totalValueRetail = data.reduce((sum, s) => sum + ((s.stock || 0) * (s.products?.price || 0)), 0);
     const lowStock = data.filter(s => s.stock > 0 && s.stock < (s.products?.min_stock || 5)).length;
     const outOfStock = data.filter(s => s.stock === 0).length;
+    const pending = data.filter(s => s.status === 'pending').length;
+    const blocked = data.filter(s => s.status === 'blocked').length;
 
-    return { totalProducts, totalStock, totalValue, totalValueRetail, lowStock, outOfStock, items: data };
+    return { totalProducts, totalStock, totalValue, totalValueRetail, lowStock, outOfStock, pending, blocked, items: data };
   }
 }
 

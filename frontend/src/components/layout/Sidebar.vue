@@ -1,71 +1,165 @@
 <template>
   <!-- Mobile overlay -->
-  <div v-if="appStore.sidebarMobileOpen" class="fixed inset-0 bg-black/50 z-30 lg:hidden" @click="appStore.closeSidebarMobile"></div>
+  <div
+    v-if="appStore.sidebarMobileOpen"
+    class="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 lg:hidden"
+    @click="appStore.closeSidebarMobile"
+  ></div>
 
-  <!-- Sidebar -->
-  <aside class="dt-sidebar fixed left-0 top-0 h-full z-40 transition-all duration-300"
-         :class="[
-           appStore.sidebarOpen ? 'w-[280px]' : 'w-[88px]',
-           appStore.sidebarMobileOpen ? 'translate-x-0' : '-translate-x-full',
-           'lg:translate-x-0'
-         ]">
-    <!-- Logo -->
-    <div class="flex items-center h-20 px-5 border-b border-[rgba(210,196,180,0.3)]">
+  <!-- Sidebar - Aurora Neumorphism -->
+  <aside
+    class="aurora-sidebar fixed left-0 top-0 h-full z-40 transition-all duration-300 ease-out flex flex-col shadow-xl"
+    :class="[
+      appStore.sidebarOpen ? 'w-[280px]' : 'w-[88px]',
+      appStore.sidebarMobileOpen ? 'translate-x-0' : '-translate-x-full',
+      'lg:translate-x-0'
+    ]"
+  >
+    <!-- Logo / Brand — Aurora ERP style -->
+    <div class="flex items-center h-[72px] px-5 flex-shrink-0">
       <div class="flex items-center gap-3" v-if="appStore.sidebarOpen">
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style="background: #624200;">
-          <span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">pets</span>
+        <div
+          class="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden"
+          style="background: var(--aurora-gradient)"
+        >
+          <img v-if="storeLogo" :src="storeLogo" class="w-full h-full object-cover" alt="Logo" />
+          <span
+            v-else
+            class="material-symbols-outlined text-white text-2xl"
+            style="font-variation-settings: 'FILL' 1"
+            >diamond</span
+          >
         </div>
         <div>
-          <span class="font-bold" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; color: #452d00;">Animal Store</span>
-          <p style="font-family: 'Inter', sans-serif; font-size: 12px; color: #4f4539; margin-top: -2px;">Admin Pro</p>
+          <span class="font-headline-lg font-black text-primary" style="font-size: 20px">{{
+            storeName || 'Aurora ERP'
+          }}</span>
+          <p
+            class="text-label-md text-on-surface-variant opacity-70"
+            style="font-size: 12px; margin-top: -2px"
+          >
+            Enterprise Suite
+          </p>
         </div>
       </div>
       <div v-else class="mx-auto">
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style="background: #624200;">
-          <span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">pets</span>
+        <div
+          class="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden"
+          style="background: var(--aurora-gradient)"
+        >
+          <img v-if="storeLogo" :src="storeLogo" class="w-full h-full object-cover" alt="Logo" />
+          <span
+            v-else
+            class="material-symbols-outlined text-white text-2xl"
+            style="font-variation-settings: 'FILL' 1"
+            >diamond</span
+          >
         </div>
       </div>
     </div>
 
     <!-- Navigation -->
-    <nav class="mt-4 px-3 space-y-1 overflow-y-auto max-h-[calc(100vh-18rem)]">
+    <nav class="mt-2 px-3 space-y-0.5 overflow-y-auto flex-1 aurora-scroll">
       <div v-if="!authStore.user" class="flex items-center justify-center py-8">
-        <div class="w-5 h-5 border-2 rounded-full animate-spin" style="border-color: #624200; border-top-color: transparent;"></div>
+        <div
+          class="w-5 h-5 border-2 rounded-full animate-spin"
+          style="border-color: var(--aurora-primary); border-top-color: transparent"
+        ></div>
       </div>
-      <SidebarItem v-for="item in menuItems" :key="item.path" :item="item" :collapsed="!appStore.sidebarOpen" />
+      <div v-for="item in menuItems" :key="item.path">
+        <router-link
+          v-if="!item.children"
+          :to="item.path"
+          class="aurora-sidebar-item"
+          :class="{ active: isActive(item.path), 'justify-center': !appStore.sidebarOpen }"
+          :title="item.label"
+        >
+          <span class="material-symbols-outlined text-xl">{{ item.icon }}</span>
+          <span v-if="appStore.sidebarOpen" class="font-label-md whitespace-nowrap">{{
+            item.label
+          }}</span>
+          <span
+            v-if="appStore.sidebarOpen && item.badge"
+            class="ml-auto text-xs px-2 py-0.5 rounded-full"
+            style="
+              background: var(--aurora-primary-fixed);
+              color: var(--aurora-on-primary-fixed-variant);
+            "
+            >{{ item.badge }}</span
+          >
+        </router-link>
+        <!-- Items with sub-items -->
+        <div v-else>
+          <div
+            @click="toggleSubmenu(item)"
+            class="aurora-sidebar-item"
+            :class="{ active: isActive(item.path), 'justify-center': !appStore.sidebarOpen }"
+            :title="item.label"
+          >
+            <span class="material-symbols-outlined text-xl">{{ item.icon }}</span>
+            <span v-if="appStore.sidebarOpen" class="font-label-md flex-1 whitespace-nowrap">{{
+              item.label
+            }}</span>
+            <span
+              v-if="appStore.sidebarOpen"
+              class="material-symbols-outlined text-lg transition-transform duration-200"
+              :class="{ 'rotate-180': item._open }"
+              >expand_more</span
+            >
+          </div>
+          <div v-if="item._open && appStore.sidebarOpen" class="ml-4 space-y-0.5">
+            <router-link
+              v-for="child in item.children"
+              :key="child.path"
+              :to="child.path"
+              class="aurora-sidebar-item text-sm"
+              :class="{ active: isActive(child.path) }"
+            >
+              <span class="material-symbols-outlined text-lg">{{ child.icon || 'circle' }}</span>
+              <span class="font-label-md">{{ child.label }}</span>
+            </router-link>
+          </div>
+        </div>
+      </div>
     </nav>
 
-    <!-- Bottom Actions -->
-    <div class="absolute bottom-16 left-0 right-0 px-3 space-y-1">
-      <router-link to="/app/profile"
-        class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
-        :class="appStore.sidebarOpen ? '' : 'justify-center'"
-        style="color: #4f4539; text-decoration: none;"
-        @mouseenter="hoverProfile = true" @mouseleave="hoverProfile = false"
-        :style="hoverProfile ? { background: 'rgba(98,66,0,0.05)', color: '#624200' } : {}">
-        <span class="material-icons-outlined text-xl flex-shrink-0">person</span>
-        <span v-if="appStore.sidebarOpen" class="text-sm font-medium truncate" style="font-family: 'Inter', sans-serif;">Mi Perfil</span>
+    <!-- Bottom Section -->
+    <div class="flex-shrink-0 px-3 pb-3 space-y-1 border-t border-outline-variant/30 pt-3">
+      <!-- Profile -->
+      <router-link
+        to="/app/profile"
+        class="aurora-sidebar-item"
+        :class="{ 'justify-center': !appStore.sidebarOpen }"
+      >
+        <span class="material-symbols-outlined text-xl">person</span>
+        <span v-if="appStore.sidebarOpen" class="font-label-md whitespace-nowrap">Mi Perfil</span>
       </router-link>
-      <button @click="handleLogout"
-        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
-        :class="appStore.sidebarOpen ? '' : 'justify-center'"
-        style="color: #dc2626; background: transparent; border: none; cursor: pointer; font-family: 'Inter', sans-serif;"
-        @mouseenter="hoverLogout = true" @mouseleave="hoverLogout = false"
-        :style="hoverLogout ? { background: 'rgba(220,38,38,0.05)' } : {}">
-        <span class="material-icons-outlined text-xl flex-shrink-0">logout</span>
-        <span v-if="appStore.sidebarOpen" class="text-sm font-medium truncate">Salir del Sistema</span>
+
+      <!-- Logout -->
+      <button
+        @click="handleLogout"
+        class="aurora-sidebar-item w-full"
+        :class="{ 'justify-center': !appStore.sidebarOpen }"
+        style="color: var(--aurora-error)"
+      >
+        <span class="material-symbols-outlined text-xl">logout</span>
+        <span v-if="appStore.sidebarOpen" class="font-label-md whitespace-nowrap"
+          >Cerrar Sesión</span
+        >
       </button>
     </div>
 
-    <!-- Toggle -->
-    <div class="absolute bottom-4 left-0 right-0 px-3">
-      <button @click="appStore.toggleSidebar"
-              class="w-full flex items-center justify-center p-2 rounded-xl transition-all duration-200"
-              style="color: #817567; background: transparent; border: none; cursor: pointer;"
-              @mouseenter="hoverToggle = true" @mouseleave="hoverToggle = false"
-              :style="hoverToggle ? { background: 'rgba(98,66,0,0.05)', color: '#624200' } : {}">
-        <span class="material-icons-outlined text-xl">
-          {{ appStore.sidebarOpen ? 'chevron_left' : 'chevron_right' }}
+    <!-- Toggle Button -->
+    <div class="flex-shrink-0 px-3 pb-4">
+      <button
+        @click="appStore.toggleSidebar"
+        class="w-full flex items-center justify-center p-2.5 rounded-xl transition-all duration-200 text-on-surface-variant hover:bg-surface-container-highest"
+      >
+        <span
+          class="material-symbols-outlined text-lg transition-transform duration-200"
+          :class="{ 'rotate-180': !appStore.sidebarOpen }"
+        >
+          chevron_left
         </span>
       </button>
     </div>
@@ -73,40 +167,92 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAppStore } from '../../stores/app';
-import { useAuthStore } from '../../stores/auth';
-import { useAuth } from '../../composables/useAuth';
-import SidebarItem from './SidebarItem.vue';
+  import { computed, ref, onMounted } from 'vue';
+  import { useRouter, useRoute } from 'vue-router';
+  import { useAppStore } from '../../stores/app';
+  import { useAuthStore } from '../../stores/auth';
+  import { useAuth } from '../../composables/useAuth';
+  import { ecommerceAPI } from '../../api';
 
-const router = useRouter();
-const appStore = useAppStore();
-const authStore = useAuthStore();
-const { can } = useAuth();
+  const router = useRouter();
+  const route = useRoute();
+  const appStore = useAppStore();
+  const authStore = useAuthStore();
+  const { can } = useAuth();
 
-const hoverProfile = ref(false);
-const hoverLogout = ref(false);
-const hoverToggle = ref(false);
+  const storeName = ref('');
+  const storeLogo = ref('');
 
-const handleLogout = async () => {
-  await authStore.logout();
-  router.push('/login');
-};
+  onMounted(async () => {
+    try {
+      const res = await ecommerceAPI.getSettings();
+      if (res.data) {
+        storeName.value = res.data.store_name || '';
+        storeLogo.value = res.data.logo_url || '';
+      }
+    } catch (e) {
+      /* fallback to defaults */
+    }
+  });
 
-const menuItems = computed(() => [
-  { path: '/app/dashboard', label: 'Dashboard', icon: 'dashboard', show: true },
-  { path: '/app/products', label: 'Productos', icon: 'inventory_2', show: can('products', 'read') },
-  { path: '/app/categories', label: 'Categorías', icon: 'category', show: can('products', 'read') },
-  { path: '/app/inventory', label: 'Inventario', icon: 'warehouse', show: can('inventory', 'read') },
-  { path: '/app/pos', label: 'Punto de Venta', icon: 'point_of_sale', show: can('sales', 'create') },
-  { path: '/app/sales', label: 'Ventas', icon: 'receipt_long', show: can('sales', 'read') },
-  { path: '/app/purchases', label: 'Compras', icon: 'shopping_cart', show: can('purchases', 'read') },
-  { path: '/app/suppliers', label: 'Proveedores', icon: 'local_shipping', show: can('purchases', 'read') },
-  { path: '/app/clients', label: 'Clientes', icon: 'people', show: can('clients', 'read') },
-  { path: '/app/invoices', label: 'Facturas', icon: 'receipt', show: can('sales', 'read') },
-  { path: '/app/reports', label: 'Reportes', icon: 'bar_chart', show: can('reports', 'view') },
-  { path: '/app/ecommerce', label: 'Ecommerce', icon: 'store', show: can('ecommerce', 'manage') },
-  { path: '/app/admin', label: 'Admin', icon: 'admin_panel_settings', show: can('admin', 'access') }
-].filter(item => item.show));
+  const handleLogout = async () => {
+    await authStore.logout();
+    router.push('/login');
+  };
+
+  function isActive(path) {
+    if (path === '/app/dashboard') return route.path === '/app/dashboard';
+    return route.path.startsWith(path);
+  }
+
+  function toggleSubmenu(item) {
+    item._open = !item._open;
+  }
+
+  const menuItems = computed(() =>
+    [
+      { path: '/app/dashboard', label: 'Dashboard', icon: 'dashboard', show: true },
+      {
+        path: '/app/products',
+        label: 'Productos',
+        icon: 'inventory_2',
+        show: can('products', 'read')
+      },
+      {
+        path: '/app/categories',
+        label: 'Categorías',
+        icon: 'category',
+        show: can('products', 'read')
+      },
+      {
+        path: '/app/inventory',
+        label: 'Inventario',
+        icon: 'swap_horiz',
+        show: can('inventory', 'read')
+      },
+      { path: '/app/sales', label: 'Ventas', icon: 'payments', show: can('sales', 'read') },
+      {
+        path: '/app/purchases',
+        label: 'Compras',
+        icon: 'shopping_cart',
+        show: can('purchases', 'read')
+      },
+      {
+        path: '/app/suppliers',
+        label: 'Proveedores',
+        icon: 'local_shipping',
+        show: can('purchases', 'read')
+      },
+      { path: '/app/clients', label: 'Clientes', icon: 'group', show: can('clients', 'read') },
+      { path: '/app/invoices', label: 'Facturas', icon: 'description', show: can('sales', 'read') },
+      { path: '/app/reports', label: 'Reportes', icon: 'analytics', show: can('reports', 'view') },
+      { path: '/app/ecommerce', label: 'Ecommerce', icon: 'web', show: can('ecommerce', 'manage') },
+      {
+        path: '/app/cash-register',
+        label: 'Punto de Venta',
+        icon: 'point_of_sale',
+        show: can('sales', 'create')
+      }
+    ].filter((item) => item.show)
+  );
 </script>

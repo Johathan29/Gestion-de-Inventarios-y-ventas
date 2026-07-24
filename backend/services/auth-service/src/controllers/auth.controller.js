@@ -233,6 +233,23 @@ const register = async (req, res, next) => {
       .update({ refresh_token: refreshTokenValue })
       .eq('id', user.id);
 
+    // Enviar correo de bienvenida (no bloqueante)
+    try {
+      const emailServiceUrl = `http://localhost:${process.env.EMAIL_SERVICE_PORT || 3014}/api/email/registration-data`;
+      fetch(emailServiceUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          name: user.name,
+          phone: user.phone,
+          role: 'cliente'
+        })
+      }).catch(err => console.log(`[Auth] Welcome email not sent: ${err.message}`));
+    } catch (emailErr) {
+      console.log(`[Auth] Welcome email error: ${emailErr.message}`);
+    }
+
     res.status(201).json({
       success: true,
       data: {
@@ -361,38 +378,23 @@ const requestPasswordReset = async (req, res, next) => {
         .update({ reset_password_token: resetToken, reset_password_expires: new Date(Date.now() + 3600000).toISOString() })
         .eq('id', user.id);
 
-      // Enviar email de recuperación
+      // Enviar email de recuperación usando Mailtrap
       const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
-      const emailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-            <h1 style="color: #fff; margin: 0; font-size: 24px;">Restablecer Contraseña</h1>
-          </div>
-          <div style="padding: 30px; background: #fff; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
-            <p style="color: #475569; font-size: 16px; line-height: 1.5;">Haz clic en el siguiente botón para restablecer tu contraseña. Este enlace expira en 1 hora.</p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${resetUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600; display: inline-block;">Restablecer Contraseña</a>
-            </div>
-            <p style="color: #94a3b8; font-size: 14px;">Si no solicitaste este cambio, ignora este mensaje.</p>
-            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-            <p style="color: #94a3b8; font-size: 12px;">© ${new Date().getFullYear()} Sistema de Gestión de Inventarios y Ventas</p>
-          </div>
-        </div>
-      `;
+      const emailServicePort = process.env.EMAIL_SERVICE_PORT || 3014;
 
       try {
-        await fetch(`http://localhost:3014/api/email/send`, {
+        await fetch(`http://localhost:${emailServicePort}/api/email/password-reset`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            to: email,
-            subject: 'Recuperación de Contraseña - Sistema de Inventarios',
-            html: emailHtml
+            email,
+            name: user.name || 'Usuario',
+            resetUrl
           })
         });
+        console.log(`[PasswordReset] Correo enviado a ${email}`);
       } catch (emailError) {
-        // No bloquear si el email service falla (SMTP no configurado)
-        console.log(`[PasswordReset] Email no enviado a ${email} (servicio no disponible): ${emailError.message}`);
+        console.log(`[PasswordReset] Email no enviado a ${email}: ${emailError.message}`);
         console.log(`[PasswordReset] Token para ${email}: ${resetToken}`);
       }
     }
@@ -446,6 +448,42 @@ const resetPassword = async (req, res, next) => {
       .eq('id', user.id);
 
     res.json({ success: true, message: 'Contraseña restablecida exitosamente' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Verificar contraseña del usuario actual (para operaciones sensibles)
+ */
+const verifyPassword = async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    const userId = req.user.id;
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Contraseña requerida' }
+      });
+    }
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('password_hash')
+      .eq('id', userId)
+      .single();
+
+    if (error || !user) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'USER_NOT_FOUND', message: 'Usuario no encontrado' }
+      });
+    }
+
+    const isValid = await bcrypt.compare(password, user.password_hash);
+
+    res.json({ success: true, data: { valid: isValid } });
   } catch (error) {
     next(error);
   }
@@ -530,4 +568,4 @@ const getCurrentUser = async (req, res, next) => {
   }
 };
 
-module.exports = { login, register, refreshToken, logout, requestPasswordReset, resetPassword, getCurrentUser };
+module.exports = { login, register, refreshToken, logout, requestPasswordReset, resetPassword, getCurrentUser, verifyPassword };

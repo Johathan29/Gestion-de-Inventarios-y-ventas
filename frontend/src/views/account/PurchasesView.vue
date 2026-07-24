@@ -1,7 +1,7 @@
 <template>
   <div class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/30 p-6 md:p-8">
-    <h2 class="text-2xl font-bold text-gray-900 mb-2">Mis Compras</h2>
-    <p class="text-gray-500 text-sm mb-6">Historial de tus compras realizadas</p>
+    <h2 class="text-[2.5rem] font-bold mb-2 tracking-tight" style="color: rgb(126, 63, 238); font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;">Mis Compras</h2>
+    <p class="text-sm font-medium mb-6" style="color: #64748b; font-family: 'Inter', sans-serif;">Historial de tus compras realizadas</p>
 
     <!-- Loading -->
     <div v-if="loading" class="flex justify-center py-16">

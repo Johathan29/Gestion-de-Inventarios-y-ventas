@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard-theme flex h-screen" style="background-color: #fdfbf7;">
+  <div class="flex h-screen" style="background-color: var(--aurora-surface-bright);">
     <!-- Sidebar -->
     <Sidebar />
 
@@ -10,26 +10,26 @@
       <Navbar />
 
       <!-- Page Content -->
-      <main class="flex-1 overflow-y-auto p-6" style="background-color: #fdfbf7;">
-        <div class="max-w-[1400px] mx-auto w-full">
+      <main class="flex-1 overflow-y-auto aurora-scroll" style="background-color: var(--aurora-surface-bright); scroll-behavior: smooth;">
+        <div class="max-w-[1400px] mx-auto w-full  py-4">
           <!-- Page Header -->
-          <div class="dt-section-header" v-if="appStore.pageTitle">
-            <h2 class="dt-headline-md">{{ appStore.pageTitle }}</h2>
+          <div class="mb-md aurora-entrance" v-if="appStore.pageTitle">
+            <h2 class="font-headline-md font-bold text-on-surface aurora-gradient-text" style="font-size: 28px;">{{ appStore.pageTitle }}</h2>
             <nav class="flex mt-1" v-if="appStore.pageBreadcrumb?.length">
-              <ol class="flex items-center space-x-2 dt-body-sm" style="color: #4f4539;">
+              <ol class="flex items-center space-x-2 text-sm">
                 <li>
-                  <router-link to="/app/dashboard" style="color: #624200; text-decoration: none;">Inicio</router-link>
+                  <router-link to="/app/dashboard" style="color: var(--aurora-primary); text-decoration: none; font-weight: 500;">Inicio</router-link>
                 </li>
                 <li v-for="(crumb, idx) in appStore.pageBreadcrumb" :key="idx">
-                  <span class="mx-1" style="color: #817567;">/</span>
-                  <span v-if="idx === appStore.pageBreadcrumb.length - 1" class="font-medium" style="color: #0b1c30;">{{ crumb }}</span>
-                  <router-link v-else :to="crumb.path || ''" style="color: #624200; text-decoration: none;">{{ crumb.label || crumb }}</router-link>
+                  <span class="mx-1" style="color: var(--aurora-outline);">/</span>
+                  <span v-if="idx === appStore.pageBreadcrumb.length - 1" class="font-medium" style="color: var(--aurora-on-surface);">{{ crumb }}</span>
+                  <router-link v-else :to="crumb.path || ''" style="color: var(--aurora-primary); text-decoration: none; font-weight: 500;">{{ crumb.label || crumb }}</router-link>
                 </li>
               </ol>
             </nav>
           </div>
 
-          <!-- Router View with transitions -->
+          <!-- Router View with enhanced page transitions -->
           <div class="page-transition-wrapper">
             <router-view v-slot="{ Component }">
               <transition name="page" mode="out-in">

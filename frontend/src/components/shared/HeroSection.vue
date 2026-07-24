@@ -3,6 +3,8 @@
     id="hero"
     class="min-h-screen flex flex-col justify-center px-4 pt-32 pb-20 relative overflow-hidden bg-[#151215]"
   >
+    <!-- Barista-style dark overlay diagonal accent -->
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[400px] bg-primary/10 rounded-3xl pointer-events-none z-[2]" style="transform: translate(-55%, -50%) rotate(45deg);"></div>
     <!-- ============================================ -->
     <!-- SKELETON LOADING STATE                       -->
     <!-- ============================================ -->
@@ -80,13 +82,13 @@
       <div class="lg:col-span-7 relative">
         <Transition name="text-stagger" mode="out-in">
           <div :key="'text-' + textDisplayIndex" data-gsap="hero-content">
-            <span
+            <em
               v-if="textSlide.badge"
-              class="font-label-sm text-label-sm uppercase tracking-widest text-primary mb-6 block hero-badge"
+              class="font-label-sm text-label-sm not-italic tracking-[0.15em] text-secondary mb-5 block hero-badge"
             >
               {{ textSlide.badge }}
-            </span>
-            <h1 class="font-display-xl text-7xl leading-tight mb-8 text-on-surface hero-title">
+            </em>
+            <h1 class="font-display-xl text-6xl md:text-7xl leading-tight mb-6 text-white hero-title">
               {{ textSlide.title_line1 }} <br />
               <span
                 :class="[
@@ -97,14 +99,14 @@
                 {{ textSlide.title_line2 }}
               </span>
             </h1>
-            <p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl mb-12 hero-description">
+            <p class="font-body-lg text-body-lg text-white/70 max-w-xl mb-10 hero-description">
               {{ textSlide.description }}
             </p>
-            <div class="flex md:flex-row flex-col gap-6 hero-cta">
+            <div class="flex md:flex-row flex-col gap-4 hero-cta">
               <a
                 v-if="textSlide.button1_text"
                 :href="textSlide.button1_url || '#'"
-                class="magnetic-btn px-10 py-5 bg-secondary text-on-secondary rounded-full font-headline-md text-headline-md flex items-center gap-3 inline-flex"
+                class="px-8 py-4 bg-primary text-white rounded-full font-headline-md text-headline-md font-bold flex items-center gap-2 inline-flex hover:brightness-110 transition-all"
                 style="text-decoration: none"
               >
                 {{ textSlide.button1_text }}
@@ -113,7 +115,7 @@
               <a
                 v-if="textSlide.button2_text"
                 :href="textSlide.button2_url || '#'"
-                class="glass-card px-10 py-5 rounded-full font-headline-md text-headline-md text-on-surface hover:backdrop-blur-3xl inline-flex"
+                class="px-8 py-4 border-2 border-white/50 text-white rounded-full font-headline-md text-headline-md font-bold hover:bg-white hover:text-primary transition-all inline-flex"
                 style="text-decoration: none"
               >
                 {{ textSlide.button2_text }}
@@ -256,14 +258,14 @@
     <!-- ============================================ -->
     <div
       v-if="slides.length > 1"
-      class="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3"
+      class="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4"
     >
       <button
         @click="prevSlide"
-        class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer"
+        class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/25 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/10"
         aria-label="Anterior slide"
       >
-        <span class="material-symbols-outlined text-lg text-on-surface" data-icon="chevron_left">chevron_left</span>
+        <span class="material-symbols-outlined text-base text-white" data-icon="chevron_left">chevron_left</span>
       </button>
       <div class="flex items-center gap-2">
         <button
@@ -277,8 +279,8 @@
               : 'bg-white/30 hover:bg-white/50'
           "
           :style="{
-            width: index === currentIndex ? '32px' : '10px',
-            height: '10px',
+            width: index === currentIndex ? '28px' : '8px',
+            height: index === currentIndex ? '8px' : '8px',
             transitionDelay:
               phase !== 'idle' && index === currentIndex ? D.total + 'ms' : '0ms',
           }"
@@ -287,10 +289,10 @@
       </div>
       <button
         @click="nextSlide"
-        class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer"
+        class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/25 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/10"
         aria-label="Siguiente slide"
       >
-        <span class="material-symbols-outlined text-lg text-on-surface" data-icon="chevron_right">chevron_right</span>
+        <span class="material-symbols-outlined text-base text-white" data-icon="chevron_right">chevron_right</span>
       </button>
     </div>
     </template> <!-- end v-else -->
@@ -367,12 +369,12 @@ const currentSlide = computed(() => {
   const s = slides.value[currentIndex.value];
   if (s) return s;
   return {
-    badge: "Elite Animal Companionship",
-    title_line1: "The Luxury",
-    title_line2: "Pet Atelier.",
+    badge: "Bienvenido a Animal Store",
+    title_line1: "The Best for",
+    title_line2: "Your Pet.",
     title_line2_style: "italic",
-    description: "We treat the bond between humans and pets as a high-art form.",
-    button1_text: "Explore Collection",
+    description: "Descubre nuestra colección premium de productos para mascotas, cuidadosamente seleccionados para su bienestar y felicidad.",
+    button1_text: "Explorar",
     button1_url: "#products",
     button2_text: "Our Story",
     button2_url: "#story",

@@ -42,7 +42,7 @@ export class CreateEntryUseCase {
     this._eventBus = eventBus;
   }
 
-  async execute({ productId, warehouse, quantity, unitCost = 0, notes, reference, userId }) {
+  async execute({ productId, warehouse, quantity, unitCost = 0, notes, reference, userId, variantId }) {
     const existing = await this._inventoryRepository.findOne(productId, warehouse);
     const prevStock = existing?.stock || 0;
 
@@ -57,7 +57,7 @@ export class CreateEntryUseCase {
       quantity, previousStock: prevStock, newStock: updated.stock,
       unitCost, totalCost: quantity * unitCost,
       reason: notes || 'Manual entry',
-      notes, reference, userId,
+      notes, reference, userId, variantId,
     });
 
     const saved = await this._movementRepository.save(movement);
@@ -74,7 +74,7 @@ export class CreateExitUseCase {
     this._eventBus = eventBus;
   }
 
-  async execute({ productId, warehouse, quantity, notes, reference, userId }) {
+  async execute({ productId, warehouse, quantity, notes, reference, userId, variantId }) {
     const existing = await this._inventoryRepository.findOne(productId, warehouse);
     if (!existing || existing.stock < quantity) {
       throw new Error('INSUFFICIENT_STOCK');
@@ -93,7 +93,7 @@ export class CreateExitUseCase {
       productId, warehouse, type: MOVEMENT_TYPES.EXIT,
       quantity, previousStock: prevStock, newStock: existing.stock,
       reason: notes || 'Manual exit',
-      notes, reference, userId,
+      notes, reference, userId, variantId,
     });
 
     const saved = await this._movementRepository.save(movement);

@@ -28,7 +28,7 @@ export class CatalogApplicationService {
   async publishProductFn(id) { return this.publishProduct.execute(id); }
   async createCategoryFn(dto) { return this.createCategory.execute(dto); }
   async createBrandFn(dto) { return this.createBrand.execute(dto); }
-  async getCategories() { return this.categoryRepo.findAll(); }
+  async getCategories(filters = {}) { return this.categoryRepo.findAll(filters); }
   async getBrands() { return this.brandRepo.findAll(); }
   async getCategory(id) { return this.categoryRepo.findById(id); }
   async getBrand(id) { return this.brandRepo.findById(id); }

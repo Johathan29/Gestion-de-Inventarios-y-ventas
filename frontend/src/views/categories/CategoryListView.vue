@@ -1,137 +1,144 @@
 <template>
-  <div>
+  <div class="px-gutter">
     <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-      <div>
-        <h2 class="text-[32px] font-bold tracking-tight" style="font-family: 'Plus Jakarta Sans', sans-serif; color: #452d00; line-height: 1.25;">Categorías</h2>
-        <p class="mt-1" style="font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.5; color: #4f4539;">
-          Gestión de familias de productos · <span style="font-weight: 600; color: #452d00;">{{ categories.length }} categoría{{ categories.length !== 1 ? 's' : '' }} registradas</span>
-        </p>
-      </div>
-      <button v-if="can('products', 'create')" @click="openModal(null)"
-        class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-md transition-all duration-300"
-        style="background: linear-gradient(to right, #624200, #8B5E00); color: white; font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.5;"
-        @mouseenter="e => { e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(98,66,0,0.3)'; e.currentTarget.style.transform = 'translateY(-2px)'; }"
-        @mouseleave="e => { e.currentTarget.style.boxShadow = ''; e.currentTarget.style.transform = ''; }">
-        <span class="material-icons-outlined" style="font-size: 20px;">add_circle</span>
+   
+<!-- Categories Header -->
+<div
+  class="mesh-gradient-header"
+  style="
+    background: radial-gradient(circle at 100% 100%, #f0c04d 0%, #9154dc 50%, #7738c1 100%);
+  "
+>
+  <div class="header-icon-container">
+    <span class="material-symbols-outlined animate-header-icon"> category </span>
+  </div>
+  <div class="header-glass">
+    <div class="header-information">
+      <PageHeader
+        title="Categorías"
+        :description="`Gestión de familias de productos · ${categories.length} categoría${
+          categories.length !== 1 ? 's' : ''
+        } registradas`"
+        tag="h1"
+      />
+    </div>
+    <div class="header-actions">
+      <button
+        v-if="can('products', 'create')"
+        @click="openModal(null)"
+        class="aurora-header-button aurora-header-button-primary"
+      >
+        <span class="material-symbols-outlined"> add_circle </span>
         Nueva Categoría
       </button>
     </div>
+  </div>
+</div>
+
 
     <!-- DataTable Card -->
-    <div class="bg-white rounded-2xl overflow-hidden border" style="border-color: rgba(210,196,180,0.2); box-shadow: 0px 4px 20px rgba(98,66,0,0.05);">
+    <div class="aurora-raised-card !p-0 overflow-hidden">
       <!-- Filter/Sort Bar -->
-      <div class="filter-bar-container p-4 border-b border-[#d2c4b4]/30 flex justify-between items-center" style="background: #ffffff; border-color: rgba(210,196,180,0.2);">
+      <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-gutter p-4 " style="border-color: var(--aurora-outline-variant);">
         <div class="flex gap-2">
           <button @click="showFilters = !showFilters"
-            class="px-3 py-1.5 text-sm font-medium border border-[#d2c4b4] rounded-md flex items-center gap-1 hover:bg-[#eff4ff] transition-colors bg-white relative"
-            :class="{ 'ring-2 ring-[rgba(98,66,0,0.2)] border-[#624200]': showFilters }"
-            style="font-family: 'Inter', sans-serif; color: #4f4539; border-color: #E5E7EB;">
-            <span class="material-icons-outlined" style="font-size: 1rem;">filter_list</span>
+            class=" border !px-3 !py-1.5 flex items-center gap-1 border-[var(--aurora-outline-variant)] hover:!bg-[#9161f4] hover:text-white transition-colors duration-200 rounded-md text-[#9161f4] bg-white"
+            :class="{ 'aurora-pressed': showFilters }"
+            style="padding: 8px 12px; font-size: 0.8rem;">
+            <span class="material-symbols-outlined" style="font-size: 1rem;">filter_list</span>
             Filtrar
           </button>
         </div>
-        <div class="relative">
-          <div class="flex items-center bg-white border border-[#d2c4b4] rounded-full px-4 py-1.5 focus-within:border-[#624200] focus-within:ring-2 focus-within:ring-[rgba(98,66,0,0.2)] transition-all" style="border-color: #E5E7EB;">
-            <span class="material-icons-outlined" style="color: #d2c4b4; margin-right: 0.5rem; font-size: 1rem;">search</span>
-            <input v-model="searchQuery" @input="onSearchInput" type="text" placeholder="Filtrar categorías..."
-              class="bg-transparent border-none focus:ring-0 outline-none text-sm"
-              style="font-family: 'Inter', sans-serif; color: #0b1c30;" />
-          </div>
+        <div class="relative w-full sm:w-auto">
+          <input v-model="searchQuery" type="text" placeholder="Filtrar categorías..."
+            class="aurora-search w-full" />
         </div>
       </div>
 
-      <Loading v-if="loading" />
+      <DataTableSkeleton v-if="loading" />
       <template v-else>
         <!-- Desktop Table (DataTable) -->
-        <DataTable :columns="categoryColumns" :data="flatCategories" :per-page="15" empty-message="No hay categorías registradas" @row-click="">
+        <DataTable :columns="categoryColumns" :data="filteredCategories" :per-page="limit" title="Lista de Categorías" empty-message="No hay categorías registradas">
           <template #cell-name="{ row }">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
                 :style="row.status === 'active'
-                  ? { background: 'rgba(253,202,92,0.3)', color: '#624200' }
-                  : { background: '#d3e4fe', color: '#4f4539' }">
-                <span v-if="row.level > 0" class="material-icons-outlined" style="font-size: 18px;">subdirectory_arrow_right</span>
+                  ? { background: 'rgba(139,92,246,0.12)', color: 'var(--aurora-primary)' }
+                  : { background: 'var(--aurora-surface-container)', color: 'var(--aurora-outline)' }">
+                <span v-if="row.parent_id" class="material-icons-outlined" style="font-size: 18px;">subdirectory_arrow_right</span>
                 <span v-else class="material-icons-outlined" style="font-size: 20px; font-variation-settings: 'FILL' 1;">category</span>
               </div>
               <div>
-                <p class="font-semibold" style="color: #452d00;">{{ row.name }}</p>
-                <p v-if="row.slug" class="text-xs mt-0.5" style="font-family: 'JetBrains Mono', monospace; color: #4f4539;">{{ row.slug }}</p>
+                <p class="font-semibold text-sm text-on-surface">{{ row.name }}</p>
+                <p v-if="row.slug" class="text-xs mt-0.5 font-mono text-on-surface-variant">{{ row.slug }}</p>
               </div>
             </div>
           </template>
           <template #cell-slug="{ row }">
-            <span v-if="row.slug" class="font-mono text-xs px-2 py-1 rounded-md border" style="font-family: 'JetBrains Mono', monospace; color: #4f4539; background: #eff4ff; border-color: rgba(210,196,180,0.3);">/{{ row.slug }}</span>
-            <span v-else style="color: #d2c4b4;">—</span>
+            <span v-if="row.slug" class="font-mono text-xs px-2 py-1 rounded-md border" style="font-family: 'JetBrains Mono', monospace; color: var(--aurora-on-surface-variant); background: var(--aurora-surface-container); border-color: var(--aurora-outline-variant);">/{{ row.slug }}</span>
+            <span v-else style="color: var(--aurora-outline);">—</span>
           </template>
           <template #cell-status="{ row }">
-            <span v-if="row.status === 'active'" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border" style="background: #dcfce7; color: #166534; border-color: #bbf7d0; font-family: 'Inter', sans-serif;">
-              <span class="w-1.5 h-1.5 rounded-full" style="background: #16a34a;"></span>
+            <span v-if="row.status === 'active'" class="aurora-badge aurora-badge-success">
+              <span class="w-1.5 h-1.5 rounded-full inline-block mr-1" style="background: currentColor;"></span>
               Activo
             </span>
-            <span v-else class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border" style="background: #f3f4f6; color: #4b5563; border-color: #e5e7eb; font-family: 'Inter', sans-serif;">
-              <span class="w-1.5 h-1.5 rounded-full" style="background: #9ca3af;"></span>
+            <span v-else class="aurora-badge" style="background: var(--aurora-surface-container); color: var(--aurora-on-surface-variant);">
+              <span class="w-1.5 h-1.5 rounded-full inline-block mr-1" style="background: var(--aurora-on-surface-variant);"></span>
               Inactivo
             </span>
           </template>
           <template #actions="{ row }">
-            <button @click="openModal(row)" class="inline-flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200" title="Editar" style="color: #4f4539; background: transparent; border: none; cursor: pointer;" @mouseenter="e => { e.currentTarget.style.background = 'rgba(98,66,0,0.05)'; e.currentTarget.style.color = '#624200'; }" @mouseleave="e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#4f4539'; }">
+            <button @click="openModal(row)" class="aurora-btn-icon" title="Editar">
               <span class="material-icons-outlined" style="font-size: 1.25rem;">edit</span>
             </button>
-            <button @click="confirmDelete(row)" class="inline-flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200" title="Eliminar" style="color: #ba1a1a; background: transparent; border: none; cursor: pointer;" @mouseenter="e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#ba1a1a'; }" @mouseleave="e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ba1a1a'; }">
+            <button @click="confirmDelete(row)" class="aurora-btn-icon" title="Eliminar" style="color: var(--aurora-error, #dc2626);">
               <span class="material-icons-outlined" style="font-size: 1.25rem;">delete</span>
             </button>
           </template>
         </DataTable>
 
         <!-- Mobile Cards -->
-        <div class="md:hidden p-4 space-y-3">
-          <div v-for="cat in flatCategories" :key="cat.id"
-            class="bg-white rounded-xl p-4 border transition-all"
-            style="border-color: rgba(210,196,180,0.2);"
-            :style="cat.level > 0 ? { marginLeft: '1rem', borderLeft: '2px solid rgba(98,66,0,0.3)' } : {}">
+        <div class="md:hidden p-md space-y-3">
+          <div v-for="cat in categories" :key="cat.id"
+            class="aurora-raised-card transition-all"
+            :style="cat.parent_id ? { marginLeft: '1rem', borderLeft: '2px solid var(--aurora-primary)' } : {}">
             <div class="flex items-start justify-between gap-3">
               <div class="flex items-start gap-3 min-w-0 flex-1">
                 <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
                   :style="cat.status === 'active'
-                    ? { background: 'rgba(253,202,92,0.3)', color: '#624200' }
-                    : { background: '#d3e4fe', color: '#4f4539' }">
-                  <span v-if="cat.level > 0" class="material-icons-outlined" style="font-size: 18px;">subdirectory_arrow_right</span>
+                    ? { background: 'rgba(139,92,246,0.12)', color: 'var(--aurora-primary)' }
+                    : { background: 'var(--aurora-surface-container)', color: 'var(--aurora-outline)' }">
+                  <span v-if="cat.parent_id" class="material-icons-outlined" style="font-size: 18px;">subdirectory_arrow_right</span>
                   <span v-else class="material-icons-outlined" style="font-size: 20px;">category</span>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-sm font-semibold truncate" style="color: #452d00;">{{ cat.name }}</p>
-                  <p v-if="cat.slug" class="text-xs mt-0.5 truncate" style="font-family: 'JetBrains Mono', monospace; color: #4f4539;">{{ cat.slug }}</p>
-                  <p class="text-xs mt-1 truncate" style="color: #4f4539;">{{ cat.description || 'Sin descripción' }}</p>
-                  <span v-if="cat.status === 'active'" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold border mt-2" style="background: #dcfce7; color: #166534; border-color: #bbf7d0;">
-                    <span class="w-1.5 h-1.5 rounded-full" style="background: #16a34a;"></span>
+                  <p class="text-sm font-semibold truncate text-on-surface">{{ cat.name }}</p>
+                  <p v-if="cat.slug" class="text-xs mt-0.5 truncate font-mono text-on-surface-variant">{{ cat.slug }}</p>
+                  <p class="text-xs mt-1 truncate text-on-surface-variant">{{ cat.description || 'Sin descripción' }}</p>
+                  <span v-if="cat.status === 'active'" class="aurora-badge aurora-badge-success mt-2">
+                    <span class="w-1.5 h-1.5 rounded-full inline-block mr-1" style="background: currentColor;"></span>
                     Activo
                   </span>
-                  <span v-else class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold border mt-2" style="background: #f3f4f6; color: #4b5563; border-color: #e5e7eb;">
-                    <span class="w-1.5 h-1.5 rounded-full" style="background: #9ca3af;"></span>
+                  <span v-else class="aurora-badge mt-2" style="background: var(--aurora-surface-container); color: var(--aurora-on-surface-variant);">
+                    <span class="w-1.5 h-1.5 rounded-full inline-block mr-1" style="background: var(--aurora-on-surface-variant);"></span>
                     Inactivo
                   </span>
                 </div>
               </div>
               <div class="flex items-center gap-1 shrink-0">
-                <button @click="openModal(cat)"
-                  class="p-1.5 rounded-md transition-colors" style="color: #4f4539;"
-                  @mouseenter="e => e.currentTarget.style.color = '#624200'"
-                  @mouseleave="e => e.currentTarget.style.color = '#4f4539'">
+                <button @click="openModal(cat)" class="aurora-btn-icon" style="color: var(--aurora-on-surface-variant);">
                   <span class="material-icons-outlined" style="font-size: 1.25rem;">edit</span>
                 </button>
-                <button @click="confirmDelete(cat)"
-                  class="p-1.5 rounded-md transition-colors" style="color: #4f4539;"
-                  @mouseenter="e => e.currentTarget.style.color = '#ef4444'"
-                  @mouseleave="e => e.currentTarget.style.color = '#4f4539'">
+                <button @click="confirmDelete(cat)" class="aurora-btn-icon" style="color: var(--aurora-error, #dc2626);">
                   <span class="material-icons-outlined" style="font-size: 1.25rem;">delete</span>
                 </button>
               </div>
             </div>
           </div>
-          <div v-if="flatCategories.length === 0" class="text-center py-12">
-            <span class="material-icons-outlined" style="font-size: 3rem; color: #d2c4b4; display: block; margin-bottom: 0.75rem;">category</span>
-            <p style="color: #4f4539; font-family: 'Inter', sans-serif;">No hay categorías registradas</p>
+          <div v-if="categories.length === 0" class="flex flex-col items-center justify-center py-10 text-center">
+            <span class="material-icons-outlined mb-2" style="font-size: 48px; color: var(--aurora-outline);">category</span>
+            <p class="text-on-surface-variant">No hay categorías registradas</p>
           </div>
         </div>
       </template>
@@ -139,52 +146,30 @@
 
     <!-- Modal -->
     <Modal :show="showModal" :title="editing ? 'Editar Categoría' : 'Nueva Categoría'" @close="closeModal">
-      <form @submit.prevent="handleSave" class="space-y-4">
+      <form @submit.prevent="handleSave" class="space-y-gutter px-6 pb-6 pt-2">
         <div>
-          <label class="block mb-1 font-medium text-sm" style="color: #4f4539; font-family: 'Inter', sans-serif;">Nombre <span style="color: #ef4444;">*</span></label>
-          <input v-model="form.name" required placeholder="Nombre de la categoría"
-            class="w-full rounded-lg px-3 py-2 text-sm transition-all bg-white"
-            style="font-family: 'Inter', sans-serif; color: #0b1c30; border: 1.5px solid #E5E7EB;"
-            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(98,66,0,0.1)'; }"
-            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+          <label class="block mb-1 font-medium text-sm text-on-surface">Nombre <span style="color: #ef4444;">*</span></label>
+          <input v-model="form.name" required placeholder="Nombre de la categoría" class="aurora-input w-full" />
         </div>
         <div>
-          <label class="block mb-1 font-medium text-sm" style="color: #4f4539; font-family: 'Inter', sans-serif;">Descripción</label>
-          <textarea v-model="form.description" rows="2" placeholder="Descripción opcional"
-            class="w-full rounded-lg px-3 py-2 text-sm transition-all bg-white resize-none"
-            style="font-family: 'Inter', sans-serif; color: #0b1c30; border: 1.5px solid #E5E7EB;"
-            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(98,66,0,0.1)'; }"
-            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }"></textarea>
+          <label class="block mb-1 font-medium text-sm text-on-surface">Descripción</label>
+          <textarea v-model="form.description" rows="2" placeholder="Descripción opcional" class="aurora-input w-full resize-none"></textarea>
         </div>
         <div>
-          <label class="block mb-1 font-medium text-sm" style="color: #4f4539; font-family: 'Inter', sans-serif;">Categoría Padre</label>
-          <select v-model="form.parent_id"
-            class="w-full rounded-lg px-3 py-2 text-sm transition-all bg-white appearance-none"
-            style="font-family: 'Inter', sans-serif; color: #0b1c30; border: 1.5px solid #E5E7EB;"
-            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(98,66,0,0.1)'; }"
-            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }">
+          <label class="block mb-1 font-medium text-sm text-on-surface">Categoría Padre</label>
+          <select v-model="form.parent_id" class="aurora-select">
             <option :value="null">— Ninguna (categoría principal) —</option>
-            <option v-for="cat in flatCategories.filter(c => c.level === 0 && (!editing || c.id !== editing.id))"
+            <option v-for="cat in allCategories.filter(c => !c.parent_id && (!editing || c.id !== editing.id))"
               :key="cat.id" :value="cat.id">
               {{ cat.name }}
             </option>
           </select>
         </div>
         <div class="flex justify-end gap-3 pt-3">
-          <button type="button" @click="closeModal"
-            class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
-            style="font-family: 'Inter', sans-serif; color: #4f4539; border: 1.5px solid #d2c4b4; background: white;"
-            @mouseenter="e => { e.currentTarget.style.background = '#eff4ff'; e.currentTarget.style.borderColor = '#624200'; }"
-            @mouseleave="e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#d2c4b4'; }">
+          <button type="button" @click="closeModal" class="aurora-btn-icon text-on-surface-variant">
             Cancelar
           </button>
-          <button type="submit" :disabled="saving"
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-            :style="saving
-              ? { background: '#624200', color: 'white', opacity: '0.7', cursor: 'not-allowed' }
-              : { background: '#624200', color: 'white' }"
-            @mouseenter="e => { if(!saving) e.currentTarget.style.background = '#8B5E00'; }"
-            @mouseleave="e => { if(!saving) e.currentTarget.style.background = '#624200'; }">
+          <button type="submit" :disabled="saving" class="aurora-btn-primary">
             <span v-if="saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             <span v-else class="material-icons-outlined" style="font-size: 1.25rem;">{{ editing ? 'save' : 'add' }}</span>
             {{ editing ? 'Actualizar' : 'Crear' }}
@@ -199,16 +184,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { categoriesAPI } from '../../api';
 import { useAuth } from '../../composables/useAuth';
+import PageHeader from '../../components/shared/PageHeader.vue';
 import Modal from '../../components/shared/Modal.vue';
 import Loading from '../../components/shared/Loading.vue';
+import DataTableSkeleton from '../../components/skeletons/DataTableSkeleton.vue';
 import ConfirmDialog from '../../components/shared/ConfirmDialog.vue';
 import DataTable from '../../components/shared/DataTable.vue';
 
 const { can } = useAuth();
 const categories = ref([]);
+const allCategories = ref([]); // Full flat list for parent dropdown
 const loading = ref(true);
 const showModal = ref(false);
 const showDelete = ref(false);
@@ -219,6 +207,9 @@ const form = ref({ name: '', description: '', parent_id: null });
 const searchQuery = ref('');
 const showFilters = ref(false);
 
+// Client-side pagination
+const limit = 15;
+
 const categoryColumns = [
   { key: 'name', label: 'Nombre' },
   { key: 'slug', label: 'Slug' },
@@ -226,42 +217,48 @@ const categoryColumns = [
   { key: 'status', label: 'Estado' }
 ];
 
-// Debounce timer for search
-let searchTimer = null;
-const onSearchInput = () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    fetchCategories();
-  }, 300);
-};
-
-// Aplana el árbol recursivo en un array plano con nivel de profundidad
-const flatCategories = computed(() => {
-  const flatten = (items, level = 0) => {
-    let result = [];
-    for (const item of items) {
-      result.push({ ...item, level });
-      if (item.children && item.children.length > 0) {
-        result = result.concat(flatten(item.children, level + 1));
-      }
-    }
-    return result;
-  };
-  return flatten(categories.value);
+// Client-side search filter (backend returns all categories, no server-side search)
+const filteredCategories = computed(() => {
+  if (!searchQuery.value) return categories.value;
+  const q = searchQuery.value.toLowerCase();
+  return categories.value.filter(c =>
+    c.name?.toLowerCase().includes(q) ||
+    c.slug?.toLowerCase().includes(q) ||
+    c.description?.toLowerCase().includes(q)
+  );
 });
 
 const fetchCategories = async () => {
   loading.value = true;
   try {
-    const params = {};
-    if (searchQuery.value) params.search = searchQuery.value;
-    const res = await categoriesAPI.getAll(params);
+    const res = await categoriesAPI.getAll({});
     categories.value = Array.isArray(res.data) ? res.data : [];
   } catch (e) {
     console.error('Error fetching categories:', e);
     categories.value = [];
   } finally {
     loading.value = false;
+  }
+};
+
+const fetchAllCategories = async () => {
+  try {
+    const res = await categoriesAPI.getAll({});
+    const raw = Array.isArray(res.data) ? res.data : [];
+    // Aplanar árbol si viene anidado
+    const flatten = (items) => {
+      let result = [];
+      for (const item of items) {
+        result.push(item);
+        if (item.children && item.children.length > 0) {
+          result = result.concat(flatten(item.children));
+        }
+      }
+      return result;
+    };
+    allCategories.value = flatten(raw);
+  } catch (e) {
+    allCategories.value = [];
   }
 };
 
@@ -287,7 +284,7 @@ const handleSave = async () => {
       await categoriesAPI.create(form.value);
     }
     closeModal();
-    await fetchCategories();
+    await Promise.all([fetchCategories(), fetchAllCategories()]);
   } catch (e) {
     console.error('Error saving category:', e);
   } finally {
@@ -313,8 +310,5 @@ const handleDelete = async () => {
   }
 };
 
-onMounted(fetchCategories);
-onUnmounted(() => {
-  clearTimeout(searchTimer);
-});
+onMounted(() => { fetchCategories(); fetchAllCategories(); });
 </script>

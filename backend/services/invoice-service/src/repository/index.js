@@ -59,7 +59,7 @@ export class SupabaseInvoiceRepository {
     return InvoiceMapper.toDomain(data);
   }
 
-  async findMany({ page = 1, limit = 10, status, saleId, clientId, invoiceType, fromDate, toDate } = {}) {
+  async findMany({ page = 1, limit = 10, status, saleId, clientId, invoiceType, fromDate, toDate, search } = {}) {
     const from = (page - 1) * limit;
     const toVal = from + limit - 1;
 
@@ -73,13 +73,29 @@ export class SupabaseInvoiceRepository {
     if (invoiceType) query = query.eq('invoice_type', invoiceType);
     if (fromDate) query = query.gte('created_at', fromDate);
     if (toDate) query = query.lte('created_at', toDate);
+    if (search) {
+      query = query.or(`client_name.ilike.%${search}%,invoice_number.ilike.%${search}%`);
+    }
 
     const { data, count, error } = await query
       .range(from, toVal)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return { data: (data || []).map(r => InvoiceMapper.toDomain(r)), count: count || 0 };
+
+    // Map client info from join if not already set (same as findById)
+    const mapped = (data || []).map(r => {
+      if (r.clients && (!r.client_name || r.client_name === '')) {
+        r.client_name = r.clients.name;
+        r.client_document_number = r.client_document_number || r.clients.document_number || '';
+      }
+      return InvoiceMapper.toDomain(r);
+    });
+
+    return {
+      data: mapped,
+      pagination: { page, limit, total: count || 0, totalPages: Math.ceil((count || 0) / limit) },
+    };
   }
 
   async findBySale(saleId) {

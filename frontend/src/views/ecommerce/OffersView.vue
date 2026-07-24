@@ -1,27 +1,40 @@
 <template>
   <div>
     <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-      <div>
-        <h2 class="font-headline-lg-mobile md:font-headline-lg" style="font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.25; font-weight: 700; color: #0b1c30; letter-spacing: -0.02em; font-family: 'Plus Jakarta Sans', sans-serif;">Ofertas</h2>
-        <p style="color: #4f4539; font-family: 'Inter', sans-serif; font-size: 1rem; line-height: 1.5; margin-top: 0.25rem;">
-          Gestiona los descuentos y promociones
-        </p>
+    <div
+      class="mesh-gradient-header"
+      style="
+        background: radial-gradient(circle at 100% 100%, #f0c04d 0%, #9154dc 50%, #7738c1 100%);
+      "
+    >
+      <div class="header-icon-container">
+        <span class="material-symbols-outlined animate-header-icon"> local_offer </span>
       </div>
-      <button @click="openForm(null)" class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border" style="background: #624200; color: white; border-color: rgba(139,94,0,0.2); font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5;">
-        <span class="material-icons-outlined" style="font-size: 1.25rem;">add</span>
-        Nueva Oferta
-      </button>
+      <div class="header-glass">
+        <div class="header-information">
+          <PageHeader
+            title="Ofertas"
+            description="Gestiona los descuentos y promociones"
+            tag="h1"
+          />
+        </div>
+        <div class="header-actions">
+          <button @click="openForm(null)" class="aurora-header-button aurora-header-button-primary">
+            <span class="material-symbols-outlined"> add </span>
+            Nueva Oferta
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Alert messages -->
-    <Alert v-if="successMsg" type="success" :message="successMsg" :show="!!successMsg" dismissible @close="successMsg = ''" class="mb-4" />
-    <Alert v-if="errorMsg" type="error" :message="errorMsg" :show="!!errorMsg" dismissible @close="errorMsg = ''" class="mb-4" />
+    <Alert v-if="successMsg" type="success" :message="successMsg" :show="!!successMsg" dismissible :duration="500" @close="successMsg = ''" class="mb-md" />
+    <Alert v-if="errorMsg" type="error" :message="errorMsg" :show="!!errorMsg" dismissible @close="errorMsg = ''" class="mb-md" />
 
-    <div v-if="offers.length === 0" class="text-sm text-gray-500 text-center py-8">No hay ofertas configuradas. ¡Crea la primera!</div>
+    <div v-if="offers.length === 0" class="text-on-surface-variant text-center py-8">No hay ofertas configuradas. ¡Crea la primera!</div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div v-for="o in offers" :key="o.id" class="dt-card p-4 relative overflow-hidden">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+      <div v-for="o in offers" :key="o.id" class="aurora-raised-card relative overflow-hidden">
         <!-- Product image preview -->
         <div v-if="o.products?.images?.[0]" class="w-full h-36 rounded-xl overflow-hidden mb-3 bg-white/5">
           <img :src="o.products.images[0]" :alt="o.products.name" class="w-full h-full object-cover"
@@ -29,29 +42,32 @@
         </div>
         <!-- Linked Product -->
         <div v-if="o.products" class="flex items-center gap-2 mb-2">
-          <span class="material-symbols-outlined text-sm" style="color: #624200;">inventory_2</span>
-          <span class="text-sm font-medium truncate" style="color: #0b1c30;">{{ o.products.name }}</span>
+          <span class="material-symbols-outlined text-sm" style="color: var(--aurora-tertiary);">inventory_2</span>
+          <span class="text-sm font-medium truncate text-on-surface">{{ o.products.name }}</span>
         </div>
-        <div v-else class="text-sm text-gray-400 mb-2 italic">Sin producto vinculado</div>
+        <div v-else class="text-sm text-on-surface-variant mb-2 italic">Sin producto vinculado</div>
         <!-- Discount & Status -->
         <div class="flex items-center gap-2 mt-2 text-sm">
-          <span v-if="o.discount_percent" class="font-bold px-2 py-0.5 rounded" style="background: #fef2f2; color: #ef4444;">{{ o.discount_percent }}% OFF</span>
-          <span class="dt-badge" :class="o.active !== false ? 'dt-badge-success' : 'dt-badge-disabled'">{{ o.active !== false ? 'Activa' : 'Inactiva' }}</span>
+          <span v-if="o.discount_percent" class="font-bold px-2 py-0.5 rounded aurora-badge-danger">{{ o.discount_percent }}% OFF</span>
+          <span class="aurora-badge" :class="o.active !== false ? 'aurora-badge-success' : 'aurora-badge-secondary'">{{ o.active !== false ? 'Activa' : 'Inactiva' }}</span>
         </div>
-        <p class="dt-caption mt-1">{{ formatDate(o.start_date) }} - {{ formatDate(o.end_date) }}</p>
+        <p class="text-on-surface-variant mt-1">{{ formatDate(o.start_date) }} - {{ formatDate(o.end_date) }}</p>
         <div class="flex gap-2 mt-3">
-          <button @click="editOffer(o)"
-            class="shrink-0 flex items-center gap-1 font-semibold px-3 py-1.5 rounded-lg transition-all duration-200 border-2"
-            style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.8rem;"
-            @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-            @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">Editar</button>
-          <button @click="deleteOffer(o)"
-            class="shrink-0 flex items-center gap-1 font-semibold px-3 py-1.5 rounded-lg transition-all duration-200 border-2"
-            style="border-color: #ef4444; color: #ef4444; font-family: Inter, sans-serif; font-size: 0.8rem;"
-            @mouseenter="e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#dc2626'; }"
-            @mouseleave="e => { e.currentTarget.style.background = ''; e.currentTarget.style.borderColor = '#ef4444'; }">Eliminar</button>
+          <button @click="editOffer(o)" class="aurora-btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">Editar</button>
+          <button @click="deleteOffer(o)" class="aurora-btn-secondary" style="padding: 6px 12px; font-size: 0.8rem; color: var(--aurora-error); border-color: var(--aurora-error);">Eliminar</button>
         </div>
       </div>
+    </div>
+
+    <!-- Paginación -->
+    <div class="aurora-pagination" v-if="total > limit">
+      <button :disabled="page <= 1" @click="changePage(page - 1)" class="aurora-page-btn">
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+      <span class="aurora-page-btn active">{{ page }} / {{ Math.ceil(total / limit) }}</span>
+      <button :disabled="page >= Math.ceil(total / limit)" @click="changePage(page + 1)" class="aurora-page-btn">
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
     </div>
 
     <!-- Offer Form Modal -->
@@ -59,83 +75,62 @@
       <form @submit.prevent="handleSave" class="space-y-4">
         <!-- Product Selector -->
         <div>
-          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Producto en Oferta <span style="color: #ba1a1a;">*</span></label>
+          <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Producto en Oferta <span style="color: var(--aurora-error);">*</span></label>
           <div class="relative">
-            <select v-model="form.product_id" required
-              class="w-full rounded-lg px-3 py-2.5 appearance-none transition-all"
-              :style="{ fontFamily: 'Inter, sans-serif', fontSize: '0.875rem', color: '#0b1c30', background: '#ffffff', border: '1.5px solid #E5E7EB' }"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }">
+            <select v-model="form.product_id" required class="aurora-select">
               <option value="" disabled>Seleccionar producto...</option>
               <option v-for="p in products" :key="p.id" :value="p.id">
                 {{ p.name }} {{ p.sku ? '(' + p.sku + ')' : '' }}
               </option>
             </select>
-            <div v-if="selectedProductPreview" class="mt-2 flex items-center gap-2 p-2 rounded-lg" style="background: #f5f0eb;">
+            <div v-if="selectedProductPreview" class="mt-2 flex items-center gap-2 p-2 rounded-lg" style="background: var(--aurora-surface-container);">
               <img v-if="selectedProductPreview.images?.[0]" :src="selectedProductPreview.images[0]"
                    class="w-10 h-10 rounded-lg object-cover" />
               <div class="text-sm">
-                <span class="font-medium" style="color: #0b1c30;">{{ selectedProductPreview.name }}</span>
-                <span v-if="selectedProductPreview.price" class="ml-2" style="color: #624200;">
+                <span class="font-medium text-on-surface">{{ selectedProductPreview.name }}</span>
+                <span v-if="selectedProductPreview.price" class="ml-2" style="color: var(--aurora-tertiary);">
                   ${{ Number(selectedProductPreview.price).toLocaleString('en-US', { minimumFractionDigits: 2 }) }}
                 </span>
               </div>
             </div>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-2 gap-gutter">
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">% Descuento <span style="color: #ba1a1a;">*</span></label>
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">% Descuento <span style="color: var(--aurora-error);">*</span></label>
             <div class="relative">
               <input v-model.number="form.discount_percent" type="number" min="0" max="100" step="0.01" required
-                class="w-full rounded-lg px-3 py-2.5 transition-all pr-8"
-                style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-                @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-                @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
-              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm" style="color: #4f4539;">%</span>
+                class="aurora-input" style="font-family: 'JetBrains Mono', monospace; padding-right: 2rem;" />
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-on-surface-variant">%</span>
             </div>
           </div>
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Estado</label>
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Estado</label>
             <div class="flex items-center gap-2 h-10">
               <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" v-model="form.active" class="sr-only peer" />
                 <div class="w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"
-                     :style="{ background: form.active ? '#624200' : '#d2c4b4' }"></div>
-                <span class="ml-3 text-sm" style="color: #4f4539;">{{ form.active ? 'Activa' : 'Inactiva' }}</span>
+                     :style="{ background: form.active ? 'var(--aurora-primary)' : 'var(--aurora-outline-variant)' }"></div>
+                <span class="ml-3 text-sm text-on-surface-variant">{{ form.active ? 'Activa' : 'Inactiva' }}</span>
               </label>
             </div>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-2 gap-gutter">
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Fecha de Inicio</label>
-            <input v-model="form.start_date" type="date"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Fecha de Inicio</label>
+            <input v-model="form.start_date" type="date" class="aurora-input" />
           </div>
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Fecha de Fin</label>
-            <input v-model="form.end_date" type="date"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Fecha de Fin</label>
+            <input v-model="form.end_date" type="date" class="aurora-input" />
           </div>
         </div>
-        <div class="flex justify-end gap-3 pt-4 border-t border-[#d2c4b4]/30">
-          <button type="button" @click="closeForm"
-            class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
-            style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
-            @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-            @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">Cancelar</button>
-          <button type="submit" :disabled="saving"
-            class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
-            style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
-            <span v-if="saving" class="material-symbols-outlined text-sm animate-spin" data-icon="progress_activity">progress_activity</span>
-            <span v-else class="material-icons-outlined" style="font-size: 1.125rem;">local_offer</span>
+        <div class="flex justify-end gap-3 pt-4 border-t" style="border-color: var(--aurora-outline-variant);">
+          <button type="button" @click="closeForm" class="aurora-btn-secondary">Cancelar</button>
+          <button type="submit" :disabled="saving" class="aurora-btn-primary">
+            <span v-if="saving" class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+            <span v-else class="material-symbols-outlined" style="font-size: 1.125rem;">local_offer</span>
             {{ editing ? 'Actualizar' : 'Guardar' }}
           </button>
         </div>
@@ -147,6 +142,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { ecommerceAPI, productsAPI } from '../../api';
+import PageHeader from '../../components/shared/PageHeader.vue';
 import Modal from '../../components/shared/Modal.vue';
 import Alert from '../../components/shared/Alert.vue';
 import { formatDate } from '../../utils';
@@ -154,6 +150,9 @@ import Swal from 'sweetalert2';
 
 const offers = ref([]);
 const products = ref([]);
+const page = ref(1);
+const limit = 12;
+const total = ref(0);
 const showForm = ref(false);
 const editing = ref(null);
 const saving = ref(false);
@@ -172,12 +171,32 @@ const selectedProductPreview = computed(() => {
   return products.value.find(p => p.id === form.value.product_id);
 });
 
+const changePage = (newPage) => {
+  page.value = newPage;
+  fetchOffers();
+};
+
 const fetchOffers = async () => {
   try {
-    const res = await ecommerceAPI.getOffers();
-    offers.value = res.data || [];
+    // all=true trae TODAS las ofertas (incluso inactivas y vencidas) para el panel admin
+    const res = await ecommerceAPI.getOffers({ page: page.value, limit, all: true });
+    // El interceptor unwrap automáticamente { success: true, data: ... }
+    // res.data puede ser el array directamente o un objeto con data
+    console.log('Fetched offers response:', res.data);
+    let offersData = res.data;
+    if (Array.isArray(offersData)) {
+      offers.value = offersData;
+      total.value = res.pagination?.total || offersData.length;
+    } else if (offersData?.data) {
+      offers.value = offersData.data;
+      total.value = offersData.pagination?.total || res.pagination?.total || offersData.data.length;
+    } else {
+      offers.value = [];
+      total.value = 0;
+    }
   } catch (e) {
     console.error('Error fetching offers:', e);
+    offers.value = [];
   }
 };
 
@@ -239,6 +258,7 @@ const handleSave = async () => {
       successMsg.value = 'Oferta creada correctamente';
     }
     closeForm();
+    page.value = 1;
     await fetchOffers();
   } catch (e) {
     errorMsg.value = e.response?.data?.error?.message || 'Error al guardar la oferta';
@@ -259,6 +279,7 @@ const deleteOffer = async (o) => {
   if (r.isConfirmed) {
     try {
       await ecommerceAPI.deleteOffer(o.id);
+      page.value = 1;
       successMsg.value = 'Oferta eliminada correctamente';
       await fetchOffers();
     } catch (e) {

@@ -13,10 +13,13 @@ export class SupabaseUserRepository extends IUserRepository {
     this.#supabase = supabaseClient;
   }
 
+  // Explicit column list avoids schema-cache staleness issues (e.g. missing company_id)
+  static #COLUMNS = 'id,email,name,password_hash,is_active,phone,last_login,created_at,updated_at,role_id,roles:role_id(name,permissions)';
+
   async findById(id) {
     const { data, error } = await this.#supabase
       .from('users')
-      .select('*, roles(name, permissions)')
+      .select(SupabaseUserRepository.#COLUMNS)
       .eq('id', id)
       .single();
 
@@ -27,7 +30,7 @@ export class SupabaseUserRepository extends IUserRepository {
   async findByEmail(email) {
     const { data, error } = await this.#supabase
       .from('users')
-      .select('*, roles(name, permissions)')
+      .select(SupabaseUserRepository.#COLUMNS)
       .eq('email', email.toLowerCase())
       .single();
 
@@ -38,7 +41,7 @@ export class SupabaseUserRepository extends IUserRepository {
   async findAll({ page = 1, limit = 20, search, role, isActive, sortBy = 'created_at', sortOrder = 'desc' } = {}) {
     let query = this.#supabase
       .from('users')
-      .select('*, roles(name, permissions)', { count: 'exact' });
+      .select(SupabaseUserRepository.#COLUMNS, { count: 'exact' });
 
     // Filters
     if (search) {
@@ -79,7 +82,7 @@ export class SupabaseUserRepository extends IUserRepository {
         created_at: user.createdAt.toISOString(),
         updated_at: user.updatedAt.toISOString(),
       }])
-      .select('*, roles(name, permissions)')
+      .select(SupabaseUserRepository.#COLUMNS)
       .single();
 
     if (error) throw error;
@@ -97,7 +100,7 @@ export class SupabaseUserRepository extends IUserRepository {
         updated_at: new Date().toISOString(),
       })
       .eq('id', user.id)
-      .select('*, roles(name, permissions)')
+      .select(SupabaseUserRepository.#COLUMNS)
       .single();
 
     if (error) throw error;
@@ -117,7 +120,7 @@ export class SupabaseUserRepository extends IUserRepository {
     let query = this.#supabase.from('users').select('id', { count: 'exact', head: true });
 
     if (filters.role) {
-      query = query.eq('role', filters.role);
+      query = query.eq('roles.name', filters.role);
     }
     if (filters.isActive !== undefined) {
       query = query.eq('is_active', filters.isActive);
@@ -126,6 +129,62 @@ export class SupabaseUserRepository extends IUserRepository {
     const { count, error } = await query;
     if (error) throw error;
     return count || 0;
+  }
+
+  async toggleActive(id) {
+    // First get current status
+    const { data: current, error: fetchError } = await this.#supabase
+      .from('users')
+      .select('is_active')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const newStatus = !current?.is_active;
+
+    const { data, error } = await this.#supabase
+      .from('users')
+      .update({ is_active: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('*, roles(name, permissions)')
+      .single();
+
+    if (error) throw error;
+    return UserMapper.toDomain(data);
+  }
+
+  async updateRole(id, roleName) {
+    // Resolve role id from name
+    const { data: role, error: roleError } = await this.#supabase
+      .from('roles')
+      .select('id')
+      .eq('name', roleName)
+      .single();
+
+    if (roleError) throw new Error(`Role '${roleName}' not found`);
+
+    const { data, error } = await this.#supabase
+      .from('users')
+      .update({ role_id: role.id, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('*, roles(name, permissions)')
+      .single();
+
+    if (error) throw error;
+    return UserMapper.toDomain(data);
+  }
+
+  async getAccessHistory(id) {
+    const { data, error } = await this.#supabase
+      .from('audit_logs')
+      .select('*')
+      .eq('user_id', id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+    return data || [];
   }
 }
 

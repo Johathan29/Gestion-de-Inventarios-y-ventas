@@ -136,6 +136,39 @@ export function createIdentityRouter({ applicationService }) {
     res.json(apiResponse({ message: 'Usuario desactivado' }));
   }));
 
+  /**
+   * PUT /api/identity/users/:id/toggle-active
+   */
+  router.put('/users/:id/toggle-active', authenticate, hasPermission('user:update'), asyncHandler(async (req, res) => {
+    const user = await applicationService.toggleActive(req.params.id);
+    const dto = UserMapper.toDTO(user);
+
+    res.json(apiResponse({ data: dto }));
+  }));
+
+  /**
+   * PUT /api/identity/users/:id/role
+   */
+  router.put('/users/:id/role', authenticate, hasPermission('user:update'), asyncHandler(async (req, res) => {
+    const { role } = req.body;
+    if (!role) {
+      return res.status(400).json(apiResponse({ success: false, message: 'Role es requerido' }));
+    }
+    const user = await applicationService.changeRole(req.params.id, role);
+    const dto = UserMapper.toDTO(user);
+
+    res.json(apiResponse({ message: 'Rol actualizado', data: dto }));
+  }));
+
+  /**
+   * GET /api/identity/users/:id/access-history
+   */
+  router.get('/users/:id/access-history', authenticate, hasPermission('user:read'), asyncHandler(async (req, res) => {
+    const history = await applicationService.getAccessHistory(req.params.id);
+
+    res.json(apiResponse({ data: history }));
+  }));
+
   return router;
 }
 

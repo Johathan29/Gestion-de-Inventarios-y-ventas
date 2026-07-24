@@ -892,3 +892,311 @@
   background: #fdca5c;
   color: #452d00;
 }
+
+/* ========================================
+   DARK MODE — Dashboard Theme Overrides
+   Adapted from Nexus ERP Material You palette
+   ======================================== */
+.dark .dashboard-theme {
+  --dt-primary: #d3bbff;
+  --dt-on-primary: #3f008d;
+  --dt-primary-container: #6d28d9;
+  --dt-on-primary-container: #dac5ff;
+  --dt-primary-fixed: #e5d6ff;
+  --dt-primary-fixed-dim: #d3bbff;
+  --dt-on-primary-fixed: #1a0040;
+
+  --dt-secondary: #c4c1fb;
+  --dt-on-secondary: #2d2968;
+  --dt-secondary-container: #444173;
+  --dt-on-secondary-container: #e4dfff;
+
+  --dt-tertiary: #ddb7ff;
+  --dt-on-tertiary: #3f006a;
+  --dt-tertiary-container: #7d21cb;
+  --dt-on-tertiary-container: #edd7ff;
+
+  --dt-surface: #171f33;
+  --dt-surface-dim: #0b1326;
+  --dt-surface-bright: #31394d;
+  --dt-surface-container-lowest: #060e20;
+  --dt-surface-container-low: #131b2e;
+  --dt-surface-container: #171f33;
+  --dt-surface-container-high: #222a3d;
+  --dt-surface-container-highest: #2d3449;
+  --dt-on-surface: #dae2fd;
+  --dt-on-surface-variant: #ccc3d7;
+  --dt-inverse-surface: #dae2fd;
+  --dt-inverse-on-surface: #171f33;
+
+  --dt-outline: #958da1;
+  --dt-outline-variant: #4a4455;
+  --dt-surface-tint: #d3bbff;
+
+  --dt-background: #0b1326;
+  --dt-on-background: #dae2fd;
+  --dt-surface-variant: #2d3449;
+
+  background-color: #0b1326;
+  color: #dae2fd;
+}
+
+/* Dark mode Dashboard Theme — Component overrides */
+.dark .dashboard-theme .dt-card,
+.dark .dashboard-theme .dt-card-sm,
+.dark .dashboard-theme .dt-kpi-card,
+.dark .dashboard-theme .dt-accent-card {
+  background: #171f33;
+  border-color: rgba(74, 68, 85, 0.3);
+  border-radius: 28px;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.2);
+}
+
+.dark .dashboard-theme .dt-card:hover,
+.dark .dashboard-theme .dt-kpi-card:hover {
+  border-color: rgba(211, 187, 255, 0.15);
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.35);
+}
+
+.dark .dashboard-theme .dt-display-lg,
+.dark .dashboard-theme .dt-headline-lg,
+.dark .dashboard-theme .dt-headline-md,
+.dark .dashboard-theme .dt-headline-sm {
+  color: #dae2fd;
+}
+
+.dark .dashboard-theme .dt-body-lg,
+.dark .dashboard-theme .dt-body-md,
+.dark .dashboard-theme .dt-body-sm {
+  color: #ccc3d7;
+}
+
+.dark .dashboard-theme .dt-label-caps {
+  color: #958da1;
+}
+
+.dark .dashboard-theme .dt-mono {
+  color: #d3bbff;
+}
+
+.dark .dashboard-theme .dt-stat-value {
+  color: #d3bbff;
+}
+
+.dark .dashboard-theme .dt-input {
+  background: #131b2e;
+  border-color: #4a4455;
+  color: #dae2fd;
+}
+
+.dark .dashboard-theme .dt-input:focus {
+  border-color: #d3bbff;
+  box-shadow: 0 0 0 3px rgba(211, 187, 255, 0.1);
+}
+
+.dark .dashboard-theme .dt-input-label {
+  color: #ccc3d7;
+}
+
+.dark .dashboard-theme .dt-btn-primary {
+  background: #d3bbff;
+  color: #1a0040;
+}
+
+.dark .dashboard-theme .dt-btn-primary:hover:not(:disabled) {
+  background: #e5d6ff;
+  box-shadow: 0 4px 12px rgba(211, 187, 255, 0.2);
+}
+
+.dark .dashboard-theme .dt-btn-secondary {
+  color: #d3bbff;
+  border-color: #d3bbff;
+}
+
+.dark .dashboard-theme .dt-btn-secondary:hover:not(:disabled) {
+  background: rgba(211, 187, 255, 0.08);
+}
+
+.dark .dashboard-theme .dt-btn-ghost {
+  color: #ccc3d7;
+}
+
+.dark .dashboard-theme .dt-btn-ghost:hover {
+  background: rgba(211, 187, 255, 0.08);
+  color: #d3bbff;
+}
+
+.dark .dashboard-theme .dt-btn-danger {
+  background: #ffb4ab;
+  color: #690005;
+}
+
+.dark .dashboard-theme .dt-btn-danger:hover:not(:disabled) {
+  background: #ffccc6;
+}
+
+.dark .dashboard-theme .dt-table thead th {
+  background: #222a3d;
+  color: #dae2fd;
+  border-bottom-color: rgba(74, 68, 85, 0.4);
+}
+
+.dark .dashboard-theme .dt-table tbody td {
+  color: #ccc3d7;
+  border-bottom-color: rgba(74, 68, 85, 0.2);
+}
+
+.dark .dashboard-theme .dt-table tbody tr:hover {
+  background: rgba(45, 52, 73, 0.4);
+}
+
+.dark .dashboard-theme .dt-pagination {
+  border-top-color: rgba(74, 68, 85, 0.3);
+  background: #171f33;
+}
+
+.dark .dashboard-theme .dt-pagination-info {
+  color: #ccc3d7;
+}
+
+.dark .dashboard-theme .dt-pagination-info strong {
+  color: #dae2fd;
+}
+
+.dark .dashboard-theme .dt-pagination-btn {
+  color: #958da1;
+}
+
+.dark .dashboard-theme .dt-pagination-btn:hover:not(:disabled):not(.dt-pagination-active) {
+  background: rgba(211, 187, 255, 0.08);
+  color: #dae2fd;
+}
+
+.dark .dashboard-theme .dt-pagination-active {
+  background: #d3bbff;
+  color: #1a0040;
+}
+
+.dark .dashboard-theme .dt-pagination-ellipsis {
+  color: #958da1;
+}
+
+.dark .dashboard-theme .dt-section-header h2 {
+  color: #dae2fd;
+}
+
+.dark .dashboard-theme .dt-section-header p {
+  color: #958da1;
+}
+
+.dark .dashboard-theme .dt-tabs {
+  border-bottom-color: rgba(74, 68, 85, 0.3);
+}
+
+.dark .dashboard-theme .dt-tab {
+  color: #958da1;
+}
+
+.dark .dashboard-theme .dt-tab:hover {
+  color: #dae2fd;
+  background: rgba(211, 187, 255, 0.06);
+}
+
+.dark .dashboard-theme .dt-tab-active {
+  color: #d3bbff;
+  background: rgba(211, 187, 255, 0.1);
+}
+
+.dark .dashboard-theme .dt-sidebar {
+  background: rgba(11, 19, 38, 0.85);
+  border-right-color: rgba(74, 68, 85, 0.2);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.dark .dashboard-theme .dt-sidebar-item {
+  color: #958da1;
+}
+
+.dark .dashboard-theme .dt-sidebar-item:hover {
+  background: rgba(211, 187, 255, 0.06);
+  color: #dae2fd;
+}
+
+.dark .dashboard-theme .dt-sidebar-item-active {
+  background: rgba(211, 187, 255, 0.1);
+  color: #d3bbff;
+  border-right-color: #d3bbff;
+}
+
+.dark .dashboard-theme .dt-navbar {
+  background: rgba(11, 19, 38, 0.75);
+  border-bottom-color: rgba(74, 68, 85, 0.3);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.dark .dashboard-theme .dt-glass {
+  background: rgba(11, 19, 38, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .dashboard-theme .dt-glass-strong {
+  background: rgba(11, 19, 38, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.dark .dashboard-theme .dt-page-header h1 {
+  color: #dae2fd;
+}
+
+.dark .dashboard-theme .dt-page-header .breadcrumb {
+  color: #958da1;
+}
+
+.dark .dashboard-theme .dt-page-header .breadcrumb a {
+  color: #d3bbff;
+}
+
+.dark .dashboard-theme .dt-empty-state {
+  color: #ccc3d7;
+}
+
+.dark .dashboard-theme .dt-empty-state .dt-empty-icon {
+  color: #4a4455;
+}
+
+.dark .dashboard-theme .dt-empty-state .dt-empty-hint {
+  color: #958da1;
+}
+
+.dark .dashboard-theme .dt-mobile-menu-btn {
+  color: #958da1;
+}
+
+.dark .dashboard-theme .dt-mobile-menu-btn:hover {
+  background: rgba(211, 187, 255, 0.06);
+}
+
+.dark .dashboard-theme .dt-financial {
+  color: #d3bbff;
+}
+
+.dark .dashboard-theme ::selection {
+  background: rgba(211, 187, 255, 0.25);
+  color: #dae2fd;
+}
+
+.dark .dashboard-theme .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4a4455;
+}
+
+.dark .dashboard-theme .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #958da1;
+}
+
+.dark .dashboard-theme ::-webkit-scrollbar-thumb {
+  background-color: rgba(74, 68, 85, 0.5);
+}

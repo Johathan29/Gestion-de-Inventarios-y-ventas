@@ -1,24 +1,24 @@
 <template>
-  <Loading v-if="loading" />
-  <div v-else class="max-w-5xl mx-auto space-y-6">
+  <DetailSkeleton v-if="loading" />
+  <div v-else class="max-w-5xl mx-auto" style="display: flex; flex-direction: column; gap: var(--aurora-gutter);">
     <!-- Invoice Display -->
-    <div class="dt-card p-8 mb-6" id="invoice-content"
+    <div class="aurora-raised-card" id="invoice-content"
          :style="{
-           borderLeft: invoice.status === 'paid' ? '4px solid #22c55e' : invoice.status === 'issued' ? '4px solid #eab308' : (invoice.status === 'cancelled' || invoice.status === 'voided') ? '4px solid #ef4444' : '4px solid #e2d6c8'
+           borderLeft: invoice.status === 'paid' ? '4px solid #22c55e' : invoice.status === 'issued' ? '4px solid #eab308' : (invoice.status === 'cancelled' || invoice.status === 'voided') ? '4px solid #ef4444' : '4px solid var(--aurora-outline)'
          }">
       <!-- Status ribbon -->
-      <div class="flex justify-between items-start mb-8">
+      <div class="flex justify-between items-start" style="margin-bottom: var(--aurora-md);">
         <div>
           <div class="flex items-center gap-3">
-            <h1 class="dt-headline" style="margin-bottom: 0;">Factura</h1>
-            <span class="dt-badge"
-              :class="invoice.status === 'paid' ? 'dt-badge-success' : invoice.status === 'issued' ? 'dt-badge-warning' : 'dt-badge-danger'">
+            <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.75rem; font-weight: 700; color: var(--aurora-on-surface); letter-spacing: -0.02em; margin: 0;">Factura</h1>
+            <span class="aurora-badge"
+              :class="invoice.status === 'paid' ? 'aurora-badge-success' : invoice.status === 'issued' ? 'aurora-badge-warning' : 'aurora-badge-danger'">
               {{ invoice.status === 'paid' ? 'PAGADA' : invoice.status === 'issued' ? 'EMITIDA' : invoice.status === 'cancelled' ? 'ANULADA' : 'ANULADA' }}
             </span>
           </div>
-          <p class="text-gray-500 mt-1">N° {{ invoice.invoice_number }}</p>
-          <p v-if="invoice.paid_at" class="text-sm text-green-600 mt-1">
-            <span class="material-icons-outlined text-sm align-text-bottom">check_circle</span>
+          <p style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: var(--aurora-on-surface-variant); margin-top: 0.25rem;">N° {{ invoice.invoice_number }}</p>
+          <p v-if="invoice.paid_at" style="font-size: 0.875rem; color: #16a34a; margin-top: 0.25rem;">
+            <span class="material-symbols-outlined" style="font-size: 0.875rem; vertical-align: text-bottom;">check_circle</span>
             Pagada el {{ formatDate(invoice.paid_at) }}
           </p>
         </div>
@@ -28,65 +28,65 @@
       </div>
 
       <!-- Client & Invoice Info -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 p-4 rounded-xl" style="background: rgba(98,66,0,0.03);">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6" style="margin-bottom: var(--aurora-md); padding: var(--aurora-md); border-radius: var(--aurora-radius-lg); background: var(--aurora-surface-container);">
         <div>
-          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Cliente</p>
-          <p class="font-semibold" style="color: #0b1c30;">{{ invoice.clients?.name || invoice.client_name || 'Cliente General' }}</p>
-          <p v-if="invoice.clients?.document_id || invoice.client_document" class="text-sm text-gray-500">
+          <p style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--aurora-on-surface-variant); margin-bottom: 0.5rem;">Cliente</p>
+          <p style="font-weight: 600; color: var(--aurora-on-surface);">{{ invoice.clients?.name || invoice.client_name || 'Cliente General' }}</p>
+          <p v-if="invoice.clients?.document_id || invoice.client_document" style="font-size: 0.875rem; color: var(--aurora-on-surface-variant);">
             Doc: {{ invoice.clients?.document_id || invoice.client_document }}
           </p>
-          <p v-if="invoice.clients?.email" class="text-sm text-gray-500">{{ invoice.clients.email }}</p>
-          <p v-if="invoice.clients?.phone" class="text-sm text-gray-500">{{ invoice.clients.phone }}</p>
-          <p v-if="invoice.clients?.address" class="text-sm text-gray-500">{{ invoice.clients.address }}</p>
+          <p v-if="invoice.clients?.email" style="font-size: 0.875rem; color: var(--aurora-on-surface-variant);">{{ invoice.clients.email }}</p>
+          <p v-if="invoice.clients?.phone" style="font-size: 0.875rem; color: var(--aurora-on-surface-variant);">{{ invoice.clients.phone }}</p>
+          <p v-if="invoice.clients?.address" style="font-size: 0.875rem; color: var(--aurora-on-surface-variant);">{{ invoice.clients.address }}</p>
         </div>
         <div class="sm:text-right">
-          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Detalles de Factura</p>
-          <p class="text-sm" style="color: #4f4539;">Emisión: {{ formatDate(invoice.created_at) }}</p>
-          <p v-if="invoice.due_date" class="text-sm" style="color: #4f4539;">Vencimiento: {{ formatDate(invoice.due_date) }}</p>
-          <p v-if="invoice.sales?.sale_number" class="text-sm" style="color: #4f4539;">
+          <p style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--aurora-on-surface-variant); margin-bottom: 0.5rem;">Detalles de Factura</p>
+          <p style="font-size: 0.875rem; color: var(--aurora-on-surface-variant);">Emisión: {{ formatDate(invoice.created_at) }}</p>
+          <p v-if="invoice.due_date" style="font-size: 0.875rem; color: var(--aurora-on-surface-variant);">Vencimiento: {{ formatDate(invoice.due_date) }}</p>
+          <p v-if="invoice.sales?.sale_number" style="font-size: 0.875rem; color: var(--aurora-on-surface-variant);">
             Venta: {{ invoice.sales.sale_number }}
           </p>
         </div>
       </div>
 
       <!-- Products Table -->
-      <table class="w-full text-sm mb-8">
+      <table class="aurora-table" style="margin-bottom: var(--aurora-md);">
         <thead>
-          <tr class="dt-table-header-row">
-            <th class="dt-table-th text-left">Producto</th>
-            <th class="dt-table-th text-right">Cant.</th>
-            <th class="dt-table-th text-right">Precio</th>
-            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Subtotal</th>
+          <tr>
+            <th style="text-align: left;">Producto</th>
+            <th style="text-align: right;">Cant.</th>
+            <th style="text-align: right;">Precio</th>
+            <th style="text-align: right;">Subtotal</th>
           </tr>
         </thead>
-        <tbody class="divide-y" style="border-color: #d2c4b4;">
-          <tr v-for="item in items" :key="item.id" class="hover:bg-gray-50">
-            <td class="px-4 py-3">
+        <tbody>
+          <tr v-for="item in items" :key="item.id">
+            <td>
               <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center shrink-0" style="color: #817567;">
-                  <span class="material-icons-outlined text-sm">inventory_2</span>
+                <div class="w-8 h-8 rounded" style="background: var(--aurora-surface-container); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--aurora-on-surface-variant);">
+                  <span class="material-symbols-outlined" style="font-size: 0.875rem;">inventory_2</span>
                 </div>
-                <span class="font-medium" style="color: #0b1c30;">
+                <span style="font-weight: 500; color: var(--aurora-on-surface);">
                   {{ item.products?.name || item.product_name || 'Producto' }}
                 </span>
               </div>
             </td>
-            <td class="px-4 py-3 text-right">{{ item.quantity }}</td>
-            <td class="px-4 py-3 text-right">{{ formatTable(item.unit_price || item.price) }}</td>
-            <td class="px-4 py-3 text-right font-medium">{{ formatTable(item.total || item.quantity * (item.unit_price || item.price)) }}</td>
+            <td style="text-align: right;">{{ item.quantity }}</td>
+            <td style="text-align: right;">{{ formatTable(item.unit_price || item.price) }}</td>
+            <td style="text-align: right; font-weight: 500;">{{ formatTable(item.total || item.quantity * (item.unit_price || item.price)) }}</td>
           </tr>
         </tbody>
       </table>
 
       <!-- Totales -->
       <div class="flex justify-end">
-        <div class="w-72 space-y-1 text-sm">
-          <div class="flex justify-between text-gray-500"><span>Subtotal</span><span>{{ format(invoice.subtotal) }}</span></div>
-          <div class="flex justify-between text-gray-500"><span>Descuento</span><span v-if="invoice.discount > 0" class="text-red-500">-{{ format(invoice.discount) }}</span><span v-else>$0</span></div>
-          <div class="flex justify-between text-gray-500"><span>IVA (19%)</span><span>{{ format(invoice.tax) }}</span></div>
-          <div class="flex justify-between text-lg font-bold pt-2 border-t" style="border-color: #d2c4b4;">
-            <span style="color: #0b1c30;">Total</span>
-            <span :class="invoice.status === 'paid' ? 'text-green-600' : 'text-primary-600'">
+        <div style="width: 18rem; display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.875rem;">
+          <div class="flex justify-between" style="color: var(--aurora-on-surface-variant);"><span>Subtotal</span><span>{{ format(invoice.subtotal) }}</span></div>
+          <div class="flex justify-between" style="color: var(--aurora-on-surface-variant);"><span>Descuento</span><span v-if="invoice.discount > 0" style="color: #dc2626;">-{{ format(invoice.discount) }}</span><span v-else>$0</span></div>
+          <div class="flex justify-between" style="color: var(--aurora-on-surface-variant);"><span>IVA (19%)</span><span>{{ format(invoice.tax) }}</span></div>
+          <div class="flex justify-between text-lg font-bold pt-2" style="border-top: 1px solid var(--aurora-outline-variant);">
+            <span style="color: var(--aurora-on-surface);">Total</span>
+            <span :style="{ color: invoice.status === 'paid' ? '#16a34a' : 'var(--aurora-primary)' }">
               {{ format(invoice.total) }}
             </span>
           </div>
@@ -94,65 +94,61 @@
       </div>
 
       <!-- Watermark for paid -->
-      <div v-if="invoice.status === 'paid'" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-45 text-6xl font-bold text-green-500/10 pointer-events-none select-none">
+      <div v-if="invoice.status === 'paid'" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 4rem; font-weight: 700; color: rgba(34,197,94,0.1); pointer-events: none; user-select: none;">
         PAGADA
       </div>
     </div>
 
     <!-- Actions -->
     <div class="flex flex-wrap gap-3">
-      <button @click="downloadPDF"
-        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
-        style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
-        <span class="material-icons-outlined" style="font-size: 1.125rem;">picture_as_pdf</span> PDF
+      <button @click="handleDownloadPDF"
+        class="aurora-btn-primary">
+        <span class="material-symbols-outlined" style="font-size: 1.125rem;">picture_as_pdf</span> PDF
       </button>
-      <button @click="downloadExcel"
-        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
-        style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
-        @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-        @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
-        <span class="material-icons-outlined" style="font-size: 1.125rem;">table_chart</span> Excel
+      <button @click="handleDownloadExcel"
+        class="aurora-btn-secondary">
+        <span class="material-symbols-outlined" style="font-size: 1.125rem;">table_chart</span> Excel
       </button>
-      <button @click="downloadFiscalPDF"
-        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
-        style="background: #1e40af; color: white; border-color: rgba(30, 64, 175, 0.3); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
-        <span class="material-icons-outlined" style="font-size: 1.125rem;">receipt_long</span> Asiento Fiscal
+      <button @click="handleDownloadFiscalPDF"
+        class="aurora-btn-primary">
+        <span class="material-symbols-outlined" style="font-size: 1.125rem;">receipt_long</span> Asiento Fiscal
       </button>
       <button @click="printInvoice"
-        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
-        style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
-        @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-        @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
-        <span class="material-icons-outlined" style="font-size: 1.125rem;">print</span> Imprimir
+        class="aurora-btn-secondary">
+        <span class="material-symbols-outlined" style="font-size: 1.125rem;">print</span> Imprimir
       </button>
 
       <button v-if="invoice.status === 'issued'"
               @click="handleTogglePaid"
               :disabled="updatingPayment"
-              class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
-              style="background: #059669; color: white; border-color: rgba(5, 150, 105, 0.3); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
-        <span class="material-icons-outlined" style="font-size: 1.125rem;">paid</span>
+              class="aurora-btn-primary">
+        <span class="material-symbols-outlined" style="font-size: 1.125rem;">paid</span>
         {{ updatingPayment ? 'Procesando...' : 'Marcar como Pagada' }}
       </button>
       <button v-if="invoice.status === 'paid'"
               @click="handleToggleIssued"
               :disabled="updatingPayment"
-              class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
-              style="border-color: #d97706; color: #d97706; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
-              @mouseenter="e => { e.currentTarget.style.background = '#fffbeb'; e.currentTarget.style.borderColor = '#b45309'; }"
-              @mouseleave="e => { e.currentTarget.style.background = ''; e.currentTarget.style.borderColor = '#d97706'; }">
-        <span class="material-icons-outlined" style="font-size: 1.125rem;">undo</span>
+              class="aurora-btn-secondary">
+        <span class="material-symbols-outlined" style="font-size: 1.125rem;">undo</span>
         {{ updatingPayment ? 'Procesando...' : 'Revertir Pago' }}
       </button>
 
       <router-link to="/app/invoices"
-        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
-        style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
-        @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-        @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
-        <span class="material-icons-outlined" style="font-size: 1.125rem;">arrow_back</span> Volver
+        class="aurora-btn-secondary">
+        <span class="material-symbols-outlined" style="font-size: 1.125rem;">arrow_back</span> Volver
       </router-link>
     </div>
+
+    <!-- Download Progress Modal -->
+    <AuroraDownloadModal
+      :visible="showDownloadModal"
+      :title="modalTitle"
+      :subtitle="modalSubtitle"
+      :success-message="modalSuccessMessage"
+      :file-name="modalFileName"
+      :download-fn="currentDownloadFn"
+      @close="showDownloadModal = false"
+    />
   </div>
 </template>
 
@@ -160,29 +156,64 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { invoicesAPI } from '../../api';
+import DetailSkeleton from '../../components/skeletons/DetailSkeleton.vue';
 import Loading from '../../components/shared/Loading.vue';
+import AuroraDownloadModal from '../../components/shared/AuroraDownloadModal.vue';
 import { useCurrency } from '../../composables/useCurrency';
 import { formatDate } from '../../utils';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { autoTable } from 'jspdf-autotable';
 import Swal from 'sweetalert2';
 import * as XLSX from 'xlsx';
 
 const { format, formatTable } = useCurrency();
-import 'jspdf-autotable';
-import Swal from 'sweetalert2';
-import * as XLSX from 'xlsx';
 
 const route = useRoute();
 const invoice = ref({});
 const loading = ref(true);
 const updatingPayment = ref(false);
 
+// Download modal state
+const showDownloadModal = ref(false);
+const currentDownloadFn = ref(null);
+const modalTitle = ref('Generating PDF Report...');
+const modalSubtitle = ref('Please wait while Aurora ERP compiles your data and performance metrics.');
+const modalSuccessMessage = ref('Your report is ready for download.');
+const modalFileName = ref('report.pdf');
+
 const items = computed(() => {
   const saleItems = invoice.value.sales?.sale_items || [];
   const directItems = invoice.value.items || [];
   return saleItems.length > 0 ? saleItems : directItems;
 });
+
+// Download modal handlers
+const handleDownloadPDF = () => {
+  modalTitle.value = 'Generating Invoice PDF...';
+  modalSubtitle.value = 'Compiling invoice data, items, and tax information into a printable document.';
+  modalSuccessMessage.value = 'Your invoice PDF is ready.';
+  modalFileName.value = `factura-${invoice.value.invoice_number}.pdf`;
+  currentDownloadFn.value = downloadPDF;
+  showDownloadModal.value = true;
+};
+
+const handleDownloadFiscalPDF = () => {
+  modalTitle.value = 'Generating Fiscal Document...';
+  modalSubtitle.value = 'Compiling fiscal records, tax breakdown, and legal compliance data.';
+  modalSuccessMessage.value = 'Your fiscal document is ready.';
+  modalFileName.value = `asiento-fiscal-${invoice.value.invoice_number}.pdf`;
+  currentDownloadFn.value = downloadFiscalPDF;
+  showDownloadModal.value = true;
+};
+
+const handleDownloadExcel = () => {
+  modalTitle.value = 'Generating Excel Report...';
+  modalSubtitle.value = 'Structuring data tables, formatting cells, and preparing spreadsheet.';
+  modalSuccessMessage.value = 'Your Excel report is ready.';
+  modalFileName.value = `factura-${invoice.value.invoice_number}.xlsx`;
+  currentDownloadFn.value = downloadExcel;
+  showDownloadModal.value = true;
+};
 
 const downloadPDF = () => {
   const isPaid = invoice.value.status === 'paid';
@@ -227,7 +258,7 @@ const downloadPDF = () => {
   ]);
 
   const tableStartY = y + (invoice.value.clients?.document_id ? 24 : 20);
-  doc.autoTable({
+  autoTable(doc, {
     startY: tableStartY,
     head: [['Producto', 'Cant.', 'Precio', 'Subtotal']],
     body: tableItems,
@@ -305,7 +336,7 @@ const downloadFiscalPDF = () => {
     `$${Number(i.unit_price || i.price).toLocaleString('es-CO')}`,
     `$${Number(i.total || (i.quantity * (i.unit_price || i.price))).toLocaleString('es-CO')}`
   ]);
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     head: [['Producto/Servicio', 'Cant.', 'Precio Unit.', 'Subtotal']],
     body: tableItems,
@@ -448,11 +479,77 @@ const handleToggleIssued = async () => {
   }
 };
 
+function mapInvoiceData(data) {
+  if (!data) return {};
+  return {
+    id: data.id,
+    invoice_number: data.invoiceNumber || data.invoice_number,
+    ncf: data.ncf,
+    sale_id: data.saleId || data.sale_id,
+    client_id: data.clientId || data.client_id,
+    client_name: data.clientName || data.client_name,
+    client_document: data.clientDocumentNumber || data.client_document_number || data.clientDocument,
+    user_id: data.userId || data.user_id,
+    status: data.status,
+    subtotal: data.subtotal,
+    discount: data.discount,
+    tax: data.tax,
+    total: data.total,
+    invoice_type: data.invoiceType || data.invoice_type,
+    qr_code: data.qrCodeText || data.qr_code,
+    due_date: data.dueDate || data.due_date,
+    paid_at: data.paidAt || data.paid_at,
+    cancelled_at: data.cancelledAt || data.cancelled_at,
+    created_at: data.createdAt || data.created_at,
+    updated_at: data.updatedAt || data.updated_at,
+    notes: data.notes,
+    source: data.source || data.source,
+    clients: data.clients || (data.clientName ? {
+      name: data.clientName || data.client_name,
+      email: data.clientEmail || data.client_email,
+      phone: data.clientPhone || data.client_phone,
+      document_id: data.clientDocumentNumber || data.client_document_number,
+      address: data.clientAddress || data.client_address,
+    } : null),
+    sales: data.sales || (data.saleId ? {
+      sale_number: data.saleNumber || data.sale_number,
+      sale_items: (data.items || []).map(i => ({
+        id: i.id,
+        product_id: i.productId || i.product_id,
+        product_name: i.productName || i.product_name,
+        quantity: i.quantity,
+        unit_price: i.unitPrice || i.unit_price,
+        price: i.unitPrice || i.unit_price || i.price,
+        total: i.total,
+        discount: i.discount,
+        tax: i.tax,
+        products: i.products || (i.productName ? { name: i.productName || i.product_name } : null),
+      }))
+    } : null),
+    items: (data.items || []).map(i => ({
+      id: i.id,
+      product_id: i.productId || i.product_id,
+      product_name: i.productName || i.product_name,
+      quantity: i.quantity,
+      unit_price: i.unitPrice || i.unit_price,
+      price: i.unitPrice || i.unit_price || i.price,
+      total: i.total,
+      discount: i.discount,
+      tax: i.tax,
+      products: i.products || (i.productName ? { name: i.productName || i.product_name } : null),
+    })),
+  };
+}
+
 const loadInvoice = async () => {
   try {
     const res = await invoicesAPI.getById(route.params.id);
-    invoice.value = res.data || {};
-  } catch (e) { /* ignore */ }
+    invoice.value = mapInvoiceData(res.data || {});
+  } catch (e) {
+    console.error('[InvoiceDetail] Error loading invoice:', e);
+  } finally {
+    loading.value = false;
+  }
 };
 
 onMounted(loadInvoice);

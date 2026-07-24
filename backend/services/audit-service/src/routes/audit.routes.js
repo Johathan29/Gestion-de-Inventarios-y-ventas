@@ -6,11 +6,11 @@ const { getAuditLogs, logAuditEvent, getRecentActivity, getAuditStats } = requir
 
 router.use(authenticate());
 
-router.get('/', hasPermission(PERMISSIONS.ADMIN_ACCESS), getAuditLogs);
+router.get('/', hasPermission(PERMISSIONS.AUDIT_READ), getAuditLogs);
 router.get('/recent', getRecentActivity);
-router.get('/stats', hasPermission(PERMISSIONS.ADMIN_ACCESS), getAuditStats);
+router.get('/stats', hasPermission(PERMISSIONS.AUDIT_READ), getAuditStats);
 
 // Ruta interna para registro
-router.post('/log', hasPermission(PERMISSIONS.ADMIN_ACCESS), logAuditEvent);
+router.post('/log', hasPermission(PERMISSIONS.AUDIT_READ), logAuditEvent);
 
 module.exports = { auditRouter: router };

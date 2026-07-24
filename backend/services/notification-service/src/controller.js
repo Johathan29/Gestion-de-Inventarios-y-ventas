@@ -27,6 +27,14 @@ export function createNotificationRouter(appService) {
     })
   );
 
+  router.get('/:id',
+    authenticate,
+    asyncHandler(async (req, res) => {
+      const notification = await appService.getNotification(req.params.id, req.user.id);
+      res.json({ success: true, data: notification });
+    })
+  );
+
   router.put('/:id/read',
     authenticate,
     asyncHandler(async (req, res) => {

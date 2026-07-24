@@ -5,6 +5,7 @@
 import {
   RegisterUserUseCase, LoginUseCase, RefreshTokenUseCase,
   ChangePasswordUseCase, UpdateUserUseCase, GetUserUseCase, ListUsersUseCase,
+  ToggleActiveUserUseCase, ChangeUserRoleUseCase, GetUserAccessHistoryUseCase,
 } from '../usecases/index.js';
 
 export class IdentityApplicationService {
@@ -15,6 +16,9 @@ export class IdentityApplicationService {
   #updateUser;
   #getUser;
   #listUsers;
+  #toggleActive;
+  #changeRole;
+  #getAccessHistory;
 
   constructor(dependencies) {
     this.#registerUser = new RegisterUserUseCase(dependencies);
@@ -24,6 +28,9 @@ export class IdentityApplicationService {
     this.#updateUser = new UpdateUserUseCase(dependencies);
     this.#getUser = new GetUserUseCase(dependencies);
     this.#listUsers = new ListUsersUseCase(dependencies);
+    this.#toggleActive = new ToggleActiveUserUseCase(dependencies);
+    this.#changeRole = new ChangeUserRoleUseCase(dependencies);
+    this.#getAccessHistory = new GetUserAccessHistoryUseCase(dependencies);
   }
 
   async register(dto) { return this.#registerUser.execute(dto); }
@@ -33,6 +40,9 @@ export class IdentityApplicationService {
   async updateUser(id, updates) { return this.#updateUser.execute({ id, updates }); }
   async getUser(id) { return this.#getUser.execute(id); }
   async listUsers(query) { return this.#listUsers.execute(query); }
+  async toggleActive(id) { return this.#toggleActive.execute(id); }
+  async changeRole(id, roleName) { return this.#changeRole.execute(id, roleName); }
+  async getAccessHistory(id) { return this.#getAccessHistory.execute(id); }
 }
 
 export default IdentityApplicationService;

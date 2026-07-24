@@ -122,9 +122,12 @@ export class InvoicePdfService {
 
         doc.fillColor(secondaryColor);
         xPos = 50;
+        const displayName = item.variantName
+          ? `${item.productName || ''} - ${item.variantName}`
+          : (item.productName || '');
         const rowData = [
           String(index + 1),
-          item.productName || '',
+          displayName,
           String(item.quantity || 0),
           `$${(item.unitPrice || 0).toFixed(2)}`,
           `$${(item.discount || 0).toFixed(2)}`,

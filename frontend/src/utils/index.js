@@ -178,12 +178,25 @@ export const formatInvoiceNumber = (num) => num || 'N/A';
  */
 export const normalizeSale = (sale) => {
   if (!sale) return sale;
+  const rawItems = sale.sale_items || sale.items || [];
   return {
     ...sale,
-    invoice_number: sale.sale_number || sale.invoice_number,
+    invoice_number: sale.invoice?.invoice_number || sale.invoice_number || sale.sale_number,
     client_name: sale.clients?.name || sale.client_name || 'Cliente General',
     user_name: sale.users?.name || sale.user_name || '-',
-    payment_type: sale.payment_method || sale.payment_type || '-'
+    payment_type: sale.payment_method || sale.payment_type || '-',
+    // Normalize items: merge snake_case + camelCase fields
+    sale_items: rawItems.map(item => ({
+      ...item,
+      product_name: item.product_name || item.productName || '',
+      productName: item.productName || item.product_name || '',
+      variant_name: item.variant_name || item.variantName || null,
+      variantName: item.variantName || item.variant_name || null,
+      variant_attributes: item.variant_attributes || item.variantAttributes || null,
+      variantAttributes: item.variantAttributes || item.variant_attributes || null,
+      variant_id: item.variant_id || item.variantId || null,
+      variantId: item.variantId || item.variant_id || null,
+    })),
   };
 };
 

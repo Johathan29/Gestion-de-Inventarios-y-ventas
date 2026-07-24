@@ -65,6 +65,9 @@ export class InvoiceMapper {
       tax: raw.tax || 0,
       total: raw.total,
       createdAt: raw.created_at ? new Date(raw.created_at) : undefined,
+      variantId: raw.variant_id,
+      variantName: raw.variant_name,
+      variantAttributes: raw.variant_attributes,
     });
   }
 
@@ -104,7 +107,6 @@ export class InvoiceMapper {
       signature: domain.signature,
       qr_code_text: domain.qrCodeText,
       fiscal_registration: domain.fiscalRegistration,
-      source: domain.source,
       notes: domain.notes,
     };
   }

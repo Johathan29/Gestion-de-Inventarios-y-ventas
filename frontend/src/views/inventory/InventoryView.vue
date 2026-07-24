@@ -1,64 +1,79 @@
 <template>
-  <div>
+  <InventorySkeleton v-if="loading" />
+  <div v-else class="px-gutter">
     <!-- Header & Summary -->
     <div class="mb-6">
-      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 class="font-headline-lg-mobile md:font-headline-lg" style="font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.25; font-weight: 700; color: #0b1c30; letter-spacing: -0.02em; font-family: 'Plus Jakarta Sans', sans-serif;">Inventario</h1>
-          <p style="color: #4f4539; font-family: 'Inter', sans-serif; font-size: 1rem; line-height: 1.5; margin-top: 0.25rem;">
-            {{ pagination.total || inventoryItems.length }} producto{{ (pagination.total || inventoryItems.length) !== 1 ? 's' : '' }} en inventario
-          </p>
+      <!-- Inventory Header -->
+      <div
+        class="mesh-gradient-header"
+        style="
+          background: radial-gradient(circle at 100% 100%, #f0c04d 0%, #9154dc 50%, #7738c1 100%);
+        "
+      >
+        <div class="header-icon-container">
+          <span class="material-symbols-outlined animate-header-icon"> inventory </span>
         </div>
-        <div class="flex items-center gap-3 w-full sm:w-auto">
-          <button class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
-            style="background: #624200; color: white; border-color: rgba(139,94,0,0.2); font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5;"
-            @mouseenter="$event => $event.currentTarget.style.background = '#452d00'"
-            @mouseleave="$event => $event.currentTarget.style.background = '#624200'">
-            <span class="material-icons-outlined" style="font-size: 1.25rem;">download</span>
-            <span class="hidden sm:inline">Exportar</span>
-          </button>
+        <div class="header-glass">
+          <div class="header-information">
+            <PageHeader
+              title="Inventario"
+              tag="h1"
+              :description="`${pagination.total || inventoryItems.length} producto${
+                (pagination.total || inventoryItems.length) !== 1 ? 's' : ''
+              } en inventario`"
+            />
+          </div>
+          <div class="header-actions">
+            <button class="aurora-header-button aurora-header-button-secondary">
+              <span class="material-symbols-outlined"> download </span>
+              Exportar
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- Summary Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Total Value Card -->
-        <div class="bg-white rounded-[16px] p-4 border relative overflow-hidden" style="border-color: rgba(210,196,180,0.2); box-shadow: 0px 4px 20px rgba(98,66,0,0.05);">
-          <div class="absolute -right-4 -top-4 w-24 h-24 rounded-full" style="background: rgba(98,66,0,0.03);"></div>
-          <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="font-family: 'Inter', sans-serif; color: #4f4539; line-height: 1; letter-spacing: 0.05em;">VALOR TOTAL INVENTARIO</p>
-          <p class="text-[32px] lg:text-[48px] font-bold leading-tight tracking-tight" style="font-family: 'Plus Jakarta Sans', sans-serif; color: #452d00;">
-            {{ formatCurrencyTotal(summary.totalValue) }}
-            <span class="text-base font-normal" style="color: #4f4539; font-family: 'Inter', sans-serif; margin-left: 0.25rem;">{{ currencySymbol }}</span>
-          </p>
-        </div>
-
-        <!-- Low Stock Alert Card -->
-        <div class="bg-white rounded-[16px] p-4 border-l-4 flex items-center justify-between" style="border-color: rgba(210,196,180,0.2); border-left-color: #d0a71f; box-shadow: 0px 4px 20px rgba(98,66,0,0.05);">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="font-family: 'Inter', sans-serif; color: #4f4539; line-height: 1; letter-spacing: 0.05em;">STOCK BAJO</p>
-            <p class="text-2xl font-bold" style="color: #0b1c30; font-family: 'Plus Jakarta Sans', sans-serif;">
-              {{ summary.lowStock }}
-              <span class="text-sm font-normal" style="color: #4f4539; font-family: 'Inter', sans-serif;">Productos</span>
-            </p>
-          </div>
-          <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background: rgba(208,167,31,0.1); color: #d0a71f;">
-            <span class="material-icons-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
-          </div>
-        </div>
-
-        <!-- Out of Stock Alert Card -->
-        <div class="bg-white rounded-[16px] p-4 border-l-4 flex items-center justify-between" style="border-color: rgba(210,196,180,0.2); border-left-color: #ba1a1a; box-shadow: 0px 4px 20px rgba(98,66,0,0.05);">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="font-family: 'Inter', sans-serif; color: #4f4539; line-height: 1; letter-spacing: 0.05em;">AGOTADOS</p>
-            <p class="text-2xl font-bold" style="color: #0b1c30; font-family: 'Plus Jakarta Sans', sans-serif;">
-              {{ summary.outOfStock }}
-              <span class="text-sm font-normal" style="color: #4f4539; font-family: 'Inter', sans-serif;">Productos</span>
-            </p>
-          </div>
-          <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background: #ffdad6; color: #93000a;">
-            <span class="material-icons-outlined" style="font-variation-settings: 'FILL' 1;">error</span>
-          </div>
-        </div>
+      <!-- Summary Cards — Dashboard style with counter animation -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-gutter">
+        <StatCard
+          label="Valor Total Inventario"
+          :value="summary.totalValue"
+          type="currency"
+          icon="inventory_2"
+          iconColor="#7c3aed"
+          variant="dashboard"
+          :stagger-delay="0"
+          :animate="true"
+        />
+        <StatCard
+          label="Stock Bajo"
+          :value="summary.lowStock"
+          icon="warning"
+          iconColor="#d97706"
+          subtext="Productos por debajo del mínimo"
+          variant="dashboard"
+          :stagger-delay="100"
+          :animate="true"
+        />
+        <StatCard
+          label="Agotados"
+          :value="summary.outOfStock"
+          icon="error"
+          iconColor="#dc2626"
+          subtext="Productos sin stock"
+          variant="dashboard"
+          :stagger-delay="200"
+          :animate="true"
+        />
+        <StatCard
+          label="Pendientes de Verificación"
+          :value="summary.pending"
+          icon="fact_check"
+          iconColor="#d97706"
+          subtext="Productos por verificar"
+          variant="dashboard"
+          :stagger-delay="300"
+          :animate="true"
+        />
       </div>
     </div>
 
@@ -66,37 +81,62 @@
     <InventoryTabs />
 
     <!-- Filter/Sort Bar -->
-    <div class="bg-white rounded-[16px] overflow-hidden" style="box-shadow: 0px 4px 20px rgba(98,66,0,0.05);">
-      <div class="filter-bar-container p-4 border-b border-[#d2c4b4]/30 flex justify-between items-center" style="background: #ffffff;">
-        <div class="flex gap-2">
-          <button @click="showFilters = !showFilters"
-            class="px-3 py-1.5 text-sm font-medium border border-[#d2c4b4] rounded-md flex items-center gap-1 hover:bg-[#eff4ff] transition-colors bg-white relative"
-            :class="{ 'ring-2 ring-[rgba(98,66,0,0.2)] border-[#624200]': showFilters }"
-            style="font-family: 'Inter', sans-serif; color: #4f4539;">
-            <span class="material-icons-outlined" style="font-size: 1rem;">filter_list</span>
+    <div class="aurora-raised-card !p-0 overflow-hidden">
+      <div
+        class="flex flex-col p-4 sm:flex-row justify-between items-stretch sm:items-center gap-gutter "
+        style="border-color: var(--aurora-outline-variant)"
+      >
+        <div class="flex gap-2" >
+          <button
+            @click="showFilters = !showFilters"
+            class="border !px-3 !py-1.5 flex items-center gap-1 border-[var(--aurora-outline-variant)] hover:!bg-[#9161f4] hover:text-white transition-colors duration-200 rounded-md text-[#9161f4] bg-white"
+            :class="{ 'aurora-pressed': showFilters }"
+            style="padding: 8px 12px; font-size: 0.8rem"
+          >
+            <span class="material-symbols-outlined" style="font-size: 1rem">filter_list</span>
             Filtrar
           </button>
         </div>
-        <div class="relative">
-          <div class="flex items-center bg-white border border-[#d2c4b4] rounded-full px-4 py-1.5 focus-within:border-[#624200] focus-within:ring-2 focus-within:ring-[rgba(98,66,0,0.2)] transition-all">
-            <span class="material-icons-outlined" style="color: #d2c4b4; margin-right: 0.5rem; font-size: 1rem;">search</span>
-            <input v-model="searchQuery" @input="onSearchInput" type="text" placeholder="Buscar por producto o SKU..."
-              class="bg-transparent border-none focus:ring-0 outline-none text-sm"
-              style="font-family: 'Inter', sans-serif; color: #0b1c30;" />
-          </div>
+        <div class="relative w-full sm:w-auto">
+          <input
+            v-model="searchQuery"
+            @input="onSearchInput"
+            type="text"
+            placeholder="Buscar por producto o SKU..."
+            class="aurora-search w-full"
+          />
         </div>
       </div>
 
       <!-- Filter Panel -->
-      <div v-if="showFilters" class="filter-panel-container px-4 py-4 border-b border-[#d2c4b4]/30" style="background: #faf9f6;">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div
+        v-if="showFilters"
+        class="p-4 border-b"
+        style="
+          background: var(--aurora-surface-container);
+          border-color: var(--aurora-outline-variant);
+        "
+      >
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; color: #4f4539;">Categoría</label>
-            <select v-model="filters.category_id"
-              class="w-full rounded-lg px-3 py-2 text-sm appearance-none bg-white transition-all"
-              style="font-family: 'Inter', sans-serif; color: #0b1c30; border: 1.5px solid #E5E7EB;">
+            <label class="block mb-1 font-medium text-xs text-on-surface-variant">Categoría</label>
+            <select v-model="filters.category_id" class="aurora-select">
               <option value="">Todas las categorías</option>
-              <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+              <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                {{ cat.name }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label class="block mb-1 font-medium text-xs text-on-surface-variant">Estado</label>
+            <select v-model="filters.status" class="aurora-select">
+              <option value="">Todos los estados</option>
+              <option value="available">Disponible</option>
+              <option value="pending">Pendiente</option>
+              <option value="blocked">Bloqueado</option>
+              <option value="not_available">No Disponible</option>
+              <option value="in_review">En Revisión</option>
+              <option value="not_available_for_sales">No Disponible para Ventas</option>
             </select>
           </div>
         </div>
@@ -110,226 +150,192 @@
         :per-page="perPage"
         empty-message="No hay productos en inventario"
         @page-change="changePage"
-        @row-click="openDetail"
+        @row-click="goToProductDetail"
         @view-kardex="viewKardex"
       />
     </div>
-
-    <!-- Product Detail Modal -->
-    <Teleport to="body">
-      <div v-if="selectedProduct" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="selectedProduct = null">
-        <div class="bg-white rounded-2xl w-full max-w-lg mx-4 p-6" style="box-shadow: 0px 12px 48px rgba(98, 66, 0, 0.16);">
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-bold" style="color: #0b1c30;">Detalle de Producto</h3>
-            <button @click="selectedProduct = null" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors !cursor-pointer" style="border: none; background: transparent;">
-              <span class="material-icons-outlined">close</span>
-            </button>
-          </div>
-          <div v-if="selectedProduct" class="space-y-4">
-            <div class="flex items-center gap-4 mb-4">
-              <div class="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                <img v-if="selectedProduct.product?.images?.[0]" :src="selectedProduct.product.images[0]" class="w-full h-full object-cover" />
-                <span v-else class="material-icons-outlined flex items-center justify-center w-full h-full" style="color: #d2c4b4; font-size: 28px;">inventory_2</span>
-              </div>
-              <div>
-                <p class="font-bold text-lg" style="color: #0b1c30;">{{ selectedProduct.product_name }}</p>
-                <p class="text-sm text-gray-500">SKU: {{ selectedProduct.product?.sku || selectedProduct.sku }}</p>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4 p-4 rounded-xl" style="background: rgba(98,66,0,0.03);">
-              <div>
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Stock Actual</p>
-                <p class="text-xl font-bold" :class="selectedProduct.stock <= (selectedProduct.min_stock || 5) ? 'text-red-600' : 'text-green-600'">{{ selectedProduct.stock || 0 }}</p>
-              </div>
-              <div>
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Stock Mínimo</p>
-                <p class="text-xl font-bold" style="color: #0b1c30;">{{ selectedProduct.min_stock || 0 }}</p>
-              </div>
-              <div>
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Costo Compra</p>
-                <p class="font-bold" style="color: #0b1c30;">{{ formatCurrencyTable(selectedProduct.purchase_price || selectedProduct.cost_price || selectedProduct.product?.cost_price || 0) }}</p>
-              </div>
-              <div>
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Precio Venta</p>
-                <p class="font-bold" style="color: #624200;">{{ formatCurrencyTable(selectedProduct.price || selectedProduct.product?.price || 0) }}</p>
-              </div>
-              <div class="col-span-2">
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Valor Total en Stock</p>
-                <p class="text-xl font-bold" style="color: #452d00;">{{ formatCurrencyTable((selectedProduct.stock || 0) * (selectedProduct.price || selectedProduct.product?.price || 0)) }}</p>
-              </div>
-            </div>
-            <div class="flex justify-end gap-3 pt-2">
-              <button @click="viewKardexFromDetail()"
-                class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2 !cursor-pointer"
-                style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
-                <span class="material-icons-outlined" style="font-size: 1.125rem;">history</span> Ver Kardex
-              </button>
-              <button @click="selectedProduct = null"
-                class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2 !cursor-pointer"
-                style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { inventoryAPI, categoriesAPI } from '../../api';
-import { useCurrency } from '../../composables/useCurrency';
-import { normalizeInventoryItems } from '../../utils';
+  import { ref, reactive, watch, onMounted, onUnmounted } from 'vue';
+  import { useRouter } from 'vue-router';
+  import { inventoryAPI, categoriesAPI } from '../../api';
+  import { normalizeInventoryItems } from '../../utils';
+  import PageHeader from '../../components/shared/PageHeader.vue';
+  import StatCard from '../../components/shared/StatCard.vue';
+  import { useCurrency } from '../../composables/useCurrency';
 
-const { format: formatCurrencyTotal, formatTable: formatCurrencyTable, currencySymbol } = useCurrency();
+  const {
+    format: formatCurrencyTotal,
+    formatTable: formatCurrencyTable,
+    currencySymbol
+  } = useCurrency();
 
-import InventoryTabs from '../../components/inventory/InventoryTabs.vue';
-import InventoryTable from '../../components/inventory/InventoryTable.vue';
+  import InventoryTabs from '../../components/inventory/InventoryTabs.vue';
+  import InventoryTable from '../../components/inventory/InventoryTable.vue';
+  import InventorySkeleton from '../../components/skeletons/InventorySkeleton.vue';
 
-const router = useRouter();
-const loading = ref(true);
-const inventoryItems = ref([]);
-const categories = ref([]);
-const searchQuery = ref('');
-const selectedProduct = ref(null);
-const filters = reactive({ category_id: '' });
-const showFilters = ref(false);
-const perPage = ref(15);
-const summary = reactive({ totalValue: 0, lowStock: 0, outOfStock: 0 });
-const pagination = reactive({
-  currentPage: 1,
-  lastPage: 1,
-  total: 0,
-  from: 0,
-  to: 0,
-  pages: []
-});
+  const router = useRouter();
+  const loading = ref(true);
+  const inventoryItems = ref([]);
+  const categories = ref([]);
+  const searchQuery = ref('');
+  const filters = reactive({ category_id: '', status: '' });
+  const showFilters = ref(false);
+  const perPage = ref(10);
+  const summary = reactive({ totalValue: 0, lowStock: 0, outOfStock: 0, pending: 0 });
+  const pagination = reactive({
+    currentPage: 1,
+    lastPage: 1,
+    total: 0,
+    from: 0,
+    to: 0,
+    pages: []
+  });
 
-let searchTimer = null;
+  let searchTimer = null;
 
-const onSearchInput = () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    pagination.currentPage = 1;
+  const onSearchInput = () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      pagination.currentPage = 1;
+      fetchInventory();
+    }, 300);
+  };
+
+  const changePage = (page) => {
+    if (page < 1 || page > pagination.lastPage) return;
+    pagination.currentPage = page;
     fetchInventory();
-  }, 300);
-};
+  };
 
-const changePage = (page) => {
-  if (page < 1 || page > pagination.lastPage) return;
-  pagination.currentPage = page;
-  fetchInventory();
-};
+  const buildPagination = (data) => {
+    pagination.currentPage = data.current_page || data.page || 1;
+    pagination.lastPage = data.last_page || data.totalPages || 1;
+    pagination.total = data.total || 0;
+    pagination.from = data.from || (pagination.currentPage - 1) * 10 + 1;
+    pagination.to = data.to || Math.min(pagination.currentPage * 10, pagination.total);
 
-const buildPagination = (data) => {
-  pagination.currentPage = data.current_page || data.page || 1;
-  pagination.lastPage = data.last_page || data.totalPages || 1;
-  pagination.total = data.total || 0;
-  pagination.from = data.from || ((pagination.currentPage - 1) * 15) + 1;
-  pagination.to = data.to || Math.min(pagination.currentPage * 15, pagination.total);
+    // Build page buttons with ellipsis
+    const pages = [];
+    const total = pagination.lastPage;
+    const current = pagination.currentPage;
 
-  // Build page buttons with ellipsis
-  const pages = [];
-  const total = pagination.lastPage;
-  const current = pagination.currentPage;
-
-  if (total <= 7) {
-    for (let i = 1; i <= total; i++) pages.push(i);
-  } else {
-    pages.push(1);
-    if (current > 3) pages.push('...');
-    const start = Math.max(2, current - 1);
-    const end = Math.min(total - 1, current + 1);
-    for (let i = start; i <= end; i++) pages.push(i);
-    if (current < total - 2) pages.push('...');
-    pages.push(total);
-  }
-  pagination.pages = pages;
-};
-
-const fetchInventory = async () => {
-  loading.value = true;
-  try {
-    const params = {
-      page: pagination.currentPage,
-      limit: 15
-    };
-    if (searchQuery.value) params.search = searchQuery.value;
-    if (filters.category_id) params.category_id = filters.category_id;
-
-    const res = await inventoryAPI.getAll(params);
-    const data = res.data;
-
-    if (Array.isArray(data)) {
-      inventoryItems.value = normalizeInventoryItems(data);
-    } else if (data?.data) {
-      inventoryItems.value = normalizeInventoryItems(data.data);
-      if (data.pagination) {
-        buildPagination(data.pagination);
-      } else {
-        buildPagination(data);
-      }
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) pages.push(i);
     } else {
-      inventoryItems.value = [];
+      pages.push(1);
+      if (current > 3) pages.push('...');
+      const start = Math.max(2, current - 1);
+      const end = Math.min(total - 1, current + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (current < total - 2) pages.push('...');
+      pages.push(total);
     }
-  } catch (e) {
-    console.error('Error fetching inventory:', e);
-    inventoryItems.value = [];
-  } finally {
-    loading.value = false;
-  }
-};
+    pagination.pages = pages;
+  };
 
-const fetchSummary = async () => {
-  try {
-    const res = await inventoryAPI.getSummary();
-    const data = res.data;
-    // Usamos totalValueRetail (stock * price) para que coincida con la columna "Valor Total" de la tabla
-    summary.totalValue = data?.totalValueRetail ?? data?.total_value_retail ?? data?.totalValue ?? data?.total_value ?? 0;
-    summary.lowStock = data?.lowStock ?? data?.low_stock ?? 0;
-    summary.outOfStock = data?.outOfStock ?? data?.out_of_stock ?? 0;
-  } catch (e) {
-    console.error('Error fetching summary:', e);
-  }
-};
+  const fetchInventory = async () => {
+    loading.value = true;
+    try {
+      const params = {
+        page: pagination.currentPage,
+        limit: 10
+      };
+      if (searchQuery.value) params.search = searchQuery.value;
+      if (filters.category_id) params.categoryId = filters.category_id;
+      if (filters.status) params.status = filters.status;
 
-const fetchCategories = async () => {
-  try {
-    const res = await categoriesAPI.getAll();
-    categories.value = Array.isArray(res.data) ? res.data : [];
-  } catch (e) {
-    console.error('Error fetching categories:', e);
-  }
-};
+      const res = await inventoryAPI.getAll(params);
+      const data = res.data;
 
-const openDetail = (row) => {
-  selectedProduct.value = row;
-};
+      if (Array.isArray(data)) {
+        inventoryItems.value = normalizeInventoryItems(data);
+        // El interceptor de axios extrae la paginación a res.pagination
+        if (res.pagination) {
+          buildPagination(res.pagination);
+        }
+      } else if (data?.data) {
+        inventoryItems.value = normalizeInventoryItems(data.data);
+        if (data.pagination) {
+          buildPagination(data.pagination);
+        } else {
+          buildPagination(data);
+        }
+      } else {
+        inventoryItems.value = [];
+      }
+    } catch (e) {
+      console.error('Error fetching inventory:', e);
+      inventoryItems.value = [];
+    } finally {
+      loading.value = false;
+    }
+  };
 
-const viewKardexFromDetail = () => {
-  if (selectedProduct.value) {
-    const item = selectedProduct.value;
-    selectedProduct.value = null;
+  const fetchSummary = async () => {
+    try {
+      const res = await inventoryAPI.getSummary();
+      const data = res.data;
+      // Usamos totalValueRetail (stock * price) para que coincida con la columna "Valor Total" de la tabla
+      summary.totalValue =
+        data?.totalValueRetail ??
+        data?.total_value_retail ??
+        data?.totalValue ??
+        data?.total_value ??
+        0;
+      summary.lowStock = data?.lowStock ?? data?.low_stock ?? 0;
+      summary.outOfStock = data?.outOfStock ?? data?.out_of_stock ?? 0;
+      summary.pending = data?.pending ?? 0;
+    } catch (e) {
+      console.error('Error fetching summary:', e);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const res = await categoriesAPI.getAll();
+      categories.value = Array.isArray(res.data) ? res.data : [];
+    } catch (e) {
+      console.error('Error fetching categories:', e);
+    }
+  };
+
+  const goToProductDetail = (row) => {
+    const productId = row.product?.id || row.product_id || row.id;
+    router.push(`/app/inventory/product/${productId}`);
+  };
+
+  const viewKardex = (item) => {
     const productId = item.product?.id || item.product_id || item.id;
     router.push(`/app/inventory/kardex/${productId}`);
-  }
-};
+  };
 
-const viewKardex = (item) => {
-  const productId = item.product?.id || item.product_id || item.id;
-  router.push(`/app/inventory/kardex/${productId}`);
-};
+  // Watch para detectar cambio en los filtros
+  watch(
+    () => filters.category_id,
+    () => {
+      pagination.currentPage = 1;
+      fetchInventory();
+    }
+  );
 
-onMounted(() => {
-  fetchSummary();
-  fetchInventory();
-  fetchCategories();
-});
+  watch(
+    () => filters.status,
+    () => {
+      pagination.currentPage = 1;
+      fetchInventory();
+    }
+  );
 
-onUnmounted(() => {
-  clearTimeout(searchTimer);
-});
+  onMounted(() => {
+    fetchSummary();
+    fetchInventory();
+    fetchCategories();
+  });
+
+  onUnmounted(() => {
+    clearTimeout(searchTimer);
+  });
 </script>

@@ -2,7 +2,7 @@
 // Supabase Notification Repository + External Channel Services
 // ============================================================
 
-import nodemailer from 'nodemailer';
+import { MailtrapClient } from 'mailtrap';
 import axios from 'axios';
 import { NotificationMapper } from '../mappers/index.js';
 
@@ -11,22 +11,51 @@ export class SupabaseNotificationRepository {
     this._supabase = supabase;
   }
 
-  async findByUser({ userId, limit = 50, offset = 0, unread }) {
+  async findByUser({ userId, limit = 50, page = 1, offset, unread, search, from_date, to_date, sort = 'recent' }) {
+    // Support both legacy offset and new page-based pagination
+    const effectiveOffset = offset != null ? offset : (Math.max(1, page) - 1) * limit;
+
     let query = this._supabase
       .from('user_notifications')
       .select('*', { count: 'exact' })
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .eq('user_id', userId);
 
+    // Filter: unread only
     if (unread === 'true') query = query.eq('read', false);
+
+    // Search: title or message ilike
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      query = query.or(`title.ilike.${term},message.ilike.${term}`);
+    }
+
+    // Date range
+    if (from_date) query = query.gte('created_at', from_date);
+    if (to_date) {
+      // Include the whole to_date day by appending 23:59:59
+      const endOfDay = to_date.includes('T') ? to_date : `${to_date}T23:59:59`;
+      query = query.lte('created_at', endOfDay);
+    }
+
+    // Sorting
+    if (sort === 'oldest') {
+      query = query.order('created_at', { ascending: true });
+    } else if (sort === 'unread_first') {
+      query = query.order('read', { ascending: true }).order('created_at', { ascending: false });
+    } else {
+      // 'recent' (default)
+      query = query.order('created_at', { ascending: false });
+    }
+
+    query = query.range(effectiveOffset, effectiveOffset + limit - 1);
 
     const { data, count, error } = await query;
     if (error) throw error;
 
+    const totalPages = Math.ceil((count || 0) / limit);
     return {
       data: (data || []).map(r => NotificationMapper.toDomain(r)),
-      pagination: { total: count, limit, offset },
+      pagination: { total: count, limit, offset: effectiveOffset, page: Math.floor(effectiveOffset / limit) + 1, totalPages },
     };
   }
 
@@ -53,7 +82,6 @@ export class SupabaseNotificationRepository {
 
   async update(notification) {
     const persistence = NotificationMapper.toPersistence(notification);
-    persistence.updated_at = new Date().toISOString();
     const { error } = await this._supabase
       .from('user_notifications')
       .update(persistence)
@@ -94,34 +122,58 @@ export class SupabaseNotificationRepository {
 
 export class EmailChannelService {
   constructor() {
-    this._transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    const token = process.env.MAILTRAP_TOKEN;
+    const senderEmail = process.env.MAILTRAP_SENDER_EMAIL || process.env.EMAIL_FROM || 'hello@demomailtrap.co';
+    const senderName = process.env.MAILTRAP_SENDER_NAME || process.env.EMAIL_FROM_NAME || 'Sistema de Inventarios';
+
+    this._enabled = !!token;
+    this._sender = { email: senderEmail, name: senderName };
+
+    if (this._enabled) {
+      this._client = new MailtrapClient({ token });
+    } else {
+      console.warn('[NotificationService] MAILTRAP_TOKEN no configurado — correos no enviados');
+    }
   }
 
-  async send({ to, subject, html, attachments }) {
-    const info = await this._transporter.sendMail({
-      from: `"${process.env.EMAIL_FROM_NAME || 'Sistema'}" <${process.env.EMAIL_FROM}>`,
-      to,
+  async send({ to, subject, html, text, category }) {
+    if (!this._enabled) {
+      console.log(`[NotificationService] Mailtrap deshabilitado. No se envió: "${subject}"`);
+      return { messageId: null, accepted: [] };
+    }
+
+    const recipients = Array.isArray(to) ? to : [{ email: to }];
+
+    const response = await this._client.send({
+      from: this._sender,
+      to: recipients,
       subject,
-      html,
-      attachments: attachments || [],
+      html: html || undefined,
+      text: text || undefined,
+      category: category || 'notification',
     });
-    return { messageId: info.messageId, accepted: info.accepted };
+
+    const messageId = response?.data?.[0]?.message_id || response?.message_ids?.[0] || response?.id || 'unknown';
+    return { messageId, accepted: recipients.map(r => r.email) };
   }
 
   async sendInvoiceEmail(invoiceData) {
-    const html = `...`; // Template resolved dynamically
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Factura ${invoiceData.invoiceNumber}</h2>
+        <p>Hola ${invoiceData.clientName},</p>
+        <p>Adjunto encontrarás tu factura por valor de <strong>$${Number(invoiceData.total).toLocaleString('es-MX')}</strong>.</p>
+        <p>Número de factura: ${invoiceData.invoiceNumber}</p>
+        <p>Fecha: ${new Date(invoiceData.date).toLocaleDateString('es-MX')}</p>
+        <hr>
+        <p>¡Gracias por tu compra!</p>
+      </div>
+    `;
     return this.send({
       to: invoiceData.clientEmail,
-      subject: `Factura ${invoiceData.invoiceNumber} - ${process.env.EMAIL_FROM_NAME}`,
+      subject: `Factura ${invoiceData.invoiceNumber} - ${this._sender.name}`,
       html,
+      category: 'invoice',
     });
   }
 }

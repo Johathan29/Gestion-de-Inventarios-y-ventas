@@ -12,13 +12,16 @@
       <!-- Avatar -->
       <div class="absolute -bottom-16 left-8">
         <div class="relative group cursor-pointer" @click="triggerAvatarUpload">
-          <div class="w-32 h-32 rounded-2xl border-4 border-white" style="background: linear-gradient(135deg, #624200, #795900); display: flex; align-items: center; justify-content: center; color: white; font-size: 2.25rem; font-weight: bold; box-shadow: 0 10px 15px -3px rgba(98,66,0,0.2); transition: transform 0.3s;" @mouseenter="e => e.currentTarget.style.transform = 'scale(1.05)'" @mouseleave="e => e.currentTarget.style.transform = ''">
+          <div v-if="form.avatar_url" class="w-32 h-32 rounded-2xl border-4 border-white overflow-hidden" style="box-shadow: 0 10px 15px -3px rgba(98,66,0,0.2); transition: transform 0.3s;" @mouseenter="e => e.currentTarget.style.transform = 'scale(1.05)'" @mouseleave="e => e.currentTarget.style.transform = ''">
+            <img :src="form.avatar_url" alt="Avatar" class="w-full h-full object-cover" />
+          </div>
+          <div v-else class="w-32 h-32 rounded-2xl border-4 border-white" style="background: linear-gradient(135deg, #624200, #795900); display: flex; align-items: center; justify-content: center; color: white; font-size: 2.25rem; font-weight: bold; box-shadow: 0 10px 15px -3px rgba(98,66,0,0.2); transition: transform 0.3s;" @mouseenter="e => e.currentTarget.style.transform = 'scale(1.05)'" @mouseleave="e => e.currentTarget.style.transform = ''">
             {{ userInitials }}
           </div>
-          <div class="absolute inset-0 rounded-2xl bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <span class="material-icons-outlined text-white text-3xl">camera_alt</span>
+          <div v-if="editing" class="absolute inset-0 rounded-2xl bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <span v-if="uploading" class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            <span v-else class="material-icons-outlined text-white text-3xl">camera_alt</span>
           </div>
-          <input ref="avatarInput" type="file" accept="image/*" class="hidden" @change="handleAvatarChange" />
         </div>
       </div>
       <!-- Edit Button -->
@@ -49,7 +52,7 @@
           </div>
           <div class="flex items-center gap-2">
             <span class="px-3 py-1 rounded-full text-xs font-medium" style="background: rgba(98,66,0,0.1); color: #624200;">
-              {{ user?.role_name || user?.roles?.name || 'Usuario' }}
+              {{ user?.role || user?.role_name || user?.roles?.name || 'Usuario' }}
             </span>
             <span v-if="user?.is_active" class="px-3 py-1 rounded-full text-xs font-medium" style="background: rgba(34,197,94,0.1); color: #166534;">
               Activo
@@ -124,7 +127,7 @@
             </div>
             <div class="p-4 rounded-xl" style="background: rgba(98,66,0,0.03);">
               <p class="dt-caption" style="text-transform: uppercase;">Rol</p>
-              <p class="text-sm font-medium" style="color: #0b1c30; margin-top: 0.25rem; text-transform: capitalize;">{{ user?.role_name || user?.roles?.name || 'Usuario' }}</p>
+              <p class="text-sm font-medium" style="color: #0b1c30; margin-top: 0.25rem; text-transform: capitalize;">{{ user?.role || user?.role_name || user?.roles?.name || 'Usuario' }}</p>
             </div>
           </div>
 
@@ -158,6 +161,9 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { usersAPI } from '../api';
+import { supabase } from '../api/supabase';
+
+const AVATAR_BUCKET = 'avatars';
 
 const authStore = useAuthStore();
 const user = computed(() => authStore.user);
@@ -169,6 +175,7 @@ const userInitials = computed(() => {
 
 const editing = ref(false);
 const saving = ref(false);
+const uploading = ref(false);
 const avatarInput = ref(null);
 
 const form = ref({
@@ -193,14 +200,57 @@ watch(editing, (isEditing) => {
 });
 
 const triggerAvatarUpload = () => {
+  if (!editing.value) return;
   avatarInput.value?.click();
 };
 
 const handleAvatarChange = async (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
-  // For now just show the file name — real upload would go to server
-  form.value.avatar_url = URL.createObjectURL(file);
+
+  uploading.value = true;
+  try {
+    const userId = user.value?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+
+    // Upload to Supabase Storage
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}_${Date.now()}.${fileExt}`;
+    const filePath = `profiles/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(AVATAR_BUCKET)
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
+
+    if (uploadError) {
+      // If bucket doesn't exist, create it and retry
+      if (uploadError.message?.includes('bucket')) {
+        await supabase.storage.createBucket(AVATAR_BUCKET, { public: true });
+        const { error: retryError } = await supabase.storage
+          .from(AVATAR_BUCKET)
+          .upload(filePath, file, { upsert: true });
+        if (retryError) throw retryError;
+      } else {
+        throw uploadError;
+      }
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from(AVATAR_BUCKET)
+      .getPublicUrl(filePath);
+
+    form.value.avatar_url = urlData?.publicUrl || '';
+  } catch (err) {
+    console.error('[Profile] Error uploading avatar:', err);
+    // Fallback: keep local preview
+    form.value.avatar_url = URL.createObjectURL(file);
+  } finally {
+    uploading.value = false;
+  }
 };
 
 const saveProfile = async () => {

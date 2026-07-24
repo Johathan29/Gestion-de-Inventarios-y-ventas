@@ -1,50 +1,69 @@
 <template>
-  <div>
-    <button @click="$router.push('/app/reports')"
-      class="shrink-0 flex items-center gap-2 font-semibold py-2 px-4 rounded-lg transition-all duration-200 mb-4 border-2"
-      style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
-      @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-      @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
-      <span class="material-icons-outlined" style="font-size: 1.125rem;">arrow_back</span> Volver a Reportes
-    </button>
+  <div class="space-y-4 aurora-entrance">
+    <!-- Mesh-gradient PageHeader -->
+    <div
+      class="mesh-gradient-header"
+      style="
+        background: radial-gradient(circle at 100% 100%, #f0c04d 0%, #9154dc 50%, #7738c1 100%);"
+    >
+      <div class="header-icon-container">
+        <span class="material-symbols-outlined animate-header-icon"> receipt </span>
+      </div>
+      <div class="header-glass">
+        <div class="header-information">
+          <PageHeader
+            title="Reporte de Ventas"
+            description="Análisis de ventas por período"
+            tag="h1"
+          />
+        </div>
+        <div class="header-actions">
+          <button @click="$router.push('/app/reports')" class="aurora-header-button aurora-header-button-secondary">
+            <span class="material-symbols-outlined" style="font-size: 1.125rem;">arrow_back</span>
+            Volver
+          </button>
+          <button @click="handleDownloadPDF" class="aurora-header-button aurora-header-button-primary">
+            <span class="material-symbols-outlined"> picture_as_pdf </span>
+            PDF
+          </button>
+          <button @click="handleDownloadExcel" class="aurora-header-button aurora-header-button-secondary">
+            <span class="material-symbols-outlined"> table_chart </span>
+            Excel
+          </button>
+        </div>
+      </div>
+    </div>
 
-    <div class="dt-card overflow-hidden">
+    <div class="nexus-card overflow-hidden">
     <!-- Filter/Sort Bar -->
-    <div class="filter-bar-container p-4 border-b border-[#d2c4b4]/30 flex justify-between items-center" style="background: #ffffff;">
+    <div class="filter-bar-container p-4 border-b border-gray-100 flex justify-between items-center" style="background: #ffffff;">
       <div class="flex gap-2">
         <button @click="showFilters = !showFilters"
-          class="px-3 py-1.5 text-sm font-medium border border-[#d2c4b4] rounded-md flex items-center gap-1 hover:bg-[#eff4ff] transition-colors bg-white relative"
-          :class="{ 'ring-2 ring-[rgba(98,66,0,0.2)] border-[#624200]': showFilters }"
-          style="font-family: 'Inter', sans-serif; color: #4f4539;">
-          <span class="material-icons-outlined" style="font-size: 1rem;">filter_list</span>
+          class="border !px-3 !py-1.5 flex items-center gap-1 border-[var(--aurora-outline-variant)] hover:!bg-[#9161f4] hover:text-white transition-colors duration-200 rounded-md text-[#9161f4] bg-white aurora-pressed"
+          :class="{ '!bg-[#9161f4] !text-white': showFilters }">
+          <span class="material-symbols-outlined" style="font-size: 1rem;">filter_list</span>
           Filtrar
         </button>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-lg font-bold" style="color: #624200;">{{ formatCurrency(totalSales) }}</span>
-        <button @click="downloadPDF"
-          class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
-          style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
-          @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-          @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
+        <span class="text-lg font-bold" style="color: #7c3aed;">{{ formatCurrency(totalSales) }}</span>
+        <button @click="handleDownloadPDF"
+          class="btn btn-sm btn-ghost">
           <span class="material-icons-outlined" style="font-size: 1.125rem;">picture_as_pdf</span> PDF
         </button>
-        <button @click="downloadExcel"
-          class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
-          style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
-          @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-          @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
+        <button @click="handleDownloadExcel"
+          class="btn btn-sm btn-ghost">
           <span class="material-icons-outlined" style="font-size: 1.125rem;">table_chart</span> Excel
         </button>
       </div>
     </div>
 
     <!-- Filter Panel -->
-    <div v-if="showFilters" class="filter-panel-container px-4 py-4 border-b border-[#d2c4b4]/30" style="background: #faf9f6;">
+    <div v-if="showFilters" class="filter-panel-container px-4 py-4 border-b border-gray-100" style="background: #f8fafc;">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; color: #4f4539;">Periodo</label>
-          <select v-model="period" @change="fetchData" class="w-full rounded-lg px-3 py-2 text-sm appearance-none bg-white transition-all" style="font-family: 'Inter', sans-serif; color: #0b1c30; border: 1.5px solid #E5E7EB;">
+          <label class="block mb-1 font-medium text-xs" style="color: #64748b;">Periodo</label>
+          <select v-model="period" @change="fetchData" class="w-full rounded-lg px-3 py-2 text-sm appearance-none bg-white transition-all border" style="color: #1e293b; border-color: #e2e8f0;">
             <option value="daily">Diario</option>
             <option value="weekly">Semanal</option>
             <option value="monthly">Mensual</option>
@@ -55,20 +74,11 @@
     </div>
 
     <div class="p-6">
-    <!-- Summary Cards -->
-    <div class="grid grid-cols-3 gap-4 mb-6">
-      <div class="rounded-xl p-4 text-center" style="background: rgba(98,66,0,0.03);">
-        <p class="dt-caption" style="text-transform: uppercase;">Total Ventas</p>
-        <p class="dt-stat-value" style="color: #0b1c30;">{{ summary.totalSales || 0 }}</p>
-      </div>
-      <div class="rounded-xl p-4 text-center" style="background: rgba(98,66,0,0.03);">
-        <p class="dt-caption" style="text-transform: uppercase;">Total Ingresos</p>
-        <p class="dt-stat-value" style="color: #624200;">{{ formatTable(summary.totalAmount || 0) }}</p>
-      </div>
-      <div class="rounded-xl p-4 text-center" style="background: rgba(98,66,0,0.03);">
-        <p class="dt-caption" style="text-transform: uppercase;">IVA Total</p>
-        <p class="dt-stat-value" style="color: #795900;">{{ formatTable(summary.totalTax || 0) }}</p>
-      </div>
+    <!-- Summary Cards — Dashboard style with counter animation -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-6">
+      <StatCard label="Total Ventas" :value="summary.totalSales || 0" icon="receipt" iconColor="#7c3aed" variant="dashboard" :stagger-delay="0" :animate="true" />
+      <StatCard label="Total Ingresos" :value="summary.totalAmount || 0" type="currency" icon="payments" iconColor="#16a34a" variant="dashboard" :stagger-delay="100" :animate="true" />
+      <StatCard label="IVA Total" :value="summary.totalTax || 0" type="currency" icon="receipt_long" iconColor="#d97706" variant="dashboard" :stagger-delay="200" :animate="true" />
     </div>
 
     <div class="chart-container" style="height: 350px;">
@@ -77,17 +87,31 @@
   </div>
     </div>
   </div>
+
+    <!-- Download Progress Modal -->
+    <AuroraDownloadModal
+      :visible="showDownloadModal"
+      :title="modalTitle"
+      :subtitle="modalSubtitle"
+      :success-message="modalSuccessMessage"
+      :file-name="modalFileName"
+      :download-fn="currentDownloadFn"
+      @close="showDownloadModal = false"
+    />
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { reportsAPI } from '../../api';
 import { useCurrency } from '../../composables/useCurrency';
+import StatCard from '../../components/shared/StatCard.vue';
+import AuroraDownloadModal from '../../components/shared/AuroraDownloadModal.vue';
+import PageHeader from '../../components/shared/PageHeader.vue';
 
 const { format: formatCurrency, formatTable } = useCurrency();
 import { Chart, registerables } from 'chart.js';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { autoTable } from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 Chart.register(...registerables);
 
@@ -98,6 +122,32 @@ const summary = ref({});
 const chartRef = ref(null);
 const rawData = ref([]);
 let chart = null;
+
+// Download modal state
+const showDownloadModal = ref(false);
+const currentDownloadFn = ref(null);
+const modalTitle = ref('Generating PDF Report...');
+const modalSubtitle = ref('Please wait while Aurora ERP compiles your data and performance metrics.');
+const modalSuccessMessage = ref('Your report is ready for download.');
+const modalFileName = ref('report.pdf');
+
+const handleDownloadPDF = () => {
+  modalTitle.value = 'Generating Sales Report...';
+  modalSubtitle.value = 'Compiling sales data, income metrics, and tax summaries into a printable report.';
+  modalSuccessMessage.value = 'Your sales report is ready.';
+  modalFileName.value = `reporte-ventas-${getDateRange().start_date}.pdf`;
+  currentDownloadFn.value = downloadPDF;
+  showDownloadModal.value = true;
+};
+
+const handleDownloadExcel = () => {
+  modalTitle.value = 'Generating Excel Report...';
+  modalSubtitle.value = 'Formatting sales data tables and preparing spreadsheet export.';
+  modalSuccessMessage.value = 'Your Excel report is ready.';
+  modalFileName.value = `reporte-ventas-${getDateRange().start_date}.xlsx`;
+  currentDownloadFn.value = downloadExcel;
+  showDownloadModal.value = true;
+};
 
 const getDateRange = () => {
   const now = new Date();
@@ -161,7 +211,7 @@ const downloadPDF = () => {
   doc.text(`IVA Total: $${Number(summary.value.totalTax || 0).toLocaleString('es-CO')}`, 14, 58);
 
   const tableData = rawData.value.map(d => [d.period || d.date, `$${Number(d.total).toLocaleString('es-CO')}`, d.count || 0]);
-  doc.autoTable({ startY: 66, head: [['Período', 'Total', 'Cant. Ventas']], body: tableData, headStyles: { fillColor: [106, 27, 138] } });
+  autoTable(doc, { startY: 66, head: [['Período', 'Total', 'Cant. Ventas']], body: tableData, headStyles: { fillColor: [106, 27, 138] } });
   doc.save(`reporte-ventas-${getDateRange().start_date}.pdf`);
 };
 

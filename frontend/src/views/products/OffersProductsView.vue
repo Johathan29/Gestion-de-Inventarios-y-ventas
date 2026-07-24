@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#151215] text-[#e8e0e4] selection:bg-primary selection:text-on-primary overflow-x-hidden">
+  <div class="min-h-screen bg-[#151215] text-[#e8e0e4] selection:bg-primary selection:text-on-primary overflow-x-hidden landing-scope">
     <!-- Background Shader -->
     <div class="fixed inset-0 w-full h-full -z-10 opacity-30 pointer-events-none">
       <canvas id="shader-canvas" style="display:block;width:100%;height:100%"></canvas>
@@ -148,9 +148,9 @@
                     <p v-if="product.sku" class="font-body-sm text-body-sm text-on-surface-variant/40 mt-0.5">SKU: {{ product.sku }}</p>
                   </div>
                   <div class="text-right shrink-0">
-                    <span class="font-headline-md text-headline-md text-secondary">${{ formatPrice(product.price) }}</span>
-                    <p v-if="product.compare_price && product.compare_price > product.price" class="font-body-sm text-body-sm text-on-surface-variant/50 line-through">
-                      ${{ formatPrice(product.compare_price) }}
+                    <span class="font-headline-md text-headline-md text-secondary">${{ formatPrice(product.offerPrice || product.price) }}</span>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant/50 line-through">
+                      ${{ formatPrice(product.compare_price || product.price) }}
                     </p>
                   </div>
                 </div>
@@ -159,18 +159,18 @@
                 <p class="font-body-md text-body-md text-on-surface-variant mb-6 line-clamp-2 flex-1">{{ product.description || 'Sin descripción' }}</p>
 
                 <!-- Price & discount detail -->
-                <div v-if="product.discountPercent > 0 && product.compare_price && product.compare_price > product.price" class="mb-6 p-3 rounded-xl bg-primary/5 border border-primary/10">
+                <div v-if="product.discountPercent > 0" class="mb-6 p-3 rounded-xl bg-primary/5 border border-primary/10">
                   <div class="flex justify-between items-center text-sm">
                     <span class="text-on-surface-variant/70">Precio original:</span>
-                    <span class="text-on-surface-variant/50 line-through">${{ formatPrice(product.compare_price) }}</span>
+                    <span class="text-on-surface-variant/50 line-through">${{ formatPrice(product.price) }}</span>
                   </div>
                   <div class="flex justify-between items-center text-sm mt-1">
-                    <span class="text-on-surface-variant/70">Descuento:</span>
-                    <span class="text-secondary font-bold">-{{ product.discountPercent }}%</span>
+                    <span class="text-on-surface-variant/70">Oferta:</span>
+                    <span class="text-secondary font-bold">${{ formatPrice(product.offerPrice) }}</span>
                   </div>
                   <div class="flex justify-between items-center text-sm mt-1 pt-1 border-t border-primary/10">
                     <span class="text-on-surface-variant/70">Ahorras:</span>
-                    <span class="text-green-400 font-bold">${{ formatPrice(product.compare_price - product.price) }}</span>
+                    <span class="text-green-400 font-bold">${{ formatPrice(product.price - product.offerPrice) }}</span>
                   </div>
                 </div>
 
@@ -274,22 +274,37 @@ async function fetchOffers() {
     const { data } = await ecommerceAPI.getOffers();
     const offers = Array.isArray(data) ? data : (data?.data || []);
 
+    // Si no hay ofertas activas, redirigir al catálogo
+    const activeOffers = offers.filter(o => o.products && o.active === true);
+    if (activeOffers.length === 0 && !searchQuery.value) {
+      router.replace({ name: 'ProductsCatalog' });
+      return;
+    }
+
     const search = searchQuery.value.toLowerCase().trim();
 
     // Filter & map offers to products with discount info
-    let mapped = offers
-      .filter(o => o.products && o.active !== false)
-      .map(o => ({
-        ...o.products,
-        discountPercent: o.discount_percent
+    let mapped = activeOffers.map(o => {
+        const discountPercent = o.discount_percent
           ? Number(o.discount_percent)
           : (o.products?.compare_price && o.products?.price
             ? Math.round((1 - o.products.price / o.products.compare_price) * 100)
-            : 0),
-        compare_price: o.products?.compare_price || null,
-        offer_end_date: o.end_date,
-        offer_id: o.id
-      }));
+            : 0);
+        const regularPrice = Number(o.products?.price) || 0;
+        const offerPrice = discountPercent > 0
+          ? regularPrice * (1 - discountPercent / 100)
+          : regularPrice;
+        return {
+          ...o.products,
+          id: o.products?.id || o.product_id,
+          product_id: o.products?.id || o.product_id,
+          discountPercent,
+          offerPrice,
+          compare_price: o.products?.compare_price || null,
+          offer_end_date: o.end_date,
+          offer_id: o.id
+        };
+      });
 
     // Apply search filter
     if (search) {
@@ -315,12 +330,16 @@ async function fetchOffers() {
       const res = await productsAPI.getAll({ status: 'active', featured: true, limit: 50 });
       const result = res.data;
       const items = Array.isArray(result) ? result : (result?.data || []);
-      let mapped = items.map(p => ({
-        ...p,
-        discountPercent: p.compare_price && p.compare_price > p.price
+      let mapped = items.map(p => {
+        const dp = p.compare_price && p.compare_price > p.price
           ? Math.round((1 - p.price / p.compare_price) * 100)
-          : 0
-      }));
+          : 0;
+        return {
+          ...p,
+          discountPercent: dp,
+          offerPrice: dp > 0 ? p.price * (1 - dp / 100) : p.price
+        };
+      });
 
       const search = searchQuery.value.toLowerCase().trim();
       if (search) {

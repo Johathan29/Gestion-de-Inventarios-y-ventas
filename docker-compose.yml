@@ -1,5 +1,17 @@
 version: '3.8'
 
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-healthcheck: &service-healthcheck
+  interval: 30s
+  timeout: 5s
+  start_period: 20s
+  retries: 3
+
 services:
   # Redis (para rate limiting y caché)
   redis:
@@ -14,6 +26,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    logging: *default-logging
 
   # API Gateway
   api-gateway:
@@ -24,27 +37,49 @@ services:
       - "3000:3000"
     env_file: ./backend/.env
     depends_on:
-      - auth-service
-      - user-service
-      - product-service
-      - category-service
-      - inventory-service
-      - purchase-service
-      - sale-service
-      - report-service
-      - invoice-service
-      - cart-service
-      - checkout-service
-      - ecommerce-service
-      - catalog-service
-      - email-service
-      - whatsapp-service
-      - notification-service
-      - audit-service
-      - config-service
+      redis:
+        condition: service_started
+      auth-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+      category-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+      purchase-service:
+        condition: service_started
+      sale-service:
+        condition: service_started
+      report-service:
+        condition: service_started
+      invoice-service:
+        condition: service_started
+      ecommerce-service:
+        condition: service_started
+      catalog-service:
+        condition: service_started
+      email-service:
+        condition: service_started
+      whatsapp-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      audit-service:
+        condition: service_started
+      config-service:
+        condition: service_started
     networks:
       - inventory-network
     restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   # Microservicios
   auth-service:
@@ -53,6 +88,9 @@ services:
     env_file: ./backend/.env
     networks: [inventory-network]
     restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.3', memory: 256M } } }
 
   user-service:
     build: { context: ./backend, dockerfile: services/user-service/Dockerfile }
@@ -60,6 +98,9 @@ services:
     env_file: ./backend/.env
     networks: [inventory-network]
     restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.3', memory: 256M } } }
 
   product-service:
     build: { context: ./backend, dockerfile: services/product-service/Dockerfile }
@@ -67,6 +108,9 @@ services:
     env_file: ./backend/.env
     networks: [inventory-network]
     restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.3', memory: 256M } } }
 
   category-service:
     build: { context: ./backend, dockerfile: services/category-service/Dockerfile }
@@ -74,6 +118,9 @@ services:
     env_file: ./backend/.env
     networks: [inventory-network]
     restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3004/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.2', memory: 128M } } }
 
   inventory-service:
     build: { context: ./backend, dockerfile: services/inventory-service/Dockerfile }
@@ -81,6 +128,9 @@ services:
     env_file: ./backend/.env
     networks: [inventory-network]
     restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3005/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.3', memory: 256M } } }
 
   purchase-service:
     build: { context: ./backend, dockerfile: services/purchase-service/Dockerfile }
@@ -88,6 +138,9 @@ services:
     env_file: ./backend/.env
     networks: [inventory-network]
     restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3006/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.3', memory: 256M } } }
 
   sale-service:
     build: { context: ./backend, dockerfile: services/sale-service/Dockerfile }
@@ -95,34 +148,20 @@ services:
     env_file: ./backend/.env
     networks: [inventory-network]
     restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3007/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.3', memory: 256M } } }
 
-  report-service:
-    build: { context: ./backend, dockerfile: services/report-service/Dockerfile }
-    ports: ["3008:3008"]
-    env_file: ./backend/.env
-    networks: [inventory-network]
-    restart: unless-stopped
-
+  # Invoice (Facturación electrónica)
   invoice-service:
     build: { context: ./backend, dockerfile: services/invoice-service/Dockerfile }
     ports: ["3009:3009"]
     env_file: ./backend/.env
     networks: [inventory-network]
     restart: unless-stopped
-
-  cart-service:
-    build: { context: ./backend, dockerfile: services/cart-service/Dockerfile }
-    ports: ["3010:3010"]
-    env_file: ./backend/.env
-    networks: [inventory-network]
-    restart: unless-stopped
-
-  checkout-service:
-    build: { context: ./backend, dockerfile: services/checkout-service/Dockerfile }
-    ports: ["3011:3011"]
-    env_file: ./backend/.env
-    networks: [inventory-network]
-    restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3009/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.3', memory: 256M } } }
 
   ecommerce-service:
     build: { context: ./backend, dockerfile: services/ecommerce-service/Dockerfile }
@@ -130,6 +169,9 @@ services:
     env_file: ./backend/.env
     networks: [inventory-network]
     restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3012/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.3', memory: 256M } } }
 
   catalog-service:
     build: { context: ./backend, dockerfile: services/catalog-service/Dockerfile }
@@ -137,6 +179,9 @@ services:
     env_file: ./backend/.env
     networks: [inventory-network]
     restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3013/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.3', memory: 256M } } }
 
   email-service:
     build: { context: ./backend, dockerfile: services/email-service/Dockerfile }
@@ -144,6 +189,9 @@ services:
     env_file: ./backend/.env
     networks: [inventory-network]
     restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3014/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.2', memory: 128M } } }
 
   whatsapp-service:
     build: { context: ./backend, dockerfile: services/whatsapp-service/Dockerfile }
@@ -151,6 +199,9 @@ services:
     env_file: ./backend/.env
     networks: [inventory-network]
     restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3015/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.2', memory: 128M } } }
 
   notification-service:
     build: { context: ./backend, dockerfile: services/notification-service/Dockerfile }
@@ -158,6 +209,9 @@ services:
     env_file: ./backend/.env
     networks: [inventory-network]
     restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3016/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.2', memory: 128M } } }
 
   audit-service:
     build: { context: ./backend, dockerfile: services/audit-service/Dockerfile }
@@ -165,6 +219,9 @@ services:
     env_file: ./backend/.env
     networks: [inventory-network]
     restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3017/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.2', memory: 128M } } }
 
   config-service:
     build: ./backend/services/config-service
@@ -172,6 +229,20 @@ services:
     env_file: ./backend/.env
     networks: [inventory-network]
     restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3018/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.2', memory: 128M } } }
+
+  # Frontend
+  frontend:
+    build: ./frontend
+    ports: ["8080:80"]
+    networks: [inventory-network]
+    restart: unless-stopped
+    depends_on:
+      - api-gateway
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.3', memory: 128M } } }
 
 networks:
   inventory-network:

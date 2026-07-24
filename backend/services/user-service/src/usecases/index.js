@@ -143,7 +143,11 @@ export class GetNotificationPrefsUseCase {
 
   async execute(clientId) {
     const prefs = await this._notifRepo.findByClientId(clientId);
-    if (!prefs) throw new Error('NOT_FOUND');
+    // Return defaults if no preferences exist yet
+    if (!prefs) {
+      const { NotificationPreference } = await import('../domain/index.js');
+      return new NotificationPreference({ clientId });
+    }
     return prefs;
   }
 }

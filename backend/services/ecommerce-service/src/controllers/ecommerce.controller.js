@@ -114,19 +114,63 @@ const deleteBanner = async (req, res, next) => {
 };
 
 /**
+ * Obtener promociones activas (para dashboard y público)
+ */
+const getActivePromotions = async (req, res, next) => {
+  try {
+    const now = new Date().toISOString();
+    const { data: promotions, error } = await supabase
+      .from('promotions')
+      .select('*')
+      .eq('is_active', true)
+      .or(`expires_at.gte.${now},expires_at.is.null`)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+    res.json({ success: true, data: promotions || [] });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Obtener ofertas
  */
 const getOffers = async (req, res, next) => {
   try {
-    const { data: offers, error } = await supabase
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const from = (page - 1) * limit;
+    const all = req.query.all === 'true';
+    const status = req.query.status; // opcional: 'active', 'inactive'
+
+    let query = supabase
       .from('offers')
-      .select('*, products(name, sku, price, images)')
-      .eq('active', true)
-      .gte('end_date', new Date().toISOString())
-      .order('created_at', { ascending: false });
+      .select('*, products(id, name, sku, price, images, compare_price)', { count: 'exact' });
+
+    if (all) {
+      // Admin: trae TODAS las ofertas sin filtrar por activas o vencidas
+      if (status === 'active') query = query.eq('active', true);
+      else if (status === 'inactive') query = query.eq('active', false);
+      // Sin filtro de fecha para que se vean también las vencidas
+    } else {
+      // Público: solo activas y no vencidas
+      query = query
+        .eq('active', true)
+        .or(`end_date.gte.${new Date().toISOString()},end_date.is.null`);
+    }
+
+    const { data: offers, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(from, from + limit - 1);
 
     if (error) throw error;
-    res.json({ success: true, data: offers });
+    res.json({
+      success: true,
+      data: offers,
+      pagination: { page, limit, total: count || 0, totalPages: Math.ceil((count || 0) / limit) },
+    });
   } catch (error) {
     next(error);
   }
@@ -158,6 +202,66 @@ const createOffer = async (req, res, next) => {
       .single();
 
     if (error) throw error;
+
+    // Notificar a todos los clientes activos sobre la nueva oferta
+    try {
+      const { data: product } = await supabase
+        .from('products')
+        .select('name')
+        .eq('id', product_id)
+        .single();
+
+      const productName = product?.name || 'Producto';
+
+      const { data: clients } = await supabase
+        .from('clients')
+        .select('id, user_id')
+        .not('email', 'is', null);
+
+      if (clients && clients.length > 0) {
+        const notifications = clients.map(c => ({
+          user_id: c.user_id,
+          type: 'new_offer',
+          title: '¡Nueva oferta disponible!',
+          message: `${productName} tiene un ${discount_percent}% de descuento. ¡No te lo pierdas!`,
+          is_read: false,
+          created_at: new Date().toISOString()
+        })).filter(n => n.user_id);
+        if (notifications.length > 0) {
+          await supabase.from('notifications').insert(notifications);
+        }
+      }
+
+      // Notificar por correo a admins
+      try {
+        const EMAIL_SERVICE_URL = process.env.EMAIL_SERVICE_URL || 'http://localhost:3014';
+        const { data: admins } = await supabase
+          .from('users')
+          .select('email, name')
+          .eq('is_active', true)
+          .in('role', ['admin', 'supervisor']);
+        if (admins) {
+          for (const admin of admins) {
+            await fetch(`${EMAIL_SERVICE_URL}/api/email/new-offer`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: admin.email,
+                adminName: admin.name || 'Admin',
+                productName: productName,
+                discountPercent: discount_percent,
+                offerId: offer.id
+              })
+            }).catch(() => {});
+          }
+        }
+      } catch (emailErr) {
+        console.error('[EcommerceService] Error sending offer email:', emailErr.message);
+      }
+    } catch (notifErr) {
+      console.error('[EcommerceService] Error creating offer notifications:', notifErr.message);
+    }
+
     res.status(201).json({ success: true, data: offer });
   } catch (error) {
     next(error);
@@ -846,6 +950,68 @@ const updateWhatsappConfig = async (req, res, next) => {
   }
 };
 
+/**
+ * ==========================================
+ * CONTACT FORM
+ * ==========================================
+ */
+
+/**
+ * Recibir mensaje del formulario de contacto
+ */
+const createContactMessage = async (req, res, next) => {
+  try {
+    const { name, email, subject, message } = req.body;
+
+    if (!name || !email || !message) {
+      return res.status(400).json({ success: false, message: 'Nombre, email y mensaje son requeridos' });
+    }
+
+    // Guardar en base de datos
+    const { data: contactMsg, error } = await supabase
+      .from('contact_messages')
+      .insert({
+        name,
+        email,
+        subject: subject || 'Sin asunto',
+        message,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      // Si la tabla no existe, intentar crearla
+      if (error.code === '42P01') {
+        // Tabla no existe - intentar enviar notificación igual
+        console.warn('[Contact] contact_messages table does not exist, skipping DB save');
+      } else {
+        throw error;
+      }
+    }
+
+    // Notificar a administradores via email-service
+    const emailServiceUrl = process.env.EMAIL_SERVICE_URL || 'http://localhost:3014';
+    try {
+      await fetch(`${emailServiceUrl}/api/email/system-event`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventType: 'contact_form',
+          eventDescription: `Nuevo mensaje de contacto de ${name} (${email}): ${subject || 'Sin asunto'}`,
+          details: { name, email, subject: subject || 'Sin asunto', message }
+        })
+      });
+    } catch (emailErr) {
+      console.warn('[Contact] Error notifying admins:', emailErr.message);
+    }
+
+    res.status(201).json({ success: true, data: contactMsg || { name, email, subject, message }, message: 'Mensaje enviado correctamente' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getBanners, createBanner, updateBanner, deleteBanner,
   getOffers, createOffer, updateOffer, deleteOffer,
@@ -860,5 +1026,7 @@ module.exports = {
   // Tax Rates
   getTaxRates, getAllTaxRates, createTaxRate, updateTaxRate, deleteTaxRate,
   // WhatsApp Config
-  getWhatsappConfig, updateWhatsappConfig
+  getWhatsappConfig, updateWhatsappConfig,
+  // Contact Form
+  createContactMessage
 };

@@ -1,5 +1,5 @@
 <template>
-  <Loading v-if="loading" />
+  <DetailSkeleton v-if="loading" />
   <div v-else class="max-w-4xl mx-auto">
     <div class="dt-card p-6 mb-6">
       <div class="flex items-start justify-between mb-4">
@@ -36,6 +36,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { usersAPI } from '../../api';
+import DetailSkeleton from '../../components/skeletons/DetailSkeleton.vue';
 import Loading from '../../components/shared/Loading.vue';
 import DataTable from '../../components/shared/DataTable.vue';
 import { formatDate, formatRelativeTime } from '../../utils';

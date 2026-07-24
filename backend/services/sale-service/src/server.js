@@ -48,7 +48,7 @@ async function main() {
   await eventBus.connect();
 
   // Subscribers
-  registerSalesSubscribers(eventBus);
+  registerSalesSubscribers(eventBus, { supabase });
 
   // Application Service
   const appService = new SalesApplicationService({ saleRepository, cartRepository, eventBus, supabase });

@@ -40,6 +40,14 @@
       style="font-family: 'Inter', sans-serif;">
       Transferencias
     </router-link>
+    <router-link to="/app/inventory/verification"
+      class="pb-3 border-b-2 font-medium whitespace-nowrap text-sm transition-colors"
+      :class="$route.path.startsWith('/app/inventory/verification')
+        ? 'border-[#452d00] text-[#452d00]'
+        : 'border-transparent text-[#4f4539] hover:text-[#452d00]'"
+      style="font-family: 'Inter', sans-serif;">
+      Verificación
+    </router-link>
   </div>
 </template>
 

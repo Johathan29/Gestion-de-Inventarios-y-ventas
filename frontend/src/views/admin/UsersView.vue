@@ -1,5 +1,5 @@
 <template>
-  <DataTable :columns="columns" :data="users" title="Usuarios del Sistema" searchable @rowClick="goToDetail">
+  <DataTable :columns="columns" :data="users" title="Usuarios del Sistema" :server-pagination="true" :total="total" :current-page-prop="page" :per-page="limit" @page-change="changePage" @rowClick="goToDetail">
     <template #cell-status="{ row }">
       <span class="dt-badge" :class="row.is_active ? 'dt-badge-success' : 'dt-badge-danger'">{{ row.is_active ? 'Activo' : 'Bloqueado' }}</span>
     </template>
@@ -34,6 +34,9 @@ import Swal from 'sweetalert2';
 const router = useRouter();
 const { can } = useAuth();
 const users = ref([]);
+const page = ref(1);
+const limit = 15;
+const total = ref(0);
 const columns = [
   { key: 'name', label: 'Nombre', sortable: true },
   { key: 'email', label: 'Email' },
@@ -47,12 +50,14 @@ const toggleBlock = async (row) => {
   const action = row.is_active ? 'bloquear' : 'activar';
   const r = await Swal.fire({ title: `¿${action} usuario?`, text: row.name, icon: 'warning', showCancelButton: true });
   if (r.isConfirmed) {
-    try { row.is_active ? await usersAPI.block(row.id) : await usersAPI.unblock(row.id); await fetchUsers(); }
+    try { await usersAPI.toggleActive(row.id); await fetchUsers(); }
     catch (e) { Swal.fire('Error', 'No se pudo realizar la acción', 'error'); }
   }
 };
 
-const fetchUsers = async () => { try { const res = await usersAPI.getAll(); users.value = res.data || []; } catch (e) { /* ignore */ } };
+const changePage = (p) => { page.value = p; fetchUsers(); };
+
+const fetchUsers = async () => { try { const res = await usersAPI.getAll({ page: page.value, limit }); users.value = res.data || []; total.value = res.pagination?.total || 0; } catch (e) { /* ignore */ } };
 
 onMounted(fetchUsers);
 </script>

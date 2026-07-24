@@ -1,48 +1,61 @@
 <template>
   <div>
-    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-      <div>
-        <h2 class="font-headline-lg-mobile md:font-headline-lg" style="font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.25; font-weight: 700; color: #0b1c30; letter-spacing: -0.02em; font-family: 'Plus Jakarta Sans', sans-serif;">Banners Flotantes</h2>
-        <p style="color: #4f4539; font-family: 'Inter', sans-serif; font-size: 1rem; line-height: 1.5; margin-top: 0.25rem;">
-          Gestiona los banners flotantes
-        </p>
+    <div
+      class="mesh-gradient-header"
+      style="
+        background: radial-gradient(circle at 100% 100%, #f0c04d 0%, #9154dc 50%, #7738c1 100%);
+      "
+    >
+      <div class="header-icon-container">
+        <span class="material-symbols-outlined animate-header-icon"> picture_in_picture </span>
       </div>
-      <button @click="openModal(null)" class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border" style="background: #624200; color: white; border-color: rgba(139,94,0,0.2); font-family: 'Inter', sans-serif; font-size: 0.875rem; line-height: 1.5;">
-        <span class="material-icons-outlined" style="font-size: 1.25rem;">add</span>
-        Nuevo Banner Flotante
-      </button>
+      <div class="header-glass">
+        <div class="header-information">
+          <PageHeader
+            title="Banners Flotantes"
+            description="Gestiona los banners flotantes"
+            tag="h1"
+          />
+        </div>
+        <div class="header-actions">
+          <button @click="openModal(null)" class="aurora-header-button aurora-header-button-primary">
+            <span class="material-symbols-outlined"> add </span>
+            Nuevo Banner Flotante
+          </button>
+        </div>
+      </div>
     </div>
 
-    <Alert v-if="successMsg" type="success" :message="successMsg" :show="!!successMsg" dismissible @close="successMsg = ''" class="mb-4" />
-    <Alert v-if="errorMsg" type="error" :message="errorMsg" :show="!!errorMsg" dismissible @close="errorMsg = ''" class="mb-4" />
-    <Loading v-if="loading" />
+    <Alert v-if="successMsg" type="success" :message="successMsg" :show="!!successMsg" dismissible :duration="500" @close="successMsg = ''" class="mb-md" />
+    <Alert v-if="errorMsg" type="error" :message="errorMsg" :show="!!errorMsg" dismissible @close="errorMsg = ''" class="mb-md" />
+    <CardGridSkeleton v-if="loading" />
 
-    <div v-else-if="banners.length === 0" class="text-sm text-gray-500 text-center py-8">No hay banners flotantes configurados.</div>
+    <div v-else-if="banners.length === 0" class="text-on-surface-variant text-center py-8">No hay banners flotantes configurados.</div>
 
     <div v-else class="space-y-4">
       <div v-for="banner in banners" :key="banner.id"
-        class="dt-card p-4 flex items-start gap-4"
-        :style="{ borderColor: banner.is_active ? '#624200' : '' }"
+        class="aurora-raised-card flex items-start gap-4"
+        :style="{ borderLeft: banner.is_active ? '4px solid var(--aurora-primary)' : '' }"
       >
         <!-- Preview -->
         <div class="w-full md:w-48 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-white/5">
           <img v-if="banner.image_url" :src="banner.image_url" class="w-full h-full object-cover" />
-          <div v-else class="w-full h-full flex items-center justify-center text-gray-500 text-xs">Sin imagen</div>
+          <div v-else class="w-full h-full flex items-center justify-center text-on-surface-variant text-xs">Sin imagen</div>
         </div>
 
         <!-- Info -->
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-1 flex-wrap">
-            <span class="text-xs font-medium text-gray-400">#{{ banner.sort_order }}</span>
-            <span :class="banner.is_active ? 'dt-badge dt-badge-success' : 'dt-badge dt-badge-disabled'" style="font-size: 0.75rem;">{{ banner.is_active ? 'Activo' : 'Inactivo' }}</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-white/10">
+            <span class="text-xs font-medium text-on-surface-variant">#{{ banner.sort_order }}</span>
+            <span :class="banner.is_active ? 'aurora-badge aurora-badge-success' : 'aurora-badge aurora-badge-secondary'" style="font-size: 0.75rem;">{{ banner.is_active ? 'Activo' : 'Inactivo' }}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full aurora-badge-secondary">
               {{ banner.position === 'top' ? 'Superior' : 'Inferior' }}
             </span>
-            <span v-if="banner.is_sticky" class="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">Sticky</span>
+            <span v-if="banner.is_sticky" class="text-xs px-2 py-0.5 rounded-full aurora-badge-primary">Sticky</span>
           </div>
-          <h4 class="font-medium" style="color: #0b1c30;">{{ banner.title || 'Sin título' }}</h4>
-          <p class="text-sm text-gray-500 truncate">{{ banner.subtitle || '' }}</p>
-          <p v-if="banner.start_date || banner.end_date" class="text-xs text-gray-400 mt-1">
+          <h4 class="font-medium text-on-surface">{{ banner.title || 'Sin título' }}</h4>
+          <p class="text-sm text-on-surface-variant truncate">{{ banner.subtitle || '' }}</p>
+          <p v-if="banner.start_date || banner.end_date" class="text-xs text-on-surface-variant mt-1">
             {{ banner.start_date ? 'Desde: ' + new Date(banner.start_date).toLocaleDateString() : '' }}
             {{ banner.end_date ? ' Hasta: ' + new Date(banner.end_date).toLocaleDateString() : '' }}
           </p>
@@ -50,16 +63,8 @@
 
         <!-- Actions -->
         <div class="flex gap-2 flex-shrink-0">
-          <button @click="openModal(banner)"
-            class="shrink-0 flex items-center gap-1 font-semibold px-3 py-1.5 rounded-lg transition-all duration-200 border-2"
-            style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.8rem;"
-            @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-            @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">Editar</button>
-          <button @click="confirmDelete(banner)"
-            class="shrink-0 flex items-center gap-1 font-semibold px-3 py-1.5 rounded-lg transition-all duration-200 border-2"
-            style="border-color: #ef4444; color: #ef4444; font-family: Inter, sans-serif; font-size: 0.8rem;"
-            @mouseenter="e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#dc2626'; }"
-            @mouseleave="e => { e.currentTarget.style.background = ''; e.currentTarget.style.borderColor = '#ef4444'; }">Eliminar</button>
+          <button @click="openModal(banner)" class="aurora-btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">Editar</button>
+          <button @click="confirmDelete(banner)" class="aurora-btn-secondary" style="padding: 6px 12px; font-size: 0.8rem; color: var(--aurora-error); border-color: var(--aurora-error);">Eliminar</button>
         </div>
       </div>
     </div>
@@ -67,171 +72,119 @@
     <!-- Modal -->
     <Modal :show="showModal" :title="editing ? 'Editar Banner Flotante' : 'Nuevo Banner Flotante'" @close="closeModal" size="lg">
       <form @submit.prevent="handleSave" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Título</label>
-            <input v-model="form.title"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              placeholder="Envío gratis"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Título</label>
+            <input v-model="form.title" class="aurora-input" placeholder="Envío gratis" />
           </div>
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Orden</label>
-            <input v-model.number="form.sort_order" type="number" min="0"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Orden</label>
+            <input v-model.number="form.sort_order" type="number" min="0" class="aurora-input" style="font-family: 'JetBrains Mono', monospace;" />
           </div>
         </div>
         <div>
-          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Subtítulo</label>
-          <input v-model="form.subtitle"
-            class="w-full rounded-lg px-3 py-2.5 transition-all"
-            style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-            placeholder="En compras mayores a $50"
-            @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-            @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+          <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Subtítulo</label>
+          <input v-model="form.subtitle" class="aurora-input" placeholder="En compras mayores a $50" />
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Imagen del Banner</label>
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Imagen del Banner</label>
             <!-- Upload zone -->
             <div
               @click="triggerUpload"
               @dragover.prevent="dragOver = true"
               @dragleave="dragOver = false"
               @drop.prevent="onDrop"
-              class="relative border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all duration-300 hover:border-primary/50"
-              :class="dragOver ? 'border-primary bg-primary/10 scale-[1.02]' : 'border-white/20 bg-white/5'"
+              class="relative border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all duration-300"
+              :class="dragOver ? 'aurora-pressed' : 'aurora-raised'"
             >
               <input type="file" ref="fileInputRef" accept="image/*" class="hidden" @change="onFileSelected" />
 
               <div v-if="uploading" class="flex flex-col items-center gap-2 py-4">
-                <span class="material-symbols-outlined animate-spin text-3xl text-primary" data-icon="refresh">refresh</span>
-                <span class="text-sm text-gray-400">Subiendo imagen...</span>
+                <span class="material-symbols-outlined animate-spin text-3xl" style="color: var(--aurora-primary);">refresh</span>
+                <span class="text-sm text-on-surface-variant">Subiendo imagen...</span>
               </div>
 
               <div v-else-if="previewFile || form.image_url" class="flex flex-col items-center gap-2">
                 <img :src="previewFile || form.image_url" class="max-h-28 rounded-lg object-contain" @error="e => e.target.style.display = 'none'" />
-                <span class="text-xs text-gray-500 mt-1">Click para cambiar imagen</span>
+                <span class="text-xs text-on-surface-variant mt-1">Click para cambiar imagen</span>
               </div>
 
               <div v-else class="flex flex-col items-center gap-2 py-6">
-                <span class="material-symbols-outlined text-3xl text-gray-500" data-icon="image">image</span>
-                <span class="text-sm text-gray-400">Arrastra una imagen o click para subir</span>
-                <span class="text-xs text-gray-500">JPG, PNG, WebP, GIF — Máx 10MB</span>
+                <span class="material-symbols-outlined text-3xl text-on-surface-variant">image</span>
+                <span class="text-sm text-on-surface-variant">Arrastra una imagen o click para subir</span>
+                <span class="text-xs text-on-surface-variant">JPG, PNG, WebP, GIF — Máx 10MB</span>
               </div>
             </div>
             <div v-if="form.image_url && !uploading" class="mt-2 flex items-center gap-2">
-              <span class="text-xs text-gray-400 truncate flex-1">{{ form.image_url }}</span>
-              <button type="button" @click="clearImage" class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-red-400/10 flex items-center gap-1">
-                <span class="material-symbols-outlined text-sm" data-icon="delete">delete</span>
+              <span class="text-xs text-on-surface-variant truncate flex-1">{{ form.image_url }}</span>
+              <button type="button" @click="clearImage" class="aurora-btn-icon danger" style="width: auto; height: auto; padding: 4px 8px; border-radius: var(--aurora-radius); gap: 4px;">
+                <span class="material-symbols-outlined text-sm">delete</span>
                 Quitar
               </button>
             </div>
             <div class="mt-2">
-              <label class="text-xs text-gray-500">O ingresa una URL manualmente:</label>
-              <input v-model="form.image_url"
-                class="w-full rounded-lg px-3 py-2 transition-all text-xs mt-1"
-                style="font-family: 'Inter', sans-serif; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-                placeholder="https://ejemplo.com/banner.jpg"
-                @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-                @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+              <label class="text-xs text-on-surface-variant">O ingresa una URL manualmente:</label>
+              <input v-model="form.image_url" class="aurora-input mt-1" style="font-size: 0.75rem;" placeholder="https://ejemplo.com/banner.jpg" />
             </div>
           </div>
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">URL de Destino (link)</label>
-            <input v-model="form.link_url"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              placeholder="#products"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">URL de Destino (link)</label>
+            <input v-model="form.link_url" class="aurora-input" placeholder="#products" />
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Color de Fondo</label>
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Color de Fondo</label>
             <div class="flex gap-2">
-              <input v-model="form.background_color"
-                class="w-full rounded-lg px-3 py-2.5 transition-all flex-1"
-                style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-                placeholder="#1a1a2e"
-                @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-                @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
-              <input type="color" v-model="form.background_color" class="w-10 h-10 rounded cursor-pointer" style="border: 1.5px solid #E5E7EB;" />
+              <input v-model="form.background_color" class="aurora-input flex-1" style="font-family: 'JetBrains Mono', monospace;" placeholder="#1a1a2e" />
+              <input type="color" v-model="form.background_color" class="w-10 h-10 rounded cursor-pointer aurora-raised" style="border: none;" />
             </div>
           </div>
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Color de Texto</label>
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Color de Texto</label>
             <div class="flex gap-2">
-              <input v-model="form.text_color"
-                class="w-full rounded-lg px-3 py-2.5 transition-all flex-1"
-                style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-                placeholder="#ffffff"
-                @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-                @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
-              <input type="color" v-model="form.text_color" class="w-10 h-10 rounded cursor-pointer" style="border: 1.5px solid #E5E7EB;" />
+              <input v-model="form.text_color" class="aurora-input flex-1" style="font-family: 'JetBrains Mono', monospace;" placeholder="#ffffff" />
+              <input type="color" v-model="form.text_color" class="w-10 h-10 rounded cursor-pointer aurora-raised" style="border: none;" />
             </div>
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Posición</label>
-            <select v-model="form.position"
-              class="w-full rounded-lg px-3 py-2.5 appearance-none transition-all"
-              :style="{ fontFamily: 'Inter, sans-serif', fontSize: '0.875rem', color: '#0b1c30', background: '#ffffff', border: '1.5px solid #E5E7EB' }"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }">
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Posición</label>
+            <select v-model="form.position" class="aurora-select">
               <option value="top">Superior (top)</option>
               <option value="bottom">Inferior (bottom)</option>
             </select>
           </div>
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Fecha Inicio</label>
-            <input v-model="form.start_date" type="date"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Fecha Inicio</label>
+            <input v-model="form.start_date" type="date" class="aurora-input" />
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
           <div>
-            <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30;">Fecha Fin</label>
-            <input v-model="form.end_date" type="date"
-              class="w-full rounded-lg px-3 py-2.5 transition-all"
-              style="font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #0b1c30; background: #ffffff; border: 1.5px solid #E5E7EB;"
-              @focus="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(98,66,0,0.1)'; }"
-              @blur="e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }" />
+            <label class="block mb-1 font-medium text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Fecha Fin</label>
+            <input v-model="form.end_date" type="date" class="aurora-input" />
           </div>
           <div class="flex items-center gap-6 pt-6">
             <div class="flex items-center gap-2">
-              <input type="checkbox" v-model="form.is_active" id="fb_active" class="w-4 h-4 rounded" style="accent-color: #624200;" />
-              <label for="fb_active" style="font-family: 'Inter', sans-serif; color: #0b1c30; font-size: 0.875rem;">Activo</label>
+              <input type="checkbox" v-model="form.is_active" id="fb_active" class="w-4 h-4 rounded" style="accent-color: var(--aurora-primary);" />
+              <label for="fb_active" class="text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Activo</label>
             </div>
             <div class="flex items-center gap-2">
-              <input type="checkbox" v-model="form.is_sticky" id="fb_sticky" class="w-4 h-4 rounded" style="accent-color: #624200;" />
-              <label for="fb_sticky" style="font-family: 'Inter', sans-serif; color: #0b1c30; font-size: 0.875rem;">Sticky (fijo al hacer scroll)</label>
+              <input type="checkbox" v-model="form.is_sticky" id="fb_sticky" class="w-4 h-4 rounded" style="accent-color: var(--aurora-primary);" />
+              <label for="fb_sticky" class="text-on-surface" style="font-family: 'Inter', sans-serif; font-size: 0.875rem;">Sticky (fijo al hacer scroll)</label>
             </div>
           </div>
         </div>
 
         <div class="flex justify-end gap-3 pt-4">
-          <button type="button" @click="closeModal"
-            class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
-            style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
-            @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-            @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">Cancelar</button>
-          <button type="submit" :disabled="saving"
-            class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
-            style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">
-            <span v-if="saving" class="material-symbols-outlined animate-spin" data-icon="refresh">refresh</span>
-            <span v-else class="material-icons-outlined" style="font-size: 1.125rem;">flag</span>
+          <button type="button" @click="closeModal" class="aurora-btn-secondary">Cancelar</button>
+          <button type="submit" :disabled="saving" class="aurora-btn-primary">
+            <span v-if="saving" class="material-symbols-outlined animate-spin">refresh</span>
+            <span v-else class="material-symbols-outlined" style="font-size: 1.125rem;">flag</span>
             {{ editing ? 'Actualizar Banner' : 'Crear Banner' }}
           </button>
         </div>
@@ -246,9 +199,11 @@
 import { ref, onMounted } from 'vue';
 import { ecommerceAPI } from '../../api';
 import { supabase } from '../../api/supabase';
+import PageHeader from '../../components/shared/PageHeader.vue';
 import Modal from '../../components/shared/Modal.vue';
 import ConfirmDialog from '../../components/shared/ConfirmDialog.vue';
 import Alert from '../../components/shared/Alert.vue';
+import CardGridSkeleton from '../../components/skeletons/CardGridSkeleton.vue';
 import Loading from '../../components/shared/Loading.vue';
 
 const banners = ref([]);

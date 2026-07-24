@@ -1,105 +1,86 @@
 <template>
-  <section id="reviews" class="py-8 px-4 overflow-hidden">
-    <div class="max-w-7xl mx-auto text-center mb-24" data-gsap="section-title">
-      <h2 class="font-display-xl text-display-xl text-on-surface mb-6">
-        Shared Experiences
-      </h2>
-      <div class="h-1 w-24 bg-primary mx-auto rounded-full"></div>
-    </div>
+  <section id="reviews" class="w-full py-20 px-4 md:px-8 relative overflow-hidden">
+    <!-- Section bg -->
+    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
 
-    <!-- Loading Skeleton -->
-    <div v-if="loading" class="max-w-7xl mx-auto">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter gap-4">
-        <div
-          v-for="n in 3"
-          :key="'skeleton-review-' + n"
-          class="glass-card p-10 border border-white/5 rounded-3xl h-full flex flex-col text-left animate-pulse"
-          :class="n === 2 ? 'translate-y-0 md:-translate-y-24' : ''"
-        >
-          <!-- Stars skeleton -->
-          <div class="flex gap-1 mb-8">
-            <div v-for="s in 5" :key="s" class="w-4 h-4 rounded bg-white/10"></div>
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16 entrance-reveal">
+        <span class="inline-block px-4 py-1.5 text-sm font-semibold bg-primary/20 text-primary rounded-full border border-primary/30 mb-4">
+          Reseñas
+        </span>
+        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Lo que dicen nuestros clientes</h2>
+        <p class="text-white/60 max-w-xl mx-auto">Opiniones reales de clientes satisfechos con nuestros productos premium.</p>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="grid md:grid-cols-3 gap-8">
+        <div v-for="n in 3" :key="n" class="bg-white/5 backdrop-blur-sm rounded-2xl p-8 space-y-4 animate-pulse border border-white/5">
+          <div class="flex gap-1">
+            <div v-for="s in 5" :key="s" class="w-5 h-5 bg-white/10 rounded" />
           </div>
-          <!-- Comment skeleton -->
-          <div class="space-y-3 mb-10">
-            <div class="h-4 bg-white/10 rounded w-full"></div>
-            <div class="h-4 bg-white/10 rounded w-5/6"></div>
-            <div class="h-4 bg-white/10 rounded w-4/6"></div>
-            <div class="h-4 bg-white/10 rounded w-3/4"></div>
-          </div>
-          <!-- Author skeleton -->
-          <div class="flex items-center gap-4 mt-auto">
-            <div class="w-12 h-12 rounded-full bg-white/10 flex-shrink-0"></div>
-            <div class="space-y-2 flex-1">
-              <div class="h-4 bg-white/10 rounded w-1/2"></div>
-              <div class="h-3 bg-white/10 rounded w-1/3"></div>
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-white/10" />
+            <div class="space-y-2">
+              <div class="h-4 w-24 bg-white/10 rounded" />
+              <div class="h-3 w-16 bg-white/10 rounded" />
             </div>
           </div>
+          <div class="h-16 w-full bg-white/10 rounded-lg" />
         </div>
       </div>
-    </div>
 
-    <!-- Reviews -->
-    <div v-else class="max-w-7xl mx-auto">
-      <div data-gsap="stagger" class="grid grid-cols-1 md:grid-cols-3 gap-gutter gap-4">
+      <!-- Error State -->
+      <div v-else-if="error" class="text-center py-12">
+        <span class="material-symbols-outlined text-5xl text-red-400 mb-4">star_half</span>
+        <p class="text-white/60 mb-6">{{ error }}</p>
+        <button @click="fetchReviews" class="px-6 py-2.5 bg-primary text-white rounded-full font-semibold hover:brightness-110 transition-all">
+          Reintentar
+        </button>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="reviews.length === 0" class="text-center py-12">
+        <span class="material-symbols-outlined text-5xl text-white/20 mb-4">reviews</span>
+        <p class="text-white/60">No hay reseñas destacadas aún.</p>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- SUCCESS – Timeline Layout                  -->
+      <!-- ========================================== -->
+      <div v-else class="timeline">
+        <!-- Vertical center line -->
+        <div class="timeline-line"></div>
+
         <div
-          v-for="(review, index) in reviews"
+          v-for="(review, idx) in reviews"
           :key="review.id"
-          data-gsap="item"
-          :style="{ transitionDelay: `${100 + index * 100}ms` }"
+          class="timeline-container"
+          :class="idx % 2 === 0 ? 'timeline-left' : 'timeline-right'"
         >
-          <div
-            :class="
-              index === 1
-                ? 'glass-card p-10 border border-[#e9b3fc] rounded-3xl h-full flex flex-col text-left'
-                : 'glass-card p-10 border border-[#e9b3fc] rounded-3xl h-full flex flex-col text-left translate-y-0 md:-translate-y-24'
-            "
-          >
-            <!-- Estrellas -->
-            <div class="flex gap-1 mb-8 text-secondary">
-              <span
-                v-for="s in 5"
-                :key="s"
-                class="material-symbols-outlined text-sm"
-                data-icon="star"
-                :style="getStarStyle(s, review.rating)"
-                >star</span
-              >
+          <!-- Circle marker -->
+          <div class="timeline-marker"></div>
+
+          <!-- Card -->
+          <div class="timeline-card bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-8 hover:border-primary/30 transition-all duration-500">
+            <!-- Stars -->
+            <div class="flex gap-1 mb-5">
+              <span v-for="s in 5" :key="s"
+                class="material-symbols-outlined text-lg"
+                :class="s <= review.rating ? 'text-yellow-400' : 'text-white/15'">
+                {{ s <= review.rating ? 'star' : 'star' }}
+              </span>
             </div>
-
-            <!-- Comentario -->
-            <p class="font-body-lg text-body-lg text-on-surface mb-10 italic">
-              {{ review.comment }}
-            </p>
-
-            <!-- Info autor -->
-            <div class="flex items-center gap-4 mt-auto">
-              <div
-                class="w-12 h-12 rounded-full overflow-hidden bg-surface-container-high"
-              >
-                <img
-                  v-if="review.client_avatar_url"
-                  class="w-full h-full object-cover"
-                  :src="review.client_avatar_url"
-                  :alt="review.client_name"
-                />
-                <div
-                  v-else
-                  class="w-full h-full flex items-center justify-center text-lg font-bold text-primary bg-primary/20"
-                >
-                  {{ review.client_name.charAt(0).toUpperCase() }}
-                </div>
+            <!-- Comment -->
+            <p class="text-white/70 mb-6 leading-relaxed italic text-sm md:text-base">"{{ review.comment }}"</p>
+            <!-- Author -->
+            <div class="flex items-center gap-4 pt-4 border-t border-white/10">
+              <div class="w-11 h-11 rounded-full overflow-hidden bg-primary/30 flex items-center justify-center shrink-0">
+                <img v-if="review.avatar_url" :src="review.avatar_url" :alt="review.client_name" class="w-full h-full object-cover" />
+                <span v-else class="material-symbols-outlined text-white text-lg">person</span>
               </div>
               <div>
-                <h4 class="font-headline-md text-[16px] text-on-surface">
-                  {{ review.client_name }}
-                </h4>
-                <p
-                  v-if="review.client_title"
-                  class="font-label-sm text-label-sm text-on-surface-variant"
-                >
-                  {{ review.client_title }}
-                </p>
+                <p class="font-semibold text-white text-sm">{{ review.client_name }}</p>
+                <p class="text-xs text-white/40">Cliente verificado</p>
               </div>
             </div>
           </div>
@@ -110,29 +91,145 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { ecommerceAPI } from "../../api";
+import { ref, onMounted } from 'vue';
+import { ecommerceAPI } from '../../api';
 
 const reviews = ref([]);
 const loading = ref(true);
+const error = ref(null);
 
-const getStarStyle = (starIndex, rating) => {
-  if (starIndex <= rating) {
-    return { "font-variation-settings": '"FILL" 1' };
-  }
-  return {};
-};
-
-onMounted(async () => {
+async function fetchReviews() {
+  loading.value = true;
+  error.value = null;
   try {
-    const res = await ecommerceAPI.getFeaturedReviews();
-    if (Array.isArray(res.data)) {
-      reviews.value = res.data;
-    }
+    const { data } = await ecommerceAPI.getFeaturedReviews();
+    reviews.value = data?.data || data || [];
   } catch (err) {
-    console.warn("[FeaturedReviews] Error:", err.message);
+    error.value = err.message || 'Error al cargar reseñas';
   } finally {
     loading.value = false;
   }
+}
+
+onMounted(() => {
+  fetchReviews();
 });
 </script>
+
+<style scoped>
+/* ==========================================
+   TIMELINE – Barista-inspired
+   ========================================== */
+.timeline {
+  position: relative;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+.timeline-line {
+  content: '';
+  position: absolute;
+  width: 3px;
+  background: linear-gradient(to bottom, transparent, rgba(180, 80, 200, 0.4), transparent);
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.timeline-container {
+  padding: 10px 40px;
+  position: relative;
+  width: 50%;
+}
+
+.timeline-left {
+  left: 0;
+  padding-right: 60px;
+}
+
+.timeline-right {
+  left: 50%;
+  padding-left: 60px;
+}
+
+.timeline-marker {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  top: 28px;
+  z-index: 2;
+  box-shadow: 0 0 16px rgba(124, 58, 237, 0.4);
+}
+
+.timeline-left .timeline-marker {
+  right: -9px;
+}
+
+.timeline-right .timeline-marker {
+  left: -9px;
+}
+
+.timeline-card {
+  position: relative;
+}
+
+/* Arrow pointer */
+.timeline-left .timeline-card::after {
+  content: '';
+  position: absolute;
+  top: 22px;
+  right: -10px;
+  width: 0;
+  height: 0;
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  border-left: 12px solid rgba(255, 255, 255, 0.08);
+}
+
+.timeline-right .timeline-card::after {
+  content: '';
+  position: absolute;
+  top: 22px;
+  left: -10px;
+  width: 0;
+  height: 0;
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  border-right: 12px solid rgba(255, 255, 255, 0.08);
+}
+
+@media screen and (max-width: 768px) {
+  .timeline-line {
+    left: 24px;
+  }
+
+  .timeline-container {
+    width: 100%;
+    padding-left: 60px;
+    padding-right: 0;
+  }
+
+  .timeline-left,
+  .timeline-right {
+    left: 0;
+  }
+
+  .timeline-marker {
+    left: 15px !important;
+    right: auto !important;
+  }
+
+  .timeline-left .timeline-card::after,
+  .timeline-right .timeline-card::after {
+    left: -10px;
+    right: auto;
+    border-right: 12px solid rgba(255, 255, 255, 0.08);
+    border-left: none;
+  }
+}
+</style>

@@ -7,7 +7,7 @@ const {
   getProducts, getProductById, createProduct, updateProduct, deleteProduct,
   getFeaturedProducts, getProductsByCategory, getLowStockProducts,
   uploadProductImage, uploadProductImageByUrl, deleteProductImage,
-  getProductVariants, createProductVariant
+  getProductVariants, createProductVariant, updateProductVariant, deleteProductVariant
 } = require('../controllers/product.controller');
 
 // Configuración de multer para subida de imágenes (máx 5MB)
@@ -39,6 +39,8 @@ router.delete('/:id', authenticate(), hasPermission(PERMISSIONS.PRODUCT_DELETE),
 // Variantes
 router.get('/:id/variants', getProductVariants);
 router.post('/:id/variants', authenticate(), hasPermission(PERMISSIONS.PRODUCT_CREATE), createProductVariant);
+router.put('/:id/variants/:variantId', authenticate(), hasPermission(PERMISSIONS.PRODUCT_UPDATE), updateProductVariant);
+router.delete('/:id/variants/:variantId', authenticate(), hasPermission(PERMISSIONS.PRODUCT_DELETE), deleteProductVariant);
 
 // Imágenes - Subida por archivo (multipart)
 router.post(

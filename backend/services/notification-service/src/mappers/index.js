@@ -30,6 +30,7 @@ export class NotificationMapper {
       data: domain.data,
       read: domain.read,
       read_at: domain.readAt?.toISOString(),
+      updated_at: domain.updatedAt?.toISOString() || new Date().toISOString(),
     };
   }
 

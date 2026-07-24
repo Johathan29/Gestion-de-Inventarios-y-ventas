@@ -1,14 +1,28 @@
 <template>
   <div>
     <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-      <div>
-        <h2 class="font-headline-lg-mobile md:font-headline-lg" style="font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.25; font-weight: 700; color: #0b1c30; letter-spacing: -0.02em; font-family: 'Plus Jakarta Sans', sans-serif;">Configuración del Sistema</h2>
-        <p style="color: #4f4539; font-family: 'Inter', sans-serif; font-size: 1rem; line-height: 1.5; margin-top: 0.25rem;">Gestiona las variables de configuración del sistema</p>
+    <div
+      class="mesh-gradient-header"
+      style="
+        background: radial-gradient(circle at 100% 100%, #f0c04d 0%, #9154dc 50%, #7738c1 100%);
+      "
+    >
+      <div class="header-icon-container">
+        <span class="material-symbols-outlined animate-header-icon"> settings </span>
+      </div>
+      <div class="header-glass">
+        <div class="header-information">
+          <PageHeader
+            title="Configuración del Sistema"
+            description="Gestiona las variables de configuración del sistema"
+            tag="h1"
+          />
+        </div>
+        <div class="header-actions"></div>
       </div>
     </div>
     <div class="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(98,66,0,0.05)] border border-[#d2c4b4]/30 p-5 md:p-6 max-w-3xl mx-auto">
-    <Alert v-if="successMsg" type="success" :message="successMsg" :show="!!successMsg" dismissible @close="successMsg = ''" class="mb-4" />
+    <Alert v-if="successMsg" type="success" :message="successMsg" :show="!!successMsg" dismissible :duration="500" @close="successMsg = ''" class="mb-4" />
 
     <div v-for="(group, section) in groupedConfig" :key="section" class="mb-8">
       <div class="flex items-center gap-2 pb-2 mb-4" style="border-bottom: 1px solid #d2c4b4;">
@@ -42,6 +56,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { configAPI } from '../../api';
+import PageHeader from '../../components/shared/PageHeader.vue';
 import Alert from '../../components/shared/Alert.vue';
 
 const config = ref({});

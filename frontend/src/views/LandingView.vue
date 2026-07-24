@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#151215] text-[#e8e0e4] selection:bg-primary selection:text-on-primary overflow-x-hidden">
+  <div class="min-h-screen bg-gradient-to-b from-[#151215] via-[#1a1225] to-[#0f0a15] text-[#e8e0e4] selection:bg-primary selection:text-on-primary overflow-x-hidden landing-scope">
     <!-- Full Screen Background Shader -->
     <div class="fixed inset-0 w-full h-full -z-10 opacity-40 pointer-events-none" style="display:block;">
       <canvas id="shader-canvas" style="display:block;width:100%;height:100%"></canvas>
@@ -32,8 +32,8 @@
       <!-- Featured Products (dynamic from product-service) -->
       <section id="products" data-gsap="section">
       <ProductShowcase
-        title="Curated Essentials"
-        subtitle="Precision-engineered care products designed for the modern sanctuary."
+        title="Productos Destacados"
+        subtitle="Descubre nuestra selección de productos premium para el cuidado y bienestar de tus mascotas."
         :featured="true"
         :limit="3"
         @view-all="handleViewAll"
@@ -48,7 +48,7 @@
       </section>
 
       <!-- Offers / Featured Products with Impact Effect -->
-      <section data-gsap="section">
+      <section v-if="hasActiveOffers" data-gsap="section">
       <OfferShowcase
         title="Ofertas Especiales"
         subtitle="Aprovecha descuentos exclusivos por tiempo limitado en productos seleccionados."
@@ -59,7 +59,7 @@
       </section>
 
       <!-- Contact Form -->
-      <section id="contact" class="py-8 px-4" data-gsap="section">
+      <section id="contact-section" data-gsap="section">
         <ContactForm />
       </section>
     </main>
@@ -73,10 +73,11 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useLandingAnimations } from '../composables/useGsapAnimations';
 import { useBounceIn } from '../composables/useAnimeEffects';
+import { ecommerceAPI } from '../api';
 import HeroSection from '../components/shared/HeroSection.vue';
 import FeaturedReviews from '../components/shared/FeaturedReviews.vue';
 import ProductShowcase from '../components/shared/ProductShowcase.vue';
@@ -89,9 +90,30 @@ import WhatsAppWidget from '../components/shared/WhatsAppWidget.vue';
 
 const router = useRouter();
 
+const hasActiveOffers = ref(false);
+
 const { init: initGsapAnimations, cleanup: cleanupGsapAnimations } = useLandingAnimations();
 
+async function checkActiveOffers() {
+  try {
+    const { data } = await ecommerceAPI.getOffers({ limit: 1, status: 'active' });
+    // El interceptor unwrap ya procesó la respuesta
+    let offers = data;
+    if (!Array.isArray(offers)) {
+      // Si es un objeto envuelto, extraer data
+      offers = data?.data || [];
+    }
+    // Verificar que al menos una oferta tenga producto activo
+    hasActiveOffers.value = Array.isArray(offers)
+      ? offers.some(o => o.active !== false && o.products?.name)
+      : true;
+  } catch (e) {
+    hasActiveOffers.value = false;
+  }
+}
+
 onMounted(async () => {
+  checkActiveOffers();
   initShader();
   initTiltEffects();
   initMagneticButtons();

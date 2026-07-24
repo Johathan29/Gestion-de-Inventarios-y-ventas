@@ -12,13 +12,16 @@ const {
   getHeroSlides, getAllHeroSlides, createHeroSlide, updateHeroSlide, deleteHeroSlide,
   getFloatingBanners, getAllFloatingBanners, createFloatingBanner, updateFloatingBanner, deleteFloatingBanner,
   getTaxRates, getAllTaxRates, createTaxRate, updateTaxRate, deleteTaxRate,
-  getWhatsappConfig, updateWhatsappConfig
+  getWhatsappConfig, updateWhatsappConfig,
+  createContactMessage,
+  getActivePromotions
 } = require('../controllers/ecommerce.controller');
 
 // Rutas públicas
 router.get('/home', getHomeData);
 router.get('/banners', getBanners);
 router.get('/offers', getOffers);
+router.get('/promotions/active', getActivePromotions);
 router.get('/settings', getHomeSettings);
 router.get('/hero', getHeroSettings);
 router.get('/hero-slides', getHeroSlides);
@@ -30,6 +33,9 @@ router.get('/reviews/product/:productId', getProductReviews);
 
 // Rutas públicas (crear review)
 router.post('/reviews', createProductReview);
+
+// Contact form (público)
+router.post('/contact', createContactMessage);
 
 // Rutas protegidas (Admin) - Banners
 router.post('/banners', authenticate(), hasPermission(PERMISSIONS.ECOMMERCE_MANAGE), createBanner);

@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#151215] text-[#e8e0e4] selection:bg-primary selection:text-on-primary overflow-x-hidden">
+  <div class="min-h-screen bg-[#151215] text-[#e8e0e4] selection:bg-primary selection:text-on-primary overflow-x-hidden landing-scope">
     <!-- Background -->
     <div class="fixed inset-0 w-full h-full -z-10 opacity-30 pointer-events-none">
       <canvas id="shader-canvas" style="display:block;width:100%;height:100%"></canvas>
@@ -71,11 +71,11 @@
                 </div>
                 <!-- Thumbnails -->
                 <div
-                  v-if="product.images && product.images.length > 1"
+                  v-if="thumbnailImages.length > 1"
                   class="flex gap-3 p-4 border-t border-white/5 overflow-x-auto"
                 >
                   <div
-                    v-for="(img, idx) in product.images"
+                    v-for="(img, idx) in thumbnailImages"
                     :key="idx"
                     @click="currentImageIndex = idx"
                     class="w-16 h-16 shrink-0 rounded-xl overflow-hidden border-2 cursor-pointer transition-all !cursor-pointer"
@@ -85,6 +85,13 @@
                   >
                     <img :src="img" class="w-full h-full object-cover" @error="imageErrors[img] = true" />
                   </div>
+                </div>
+                <!-- Variant image identifier -->
+                <div v-if="selectedVariant?.images?.length" class="hidden px-4 pb-3">
+                  <span class="inline-flex items-center gap-1.5 text-xs text-primary/60 bg-primary/5 px-3 py-1 rounded-full">
+                    <span class="material-symbols-outlined text-xs">photo_library</span>
+                    Imágenes de: <strong class="text-primary/80">{{ selectedVariant.name }}</strong>
+                  </span>
                 </div>
               </div>
             </div>
@@ -106,18 +113,18 @@
 
                 <!-- Price -->
                 <div class="flex items-baseline gap-3 mb-6">
-                  <span class="font-headline-xl text-headline-xl text-secondary">${{ formatPrice(product.price) }}</span>
+                  <span class="font-headline-xl text-headline-xl text-secondary">${{ formatPrice(displayPrice) }}</span>
                   <span
-                    v-if="product.compare_price && product.compare_price > product.price"
+                    v-if="displayComparePrice && displayComparePrice > displayPrice"
                     class="font-headline-md text-headline-md text-on-surface-variant/50 line-through"
                   >
-                    ${{ formatPrice(product.compare_price) }}
+                    ${{ formatPrice(displayComparePrice) }}
                   </span>
                   <span
-                    v-if="discountPercent > 0"
+                    v-if="displayDiscountPercent > 0"
                     class="px-3 py-1 bg-secondary/20 text-secondary rounded-full font-label-sm text-label-sm text-xs"
                   >
-                    Save {{ discountPercent }}%
+                    Save {{ displayDiscountPercent }}%
                   </span>
                 </div>
 
@@ -127,35 +134,137 @@
                 </p>
 
                 <!-- SKU & Stock -->
-                <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2   gap-4 mb-8">
                   <div class="bg-white/5 rounded-2xl p-4">
                     <p class="text-xs text-on-surface-variant/60 uppercase tracking-wider mb-1">SKU</p>
-                    <p class="font-label-md text-label-md text-on-surface font-mono">{{ product.sku }}</p>
+                    <p class="font-label-md text-label-md text-on-surface font-mono">{{ displaySku }}</p>
                   </div>
                   <div class="bg-white/5 rounded-2xl p-4">
                     <p class="text-xs text-on-surface-variant/60 uppercase tracking-wider mb-1">Availability</p>
-                    <p class="font-label-md text-label-md" :class="stockColor">
-                      <span v-if="product.stock > 0">{{ product.stock }} in stock</span>
+                    <p class="font-label-md text-label-md" :class="displayStockColor">
+                      <span v-if="displayStock > 0">{{ displayStock }} in stock</span>
                       <span v-else>Out of stock</span>
                     </p>
                   </div>
                 </div>
 
-                <!-- Add to Cart Button -->
-                <button
-                  @click="addToCart"
-                  :disabled="addingToCart || product.stock <= 0"
-                  class="w-full py-4 rounded-2xl bg-primary text-on-primary font-label-sm text-label-sm hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-3 !cursor-pointer"
-                >
-                  <template v-if="addingToCart">
-                    <span class="material-symbols-outlined animate-spin">progress_activity</span>
-                    Adding...
-                  </template>
-                  <template v-else>
-                    <span class="material-symbols-outlined">shopping_bag</span>
-                    Add to Collection
-                  </template>
-                </button>
+                <!-- Variant Selector -->
+                <div v-if="variantGroups.length > 0" class="mb-6 space-y-4">
+                  <div v-for="group in variantGroups" :key="group.attr">
+                    <p class="text-xs text-on-surface-variant/60 uppercase tracking-wider mb-2 font-label-sm text-label-sm">{{ group.attr }}</p>
+                    <div class="flex flex-wrap gap-2">
+                      <template v-if="group.attr === 'color' || group.attr === 'Color' || group.attr === 'COLOR'">
+                        <!-- Color swatches -->
+                        <button
+                          v-for="opt in group.options" :key="opt.value"
+                          @click="selectVariantAttribute(group.attr, opt.value)"
+                          class="w-10 h-10 rounded-full border-2 transition-all !cursor-pointer"
+                          :style="{
+                            background: opt.value.toLowerCase(),
+                            borderColor: selectedAttributes[group.attr] === opt.value ? '#624200' : 'rgba(255,255,255,0.2)',
+                            transform: selectedAttributes[group.attr] === opt.value ? 'scale(1.15)' : 'scale(1)'
+                          }"
+                          :title="opt.label"
+                        >
+                        </button>
+                      </template>
+                      <template v-else>
+                        <!-- Text/button options -->
+                        <button
+                          v-for="opt in group.options" :key="opt.value"
+                          @click="selectVariantAttribute(group.attr, opt.value)"
+                          class="px-4 py-2 rounded-xl border text-sm font-medium transition-all !cursor-pointer"
+                          :class="selectedAttributes[group.attr] === opt.value
+                            ? 'bg-primary text-on-primary border-primary'
+                            : 'bg-white/5 text-on-surface-variant border-white/10 hover:border-white/30 hover:text-on-surface'"
+                        >
+                          {{ opt.label }}
+                        </button>
+                      </template>
+                    </div>
+                  </div>
+                  <!-- Selected variant info -->
+                  <div v-if="selectedVariant" class="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="font-label-sm text-label-sm text-on-surface">{{ selectedVariant.name }}</span>
+                      <span v-if="selectedVariant.sku !== product.sku" class="text-xs text-on-surface-variant/60 font-mono">SKU: {{ selectedVariant.sku }}</span>
+                    </div>
+                    <div class="flex items-baseline gap-3">
+                      <span class="font-headline-md text-headline-md text-secondary">
+                        ${{ formatPrice(activeOffer ? (Number(selectedVariant.price || product.price) * (1 - (Number(activeOffer.discount_percent) || 0) / 100)) : (selectedVariant.price || product.price)) }}
+                      </span>
+                      <span v-if="activeOffer || (selectedVariant.compare_price && selectedVariant.compare_price > (selectedVariant.price || product.price))"
+                        class="font-label-md text-label-md text-on-surface-variant/50 line-through">
+                        ${{ formatPrice(activeOffer ? (selectedVariant.price || product.price) : selectedVariant.compare_price) }}
+                      </span>
+                    </div>
+                    <div class="flex items-center gap-4 mt-2 text-sm">
+                      <span v-if="selectedVariant.stock !== undefined" :class="selectedVariant.stock > 0 ? 'text-green-400' : 'text-red-400'">
+                        {{ selectedVariant.stock > 0 ? selectedVariant.stock + ' in stock' : 'Out of stock' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Quantity Selector -->
+                <div class="flex items-center gap-4 mb-4" v-if="displayStock > 0">
+                  <span class="text-sm text-on-surface-variant/70 font-label-sm text-label-sm">Cantidad:</span>
+                  <div class="flex items-center bg-white/5 rounded-xl border border-white/10">
+                    <button
+                      @click="quantity = Math.max(1, quantity - 1)"
+                      class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-white/5 rounded-l-xl transition-all !cursor-pointer"
+                      :disabled="quantity <= 1"
+                    >
+                      <span class="material-symbols-outlined text-lg">remove</span>
+                    </button>
+                    <input
+                      v-model.number="quantity"
+                      type="number"
+                      min="1"
+                      :max="displayStock"
+                      class="w-16 h-10 bg-transparent text-center text-on-surface font-label-md text-label-md border-x border-white/10 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <button
+                      @click="quantity = Math.min(displayStock, quantity + 1)"
+                      class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-white/5 rounded-r-xl transition-all !cursor-pointer"
+                      :disabled="quantity >= displayStock"
+                    >
+                      <span class="material-symbols-outlined text-lg">add</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3 flex-col sm:flex-row ">
+                  <button
+                    @click="addToCart"
+                    :disabled="addingToCart || displayStock <= 0"
+                    class="flex-1 py-4 rounded-2xl bg-white/5 border border-white/10 text-on-surface font-label-sm text-label-sm hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-3 !cursor-pointer"
+                  >
+                    <template v-if="addingToCart">
+                      <span class="material-symbols-outlined animate-spin">progress_activity</span>
+                      Agregando...
+                    </template>
+                    <template v-else>
+                      <span class="material-symbols-outlined">shopping_bag</span>
+                      Carrito
+                    </template>
+                  </button>
+                  <button
+                    @click="buyNow"
+                    :disabled="buyingNow || displayStock <= 0"
+                    class="flex-1 py-4 rounded-2xl bg-primary text-on-primary font-label-sm text-label-sm hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-3 !cursor-pointer"
+                  >
+                    <template v-if="buyingNow">
+                      <span class="material-symbols-outlined animate-spin">progress_activity</span>
+                      Procesando...
+                    </template>
+                    <template v-else>
+                      <span class="material-symbols-outlined">flash_on</span>
+                      Comprar ahora
+                    </template>
+                  </button>
+                </div>
 
                 <!-- Extra info -->
                 <div class="mt-6 pt-6 border-t border-white/5 grid grid-cols-2 gap-3 text-sm">
@@ -174,7 +283,7 @@
         </template>
 
         <!-- Offers Section at bottom of detail -->
-        <div class="mt-16">
+        <div class="mt-16 hidden">
           <OfferShowcase
             title="También en Oferta"
             subtitle="Descubre otros productos con descuentos exclusivos por tiempo limitado."
@@ -364,7 +473,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { productsAPI, cartAPI, ecommerceAPI } from '../../api/index.js';
 import OfferShowcase from '../../components/shared/OfferShowcase.vue';
@@ -379,8 +488,58 @@ const product = ref(null);
 const loading = ref(true);
 const error = ref(null);
 const addingToCart = ref(false);
+const buyingNow = ref(false);
+const activeOffer = ref(null);
+const quantity = ref(1);
 const currentImageIndex = ref(0);
 const imageErrors = reactive({});
+
+// ========== VARIANT STATE ==========
+const variants = ref([]);
+const selectedAttributes = reactive({});
+
+// Build variant groups from attributes (e.g., { attr: 'color', options: [{value:'rojo',label:'Rojo'}] })
+const variantGroups = computed(() => {
+  if (variants.value.length === 0) return [];
+  const attrMap = {};
+  for (const v of variants.value) {
+    if (!v.attributes || typeof v.attributes !== 'object') continue;
+    for (const [key, value] of Object.entries(v.attributes)) {
+      if (!value) continue;
+      if (!attrMap[key]) attrMap[key] = new Set();
+      attrMap[key].add(String(value));
+    }
+  }
+  return Object.entries(attrMap).map(([attr, values]) => ({
+    attr,
+    options: Array.from(values).map(v => ({
+      value: v,
+      label: v.charAt(0).toUpperCase() + v.slice(1)
+    }))
+  }));
+});
+
+// Find the selected variant based on attribute selections
+const selectedVariant = computed(() => {
+  const selectedKeys = Object.keys(selectedAttributes);
+  if (selectedKeys.length === 0 || variants.value.length === 0) return null;
+  // Try to find an exact match
+  return variants.value.find(v => {
+    if (!v.attributes) return false;
+    return selectedKeys.every(key =>
+      v.attributes[key] && String(v.attributes[key]).toLowerCase() === (selectedAttributes[key] || '').toLowerCase()
+    );
+  }) || null;
+});
+
+function selectVariantAttribute(attr, value) {
+  selectedAttributes[attr] = value;
+}
+
+// Reset image index when variant changes
+watch(selectedVariant, () => {
+  currentImageIndex.value = 0;
+});
 
 // ========== REVIEWS STATE ==========
 const reviews = ref([]);
@@ -464,6 +623,13 @@ async function submitReview() {
 }
 
 const currentImage = computed(() => {
+  // Use variant images first if a variant is selected and has images
+  const sv = selectedVariant.value;
+  if (sv?.images && Array.isArray(sv.images) && sv.images.length > 0) {
+    const url = sv.images[currentImageIndex.value] || sv.images[0];
+    if (imageErrors[url]) return null;
+    return url;
+  }
   const images = product.value?.images;
   if (!images || !Array.isArray(images) || images.length === 0) return null;
   const url = images[currentImageIndex.value] || images[0];
@@ -471,18 +637,72 @@ const currentImage = computed(() => {
   return url;
 });
 
-const discountPercent = computed(() => {
-  if (!product.value) return 0;
-  const { compare_price, price } = product.value;
-  if (!compare_price || compare_price <= price) return 0;
-  return Math.round((1 - price / compare_price) * 100);
+// Thumbnails use variant images when a variant with images is selected
+const thumbnailImages = computed(() => {
+  const sv = selectedVariant.value;
+  if (sv?.images && Array.isArray(sv.images) && sv.images.length > 0) {
+    return sv.images;
+  }
+  return product.value?.images || [];
 });
 
-const stockColor = computed(() => {
-  const stock = product.value?.stock ?? 0;
-  if (stock <= 0) return 'text-red-400';
+// Variant-aware display values (with offer discount applied)
+const displayPrice = computed(() => {
+  const basePrice = (() => {
+    const sv = selectedVariant.value;
+    if (sv?.price !== undefined && sv.price !== null) return Number(sv.price);
+    return Number(product.value?.price ?? 0);
+  })();
+  // Aplicar descuento de oferta activa si existe
+  if (activeOffer.value) {
+    const disc = Number(activeOffer.value.discount_percent) || 0;
+    return basePrice * (1 - disc / 100);
+  }
+  return basePrice;
+});
+
+const displayComparePrice = computed(() => {
+  const sv = selectedVariant.value;
+  if (sv?.compare_price !== undefined && sv.compare_price !== null) return Number(sv.compare_price);
+  // Si hay oferta activa, mostrar el precio original como comparación
+  if (activeOffer.value) {
+    const sv2 = selectedVariant.value;
+    if (sv2?.price !== undefined && sv2.price !== null) return Number(sv2.price);
+    return Number(product.value?.price ?? 0);
+  }
+  return Number(product.value?.compare_price ?? 0);
+});
+
+const displayStock = computed(() => {
+  const sv = selectedVariant.value;
+  if (sv?.stock !== undefined && sv.stock !== null) return sv.stock;
+  return product.value?.stock ?? 0;
+});
+
+const displaySku = computed(() => {
+  const sv = selectedVariant.value;
+  if (sv?.sku) return sv.sku;
+  return product.value?.sku ?? '';
+});
+
+const displayDiscountPercent = computed(() => {
+  // Si hay oferta activa, usar su porcentaje directamente
+  if (activeOffer.value) {
+    return Number(activeOffer.value.discount_percent) || 0;
+  }
+  // Calcular descuento por compare_price
+  if (!displayComparePrice.value || displayComparePrice.value <= displayPrice.value) return 0;
+  return Math.round((1 - displayPrice.value / displayComparePrice.value) * 100);
+});
+
+const displayStockColor = computed(() => {
+  if (displayStock.value <= 0) return 'text-red-400';
   return 'text-green-400';
 });
+
+// Keep discountPercent and stockColor for backward compatibility
+const discountPercent = displayDiscountPercent;
+const stockColor = displayStockColor;
 
 function formatPrice(price) {
   return Number(price).toLocaleString('en-US', {
@@ -500,11 +720,38 @@ async function addToCart() {
 
   addingToCart.value = true;
   try {
-    await cartAPI.addItem({ product_id: product.value.id, quantity: 1 });
+    const payload = { productId: product.value.id, quantity: quantity.value };
+    if (selectedVariant.value?.id) {
+      payload.variantId = selectedVariant.value.id;
+    }
+    await cartAPI.addItem(payload);
+    quantity.value = 1;
   } catch (err) {
     console.error('[ProductDetail] Error adding to cart:', err);
   } finally {
     addingToCart.value = false;
+  }
+}
+
+async function buyNow() {
+  const token = sessionStorage.getItem('accessToken');
+  if (!token) {
+    router.push({ name: 'Login', query: { redirect: route.fullPath } });
+    return;
+  }
+
+  buyingNow.value = true;
+  try {
+    const payload = { productId: product.value.id, quantity: quantity.value };
+    if (selectedVariant.value?.id) {
+      payload.variantId = selectedVariant.value.id;
+    }
+    await cartAPI.addItem(payload);
+    quantity.value = 1;
+    router.push({ name: 'Cart' });
+  } catch (err) {
+    console.error('[ProductDetail] Error buying now:', err);
+    buyingNow.value = false;
   }
 }
 
@@ -572,6 +819,32 @@ onMounted(async () => {
     const res = await productsAPI.getById(route.params.id);
     if (res.data && res.data.id) {
       product.value = res.data;
+      // Extract variants from embedded product_variants
+      if (Array.isArray(res.data.product_variants) && res.data.product_variants.length > 0) {
+        variants.value = res.data.product_variants.map(v => ({
+          ...v,
+          attributes: typeof v.attributes === 'object' && v.attributes ? v.attributes : {}
+        }));
+        // Read variant from URL query param first
+        const urlVariantId = route.query.variant;
+        if (urlVariantId) {
+          const foundVariant = variants.value.find(v => v.id === urlVariantId);
+          if (foundVariant?.attributes && typeof foundVariant.attributes === 'object') {
+            for (const [key, value] of Object.entries(foundVariant.attributes)) {
+              selectedAttributes[key] = String(value);
+            }
+          }
+        }
+
+        // Auto-select first option of each attribute group (only for unselected)
+        if (variantGroups.value.length > 0) {
+          for (const group of variantGroups.value) {
+            if (group.options.length > 0 && !selectedAttributes[group.attr]) {
+              selectedAttributes[group.attr] = group.options[0].value;
+            }
+          }
+        }
+      }
     } else {
       error.value = 'Product not found';
     }
@@ -581,6 +854,24 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+
+  // Buscar oferta activa para este producto
+  if (product.value?.id) {
+    try {
+      const { data } = await ecommerceAPI.getOffers({ limit: 50 });
+      const offers = Array.isArray(data) ? data : (data?.data || []);
+      const found = offers.find(o =>
+        Number(o.product_id) === Number(product.value.id) &&
+        o.active !== false
+      );
+      if (found) {
+        activeOffer.value = found;
+      }
+    } catch (e) {
+      console.warn('[ProductDetail] Error fetching offers:', e);
+    }
+  }
+
   fetchReviews();
 });
 

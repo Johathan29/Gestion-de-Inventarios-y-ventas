@@ -258,7 +258,44 @@ export class ListUsersUseCase {
   }
 }
 
+export class ToggleActiveUserUseCase {
+  #userRepository;
+
+  constructor({ userRepository }) {
+    this.#userRepository = userRepository;
+  }
+
+  async execute(id) {
+    return await this.#userRepository.toggleActive(id);
+  }
+}
+
+export class ChangeUserRoleUseCase {
+  #userRepository;
+
+  constructor({ userRepository }) {
+    this.#userRepository = userRepository;
+  }
+
+  async execute(id, roleName) {
+    return await this.#userRepository.updateRole(id, roleName);
+  }
+}
+
+export class GetUserAccessHistoryUseCase {
+  #userRepository;
+
+  constructor({ userRepository }) {
+    this.#userRepository = userRepository;
+  }
+
+  async execute(id) {
+    return await this.#userRepository.getAccessHistory(id);
+  }
+}
+
 export default {
   RegisterUserUseCase, LoginUseCase, RefreshTokenUseCase,
   ChangePasswordUseCase, UpdateUserUseCase, GetUserUseCase, ListUsersUseCase,
+  ToggleActiveUserUseCase, ChangeUserRoleUseCase, GetUserAccessHistoryUseCase,
 };

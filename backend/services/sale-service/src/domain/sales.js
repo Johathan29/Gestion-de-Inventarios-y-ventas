@@ -21,7 +21,7 @@ export const PAYMENT_STATUSES = {
 export const PAYMENT_METHODS = ['cash', 'card', 'transfer', 'check', 'credit'];
 
 export class SaleItem extends Entity {
-  constructor({ id, saleId, productId, productName, sku, quantity, unitPrice, discount, total, createdAt }) {
+  constructor({ id, saleId, productId, productName, sku, quantity, unitPrice, discount, total, createdAt, variantId, variantName, variantAttributes }) {
     super(id);
     this._saleId = saleId;
     this._productId = productId;
@@ -32,6 +32,9 @@ export class SaleItem extends Entity {
     this._discount = discount || 0;
     this._total = total || (quantity * unitPrice);
     this._createdAt = createdAt || new Date();
+    this._variantId = variantId || null;
+    this._variantName = variantName || null;
+    this._variantAttributes = variantAttributes || null;
   }
 
   get saleId() { return this._saleId; }
@@ -43,6 +46,9 @@ export class SaleItem extends Entity {
   get discount() { return this._discount; }
   get total() { return this._total; }
   get createdAt() { return this._createdAt; }
+  get variantId() { return this._variantId; }
+  get variantName() { return this._variantName; }
+  get variantAttributes() { return this._variantAttributes; }
 
   toJSON() {
     return {
@@ -51,17 +57,22 @@ export class SaleItem extends Entity {
       quantity: this._quantity, unitPrice: this._unitPrice,
       discount: this._discount, total: this._total,
       createdAt: this._createdAt,
+      variantId: this._variantId,
+      variantName: this._variantName,
+      variantAttributes: this._variantAttributes,
     };
   }
 }
 
 export class Sale extends AggregateRoot {
-  constructor({ id, saleNumber, clientId, client, userId, items, subtotal, discount, tax, total, status, paymentMethod, paymentStatus, notes, shippingAddress, source, createdAt, updatedAt }) {
+  constructor({ id, saleNumber, clientId, client, userId, invoiceId, invoice, items, subtotal, discount, tax, total, status, paymentMethod, paymentStatus, notes, shippingAddress, source, createdAt, updatedAt }) {
     super(id);
     this._saleNumber = saleNumber;
     this._clientId = clientId;
     this._client = client || null;
     this._userId = userId;
+    this._invoiceId = invoiceId;
+    this._invoice = invoice || null;
     this._items = items || [];
     this._subtotal = subtotal || 0;
     this._discount = discount || 0;
@@ -81,6 +92,8 @@ export class Sale extends AggregateRoot {
   get clientId() { return this._clientId; }
   get client() { return this._client; }
   get userId() { return this._userId; }
+  get invoiceId() { return this._invoiceId; }
+  get invoice() { return this._invoice; }
   get items() { return this._items; }
   get subtotal() { return this._subtotal; }
   get discount() { return this._discount; }
@@ -132,6 +145,8 @@ export class Sale extends AggregateRoot {
       id: this.id, saleNumber: this._saleNumber,
       clientId: this._clientId, client: this._client,
       userId: this._userId,
+      invoiceId: this._invoiceId,
+      invoice: this._invoice,
       items: this._items.map(i => i.toJSON()),
       subtotal: this._subtotal, discount: this._discount,
       tax: this._tax, total: this._total,
@@ -176,7 +191,7 @@ export class Cart extends Entity {
 }
 
 export class CartItem extends Entity {
-  constructor({ id, cartId, productId, product, quantity, unitPrice, discount, createdAt }) {
+  constructor({ id, cartId, productId, product, quantity, unitPrice, discount, createdAt, variantId, variantName, variantAttributes }) {
     super(id);
     this._cartId = cartId;
     this._productId = productId;
@@ -185,6 +200,9 @@ export class CartItem extends Entity {
     this._unitPrice = unitPrice;
     this._discount = discount || 0;
     this._createdAt = createdAt || new Date();
+    this._variantId = variantId || null;
+    this._variantName = variantName || null;
+    this._variantAttributes = variantAttributes || null;
   }
 
   get cartId() { return this._cartId; }
@@ -195,6 +213,9 @@ export class CartItem extends Entity {
   get discount() { return this._discount; }
   get subtotal() { return this._quantity * this._unitPrice; }
   get createdAt() { return this._createdAt; }
+  get variantId() { return this._variantId; }
+  get variantName() { return this._variantName; }
+  get variantAttributes() { return this._variantAttributes; }
 
   toJSON() {
     return {
@@ -203,6 +224,9 @@ export class CartItem extends Entity {
       quantity: this._quantity, unitPrice: this._unitPrice,
       discount: this._discount, subtotal: this.subtotal,
       createdAt: this._createdAt,
+      variantId: this._variantId,
+      variantName: this._variantName,
+      variantAttributes: this._variantAttributes,
     };
   }
 }

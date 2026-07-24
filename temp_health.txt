@@ -1,1 +1,0 @@
-{"status":"ok","service":"inventory-service","timestamp":"2026-07-08T13:17:24.897Z"}

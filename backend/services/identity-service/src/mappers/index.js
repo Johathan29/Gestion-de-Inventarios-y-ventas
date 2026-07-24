@@ -11,16 +11,38 @@ export class UserMapper {
   static toDomain(row) {
     if (!row) return null;
 
+    // Map DB permission module names to permission prefix (e.g. 'users' -> 'user')
+    const MODULE_MAP = {
+      sales: 'sale', purchases: 'purchase', products: 'product',
+      inventory: 'inventory', users: 'user', clients: 'client',
+      suppliers: 'supplier', invoices: 'invoice', reports: 'report',
+      categories: 'category', ecommerce: 'ecommerce',
+      notifications: 'notification', audit: 'audit', config: 'config',
+      accounting: 'accounting', admin: 'admin',
+    };
+
+    // Flatten role permissions object into array of "category:action" strings
+    const permissions = [];
+    if (row.roles?.permissions && typeof row.roles.permissions === 'object') {
+      for (const [category, actions] of Object.entries(row.roles.permissions)) {
+        const prefix = MODULE_MAP[category] || category;
+        if (Array.isArray(actions)) {
+          actions.forEach(action => permissions.push(`${prefix}:${action}`));
+        }
+      }
+    }
+
     return new User({
       id: row.id,
       email: row.email,
       name: row.name,
       passwordHash: row.password_hash,
-      role: row.roles?.name || row.role,
+      role: row.roles?.name || row.role || null,
       isActive: row.is_active,
-      companyId: row.company_id,
+      companyId: row.company_id || row.companyid || null,
       phone: row.phone || '',
       lastLogin: row.last_login ? new Date(row.last_login) : null,
+      permissions,
     });
   }
 
@@ -28,17 +50,20 @@ export class UserMapper {
    * Map Domain entity to persistence format
    */
   static toPersistence(user) {
-    return {
+    const result = {
       id: user.id,
       email: user.email.address,
       name: user.name,
       password_hash: user.passwordHash,
-      role: user.role,
       is_active: user.isActive,
-      company_id: user.companyId,
       phone: user.phone,
       last_login: user.lastLogin?.toISOString(),
     };
+    // Only include company_id if it exists in DB (some environments lack this column)
+    if (user.companyId) {
+      result.company_id = user.companyId;
+    }
+    return result;
   }
 
   /**
@@ -48,14 +73,14 @@ export class UserMapper {
     if (!user) return null;
     return {
       id: user.id,
-      email: user.email.address,
+      email: user.email?.address || user.email,
       name: user.name,
-      role: user.role,
-      isActive: user.isActive,
-      companyId: user.companyId,
+      role_name: user.role,
+      is_active: user.isActive,
+      company_id: user.companyId || null,
       phone: user.phone,
-      lastLogin: user.lastLogin?.toISOString(),
-      createdAt: user.createdAt?.toISOString(),
+      last_login: user.lastLogin?.toISOString?.() || user.lastLogin,
+      created_at: user.createdAt?.toISOString?.() || user.createdAt,
     };
   }
 

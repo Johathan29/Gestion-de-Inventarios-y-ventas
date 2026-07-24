@@ -34,7 +34,7 @@
       </div>
     </div>
     <div class="px-margin-desktop py-8 border-t border-white/5 text-center">
-      <p class="font-body-md text-body-md text-on-surface-variant opacity-60">© 2024 {{ storeName }}. All rights reserved.</p>
+      <p class="font-body-md text-body-md text-on-surface-variant opacity-60">© {{ new Date().getFullYear() }} {{ storeName }}. All rights reserved.</p>
     </div>
   </footer>
 </template>

@@ -19,6 +19,7 @@ export class InventoryItemMapper {
       maxStock: raw.products?.max_stock || null,
       createdAt: raw.created_at ? new Date(raw.created_at) : undefined,
       updatedAt: raw.updated_at ? new Date(raw.updated_at) : undefined,
+      status: raw.status || 'available',
     });
   }
 
@@ -36,6 +37,9 @@ export class InventoryItemMapper {
     return {
       id: domain.id,
       productId: domain.productId,
+      status: domain.status,
+      isPending: domain.isPending,
+      isAvailable: domain.isAvailable,
       product: domain.product,
       warehouse: domain.warehouse,
       stock: domain.stock,
@@ -74,6 +78,7 @@ export class MovementMapper {
       notes: raw.notes,
       userId: raw.user_id || raw.created_by,
       createdAt: raw.created_at ? new Date(raw.created_at) : undefined,
+      variantId: raw.variant_id,
     });
   }
 
@@ -92,6 +97,7 @@ export class MovementMapper {
       reason: domain.reason,
       notes: domain.notes,
       user_id: domain.userId,
+      variant_id: domain.variantId,
     };
   }
 
@@ -112,6 +118,7 @@ export class MovementMapper {
       notes: domain.notes,
       userId: domain.userId,
       createdAt: domain.createdAt?.toISOString(),
+      variantId: domain.variantId,
     };
   }
 

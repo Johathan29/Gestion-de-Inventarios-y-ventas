@@ -1,12 +1,13 @@
 <template>
-  <nav class="fixed w-full z-50 bg-white/5 backdrop-blur-xl border-b border-white/20 flex justify-between items-center !px-4 !py-5"
+  <nav class="fixed w-full z-50 flex justify-center items-start pt-3 !px-4"
     :style="{ top: 'var(--banner-height, 0px)' }">
-    <div class="max-w-7xl mx-auto flex items-center justify-between w-full">
-      <router-link to="/" class="font-headline-md text-headline-md font-bold text-primary flex items-center gap-2">
-        <img v-if="settings?.logo_url" :src="settings.logo_url" :alt="storeName" class="h-8 w-auto object-contain" />
-        {{ storeName }}
+    <div class="max-w-7xl mx-auto w-full bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl px-5 py-3 flex items-center justify-between transition-all duration-500"
+      :class="{ 'bg-black/60 shadow-2xl shadow-primary/5': scrolled }">
+      <router-link to="/" class="font-headline-md text-headline-md font-bold text-white flex items-center gap-2 hover:text-primary transition-colors">
+        <img v-if="settings?.logo_url" :src="settings.logo_url" :alt="storeName" class="h-8 w-auto object-contain brightness-0 invert" />
+        <span class="hidden sm:inline">{{ storeName }}</span>
       </router-link>
-      <div class="hidden md:flex gap-4 items-center">
+      <div class="hidden md:flex gap-1 items-center">
         <a
           v-for="link in anchorLinks"
           :key="link.id"
@@ -14,114 +15,95 @@
           :href="isOnHome ? '#' : `/#${link.id}`"
           @click.prevent="scrollToSection(link.id)"
         >
-          <span class="material-symbols-outlined text-lg mr-1 align-text-bottom">{{ link.icon }}</span>
+          <span class="material-symbols-outlined !text-[1.4rem] align-middle">{{ link.icon }}</span>
           {{ link.label }}
         </a>
       </div>
 
-      <div class="flex items-center gap-6">
+      <div class="flex items-center gap-3">
         <!-- Notificaciones (solo clientes autenticados) -->
         <div v-if="isClient" class="relative">
           <button
             @click.stop="toggleNotifications"
-            class="text-secondary hover:text-primary transition-all duration-300 relative"
+            class="text-white/70 hover:text-primary transition-all duration-300 relative p-2"
             :class="{ 'text-primary': showNotifications }"
           >
-            <span class="material-symbols-outlined">notifications</span>
+            <span class="material-symbols-outlined text-xl">notifications</span>
             <span
               v-if="notifUnread > 0"
-              class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] min-w-4 h-4 rounded-full flex items-center justify-center font-bold px-1"
+              class="absolute top-0 right-0 bg-red-500 text-white text-[10px] min-w-4 h-4 rounded-full flex items-center justify-center font-bold px-1"
             >{{ notifUnread > 9 ? '9+' : notifUnread }}</span>
           </button>
 
           <transition name="fade">
             <div
               v-if="showNotifications"
-              class="absolute right-0 top-full mt-2 w-80 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/30 py-2 overflow-hidden"
+              class="absolute right-0 top-full mt-2 w-80 bg-[#1a1a1e] backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 py-2 overflow-hidden"
             >
-              <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-gray-900">Notificaciones</h3>
+              <div class="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-white">Notificaciones</h3>
                 <button v-if="notifUnread > 0" @click.stop="markAllRead" class="text-xs text-primary hover:underline">Marcar leídas</button>
               </div>
               <div class="max-h-72 overflow-y-auto">
-                <div v-if="notifList.length === 0" class="p-6 text-center text-gray-400 text-sm">
+                <div v-if="notifList.length === 0" class="p-6 text-center text-white/40 text-sm">
                   <span class="material-symbols-outlined text-3xl mb-2 block">notifications_off</span>
                   No hay notificaciones
                 </div>
                 <div v-for="n in notifList" :key="n.id"
-                  class="px-4 py-3 border-b border-gray-50 hover:bg-primary/5 cursor-pointer transition-colors"
+                  class="px-4 py-3 border-b border-white/5 hover:bg-primary/10 cursor-pointer transition-colors"
                   @click.stop="markRead(n.id)">
-                  <p class="text-sm font-medium text-gray-900">{{ n.title }}</p>
-                  <p class="text-xs text-gray-500 mt-0.5">{{ n.message }}</p>
-                  <p class="text-xs text-gray-400 mt-1">{{ formatRelativeTime(n.created_at) }}</p>
+                  <p class="text-sm font-medium text-white">{{ n.title }}</p>
+                  <p class="text-xs text-white/50 mt-0.5">{{ n.message }}</p>
+                  <p class="text-xs text-white/30 mt-1">{{ formatRelativeTime(n.created_at) }}</p>
                 </div>
               </div>
               <router-link to="/account/notifications" @click="showNotifications = false"
-                class="block text-center text-xs text-primary hover:text-primary-dark font-medium py-2.5 border-t border-gray-100 hover:bg-primary/5 transition-colors">
+                class="block text-center text-xs text-primary hover:text-primary-light font-medium py-2.5 border-t border-white/10 hover:bg-primary/10 transition-colors">
                 Ver todas las notificaciones
               </router-link>
             </div>
           </transition>
         </div>
 
-        <!-- Menú de usuario -->
-        <div v-if="isClient" class="relative">
-          <button
-            @click="toggleUserMenu"
-            class="flex items-center gap-2 text-secondary hover:text-primary transition-all duration-300"
-            :class="{ 'text-primary': showUserMenu }"
+        <!-- Menú de usuario (shared component) -->
+        <div v-if="isClient">
+          <UserMenu
+            context="landing"
           >
-            <span class="material-symbols-outlined">account_circle</span>
-            <span class="text-sm font-medium hidden sm:inline">{{ userName }}</span>
-            <span class="material-symbols-outlined text-sm">{{ showUserMenu ? 'expand_less' : 'expand_more' }}</span>
-          </button>
-
-          <!-- Dropdown -->
-          <transition name="fade">
-            <div
-              v-if="showUserMenu"
-              class="absolute right-0 top-full mt-2 w-56 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/30 py-2 overflow-hidden"
-            >
-              <div class="px-4 py-3 border-b border-gray-100">
-                <p class="text-sm font-semibold text-gray-900 truncate">{{ userName }}</p>
-                <p class="text-xs text-gray-500 truncate">{{ userEmail }}</p>
-              </div>
-
-              <router-link
-                v-for="item in menuItems"
-                :key="item.to"
-                :to="item.to"
-                class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-primary/10 hover:text-primary transition-colors"
-                @click="showUserMenu = false"
+            <template #trigger="{ toggle }">
+              <button
+                @click="toggle"
+                class="flex items-center gap-2 text-white/70 hover:text-primary transition-all duration-300 p-2"
               >
-                <span class="material-symbols-outlined text-lg">{{ item.icon }}</span>
-                {{ item.label }}
+                <span class="material-symbols-outlined text-xl">account_circle</span>
+                <span class="text-sm font-medium hidden sm:inline">{{ userName }}</span>
+                <span class="material-symbols-outlined text-sm">expand_more</span>
+              </button>
+            </template>
+            <template #extra>
+              <router-link
+                to="/account/credit"
+                class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:bg-primary/20 hover:text-primary transition-colors"
+                style="text-decoration: none;"
+              >
+                <span class="material-symbols-outlined text-lg">credit_card</span>
+                Cuenta de Crédito
               </router-link>
-
-              <div class="border-t border-gray-100 mt-1 pt-1">
-                <button
-                  @click="handleLogout"
-                  class="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left"
-                >
-                  <span class="material-symbols-outlined text-lg">logout</span>
-                  Cerrar Sesión
-                </button>
-              </div>
-            </div>
-          </transition>
+            </template>
+          </UserMenu>
         </div>
 
         <!-- Icono de login para usuarios no autenticados -->
-        <router-link v-else to="/login" class="text-secondary hover:scale-105 transition-all duration-300">
-          <span class="material-symbols-outlined" data-icon="person">person</span>
+        <router-link v-else to="/login" class="text-white/70 hover:text-primary hover:scale-105 transition-all duration-300 p-2">
+          <span class="material-symbols-outlined text-xl">person</span>
         </router-link>
 
         <!-- Carrito -->
-        <router-link to="/cart" class="text-secondary hover:scale-105 transition-all duration-300 relative">
-          <span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+        <router-link to="/cart" class="text-white/70 hover:text-primary hover:scale-105 transition-all duration-300 relative p-2">
+          <span class="material-symbols-outlined text-xl">shopping_cart</span>
           <span
             v-if="cartCount > 0"
-            class="absolute -top-2 -right-2 bg-primary text-on-primary text-[10px] min-w-4 h-4 rounded-full flex items-center justify-center font-bold px-1"
+            class="absolute top-0 right-0 bg-primary text-white text-[10px] min-w-4 h-4 rounded-full flex items-center justify-center font-bold px-1"
           >{{ cartCount }}</span>
         </router-link>
       </div>
@@ -130,21 +112,23 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, onBeforeMount } from 'vue';
+import { ref, computed, onMounted, onUnmounted, onBeforeMount, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
-import { cartAPI, notificationsAPI } from '../../api';
+import { useAppStore } from '../../stores/app';
+import { cartAPI, notificationsAPI, ecommerceAPI } from '../../api';
 import { formatRelativeTime } from '../../utils';
 import { useEcommerceSettings } from '../../composables/useEcommerceSettings';
+import UserMenu from '../shared/UserMenu.vue';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const appStore = useAppStore();
 const { settings, fetchSettings } = useEcommerceSettings();
 
 const storeName = computed(() => settings.value?.store_name || 'Animal Store');
 
-const showUserMenu = ref(false);
 const showNotifications = ref(false);
 const cartCount = ref(0);
 const notifList = ref([]);
@@ -152,24 +136,34 @@ const notifUnread = ref(0);
 
 let notifInterval = null;
 
-const anchorLinks = [
-  { id: 'hero', label: 'Inicio', icon: 'home' },
-  { id: 'products', label: 'Productos', icon: 'inventory_2' },
-  { id: 'reviews', label: 'Reseñas', icon: 'rate_review' },
-  { id: 'offers', label: 'Ofertas', icon: 'local_offer' },
-  { id: 'contact', label: 'Contacto', icon: 'contact_mail' },
-];
+async function checkActiveOffers() {
+  try {
+    const { data } = await ecommerceAPI.getOffers({ limit: 1, status: 'active' });
+    const offers = data?.data || data || [];
+    hasActiveOffers.value = Array.isArray(offers) ? offers.length > 0 : true;
+  } catch (e) {
+    hasActiveOffers.value = false;
+  }
+}
+
+const hasActiveOffers = ref(true);
+const anchorLinks = computed(() => {
+  const links = [
+    { id: 'hero', label: 'Inicio', icon: 'home' },
+    { id: 'products', label: 'Productos', icon: 'inventory_2' },
+    { id: 'reviews', label: 'Reseñas', icon: 'rate_review' },
+    { id: 'contact', label: 'Contacto', icon: 'contact_mail' },
+  ];
+  // Insertar Ofertas solo si hay ofertas activas
+  if (hasActiveOffers.value) {
+    links.splice(3, 0, { id: 'offers', label: 'Ofertas', icon: 'local_offer' });
+  }
+  return links;
+});
 
 const activeSection = ref('hero');
+const scrolled = ref(false);
 let observer = null;
-
-// Menú items para clientes autenticados
-const menuItems = [
-  { to: '/account/profile', label: 'Ver Perfil', icon: 'person' },
-  { to: '/account/purchases', label: 'Mis Compras', icon: 'receipt_long' },
-  { to: '/account/credit', label: 'Cuenta de Crédito', icon: 'credit_card' },
-  { to: '/account/notifications', label: 'Notificaciones', icon: 'notifications' },
-];
 
 // Detectar si el usuario es cliente autenticado
 const isClient = computed(() => {
@@ -177,7 +171,6 @@ const isClient = computed(() => {
 });
 
 const userName = computed(() => authStore.user?.name || 'Usuario');
-const userEmail = computed(() => authStore.user?.email || '');
 
 const isProductRoute = computed(() =>
   ['ProductsCatalog', 'ProductPublicDetail'].includes(route.name)
@@ -211,21 +204,11 @@ function navLinkClass(sectionId) {
     : isOnHome.value && activeSection.value === sectionId;
 
   return [
-    'font-body-md text-body-md transition-all duration-300',
+    'font-body-md text-body-md transition-all duration-300 px-4 py-2 rounded-full flex items-center gap-[0.4rem] justify-between',
     isActive
-      ? 'text-primary font-bold border-b-2 border-primary pb-1'
-      : 'text-on-surface-variant hover:text-primary'
+      ? 'text-primary font-bold bg-primary/10 border border-primary/30'
+      : 'text-white/70 hover:text-primary hover:bg-white/5'
   ];
-}
-
-function toggleUserMenu() {
-  showUserMenu.value = !showUserMenu.value;
-}
-
-async function handleLogout() {
-  showUserMenu.value = false;
-  await authStore.logout();
-  router.push('/');
 }
 
 async function fetchCartCount() {
@@ -277,26 +260,37 @@ async function markAllRead() {
   } catch (e) { /* silent */ }
 }
 
-// Cerrar menú al hacer clic fuera
+// Cerrar notificaciones al hacer clic fuera
 function handleClickOutside(event) {
-  if (showUserMenu.value) {
-    showUserMenu.value = false;
-  }
-  // Notifications dropdown closes when clicking outside
   if (showNotifications.value && !event.target.closest) {
     showNotifications.value = false;
   }
 }
 
-onBeforeMount(() => {
+onBeforeMount(async () => {
+  // Restore session on page reload
+  const token = sessionStorage.getItem('accessToken');
+  if (token && !authStore.user) {
+    try {
+      await authStore.fetchProfile();
+    } catch (e) {
+      // Token invalid
+    }
+  }
   if (authStore.isAuthenticated) {
     fetchCartCount();
   }
 });
 
+function handleScroll() {
+  scrolled.value = window.scrollY > 60;
+}
+
 onMounted(() => {
   fetchSettings();
-  const allIds = [...anchorLinks.map(l => l.id), 'products'];
+  checkActiveOffers();
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  const allIds = [...anchorLinks.value.map(l => l.id), 'products'];
 
   observer = new IntersectionObserver((entries) => {
     let current = activeSection.value;
@@ -333,6 +327,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (observer) observer.disconnect();
+  window.removeEventListener('scroll', handleScroll);
   document.removeEventListener('click', handleClickOutside);
   if (notifInterval) clearInterval(notifInterval);
 });

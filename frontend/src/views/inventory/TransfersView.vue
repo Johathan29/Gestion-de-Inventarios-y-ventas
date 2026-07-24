@@ -2,10 +2,30 @@
   <div>
     <InventoryTabs />
     <div class="flex justify-between items-center mb-4">
-      <h2 class="font-headline-lg-mobile md:font-headline-lg" style="font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.25; font-weight: 700; color: #0b1c30; letter-spacing: -0.02em; font-family: 'Plus Jakarta Sans', sans-serif;">Transferencias</h2>
-      <button @click="showForm = true"
-        class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 border"
-        style="background: rgb(98, 66, 0); color: white; border-color: rgba(139, 94, 0, 0.2); font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;">Nueva Transferencia</button>
+      <div
+        class="mesh-gradient-header"
+        style="
+          background: radial-gradient(circle at 100% 100%, #f0c04d 0%, #9154dc 50%, #7738c1 100%);
+        "
+      >
+        <div class="header-icon-container">
+          <span class="material-symbols-outlined animate-header-icon"> swap_horiz </span>
+        </div>
+        <div class="header-glass">
+          <div class="header-information">
+            <PageHeader
+              title="Transferencias"
+              description="Transferencias entre ubicaciones"
+              tag="h1"
+            />
+          </div>
+          <div class="header-actions">
+            <button @click="showForm = true" class="aurora-header-button aurora-header-button-primary">
+              Nueva Transferencia
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <DataTable :columns="columns" :data="transfers" searchable />
@@ -69,6 +89,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { inventoryAPI, productsAPI } from '../../api';
 import InventoryTabs from '../../components/inventory/InventoryTabs.vue';
+import PageHeader from '../../components/shared/PageHeader.vue';
 import DataTable from '../../components/shared/DataTable.vue';
 import Modal from '../../components/shared/Modal.vue';
 

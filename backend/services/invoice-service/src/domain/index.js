@@ -35,7 +35,7 @@ export const CLIENT_DOCUMENT_TYPES = ['', 'RNC', 'CEDULA', 'PASAPORTE'];
 // ============================================================
 
 export class InvoiceItem extends Entity {
-  constructor({ id, invoiceId, productId, productName, sku, quantity, unitPrice, discount, tax, total, createdAt }) {
+  constructor({ id, invoiceId, productId, productName, sku, quantity, unitPrice, discount, tax, total, createdAt, variantId, variantName, variantAttributes }) {
     super(id);
     this._invoiceId = invoiceId;
     this._productId = productId;
@@ -47,6 +47,9 @@ export class InvoiceItem extends Entity {
     this._tax = tax || 0;
     this._total = total || (quantity * unitPrice - (discount || 0));
     this._createdAt = createdAt || new Date();
+    this._variantId = variantId || null;
+    this._variantName = variantName || null;
+    this._variantAttributes = variantAttributes || null;
   }
 
   get invoiceId() { return this._invoiceId; }
@@ -59,6 +62,9 @@ export class InvoiceItem extends Entity {
   get tax() { return this._tax; }
   get total() { return this._total; }
   get createdAt() { return this._createdAt; }
+  get variantId() { return this._variantId; }
+  get variantName() { return this._variantName; }
+  get variantAttributes() { return this._variantAttributes; }
 
   toJSON() {
     return {
@@ -68,6 +74,9 @@ export class InvoiceItem extends Entity {
       unitPrice: this._unitPrice, discount: this._discount,
       tax: this._tax, total: this._total,
       createdAt: this._createdAt,
+      variantId: this._variantId,
+      variantName: this._variantName,
+      variantAttributes: this._variantAttributes,
     };
   }
 }

@@ -39,7 +39,11 @@ export function createReportRouter(appService) {
     validate(InventoryReportQueryDTO, 'query'),
     asyncHandler(async (req, res) => {
       const report = await appService.getInventoryReport(req.validatedQuery);
-      res.json({ success: true, data: report });
+      res.json({
+        success: true,
+        data: { summary: report.summary, items: report.items },
+        pagination: report.pagination,
+      });
     })
   );
 
@@ -55,7 +59,7 @@ export function createReportRouter(appService) {
     validate(ClientReportQueryDTO, 'query'),
     asyncHandler(async (req, res) => {
       const report = await appService.getClientReport(req.validatedQuery);
-      res.json({ success: true, data: report });
+      res.json({ success: true, data: report.data, pagination: report.pagination });
     })
   );
 

@@ -1,43 +1,66 @@
 <template>
-  <Transition name="alert">
-    <div v-if="show" :class="alertClass" class="flex items-start gap-3 p-4 rounded-lg border">
-      <span class="material-icons-outlined mt-0.5">{{ icon }}</span>
-      <div class="flex-1">
-        <p v-if="title" class="font-medium text-sm mb-1">{{ title }}</p>
-        <p class="text-sm">{{ message || $slots.default?.() }}</p>
-      </div>
-      <button v-if="dismissible" @click="$emit('close')" class="p-1 rounded hover:bg-black/10">
-        <span class="material-icons-outlined text-lg">close</span>
+  <Transition name="alert-fade">
+    <div
+      v-if="show"
+      class="flex items-start gap-3 px-5 py-4 rounded-xl border"
+      :class="alertClasses"
+      role="alert"
+    >
+      <span class="material-icons-outlined text-lg mt-0.5 flex-shrink-0">{{ iconName }}</span>
+      <p class="text-sm flex-1">{{ message }}</p>
+      <button
+        v-if="dismissible"
+        @click="$emit('close')"
+        class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+        aria-label="Cerrar"
+      >
+        <span class="material-icons-outlined text-sm">close</span>
       </button>
     </div>
   </Transition>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 
 const props = defineProps({
-  show: { type: Boolean, default: true },
   type: { type: String, default: 'info' },
-  title: { type: String, default: '' },
   message: { type: String, default: '' },
-  dismissible: { type: Boolean, default: false }
+  show: { type: Boolean, default: false },
+  dismissible: { type: Boolean, default: false },
+  duration: { type: Number, default: 0 }
 });
 
-defineEmits(['close']);
+const emit = defineEmits(['close']);
 
-const config = {
-  success: { bg: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300', icon: 'check_circle' },
-  error: { bg: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300', icon: 'error' },
-  warning: { bg: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300', icon: 'warning' },
-  info: { bg: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300', icon: 'info' }
+watch(() => props.show, (val) => {
+  if (val && props.duration > 0) {
+    setTimeout(() => {
+      emit('close');
+    }, props.duration);
+  }
+});
+
+const typeConfig = {
+  success: { icon: 'check_circle', classes: 'bg-green-500/10 border-green-500/30 text-green-400' },
+  error: { icon: 'error', classes: 'bg-red-500/10 border-red-500/30 text-red-400' },
+  warning: { icon: 'warning', classes: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' },
+  info: { icon: 'info', classes: 'bg-blue-500/10 border-blue-500/30 text-blue-400' }
 };
 
-const alertClass = computed(() => config[props.type]?.bg || config.info.bg);
-const icon = computed(() => config[props.type]?.icon || 'info');
+const config = computed(() => typeConfig[props.type] || typeConfig.info);
+const iconName = computed(() => config.value.icon);
+const alertClasses = computed(() => config.value.classes);
 </script>
 
 <style scoped>
-.alert-enter-active, .alert-leave-active { transition: all 0.3s ease; }
-.alert-enter-from, .alert-leave-to { opacity: 0; transform: translateY(-10px); }
+.alert-fade-enter-active,
+.alert-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.alert-fade-enter-from,
+.alert-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
 </style>

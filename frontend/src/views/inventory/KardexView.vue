@@ -2,17 +2,32 @@
   <div>
     <InventoryTabs />
     <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-      <div>
-        <h2 class="font-headline-lg-mobile md:font-headline-lg" style="font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.25; font-weight: 700; color: #0b1c30; letter-spacing: -0.02em; font-family: 'Plus Jakarta Sans', sans-serif;">Kardex</h2>
-        <p style="color: #4f4539; font-family: 'Inter', sans-serif; font-size: 1rem; line-height: 1.5; margin-top: 0.25rem;">
-          Historial de movimientos de inventario
-        </p>
-      </div>
-      <div class="relative w-full sm:w-72">
-        <select v-model="productId" @change="fetchKardex" class="w-full bg-white border border-[#d2c4b4] rounded-full px-4 py-2.5 text-sm outline-none transition-all appearance-none" style="font-family: 'Inter', sans-serif; color: #0b1c30;" @focus="e => e.currentTarget.style.borderColor = '#624200'" @blur="e => e.currentTarget.style.borderColor = '#d2c4b4'">
-        <option value="">Seleccionar producto...</option>
-        <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }} ({{ p.sku }})</option>
-        </select>
+      <div
+        class="mesh-gradient-header"
+        style="
+          background: radial-gradient(circle at 100% 100%, #f0c04d 0%, #9154dc 50%, #7738c1 100%);
+        "
+      >
+        <div class="header-icon-container">
+          <span class="material-symbols-outlined animate-header-icon"> assignment </span>
+        </div>
+        <div class="header-glass">
+          <div class="header-information">
+            <PageHeader
+              title="Kardex"
+              description="Historial de movimientos de inventario"
+              tag="h1"
+            />
+          </div>
+          <div class="header-actions">
+            <div class="relative">
+              <select v-model="productId" @change="fetchKardex" class="w-full bg-white border border-[#d2c4b4] rounded-full px-4 py-2.5 text-sm outline-none transition-all appearance-none" style="font-family: 'Inter', sans-serif; color: #0b1c30;" @focus="e => e.currentTarget.style.borderColor = '#624200'" @blur="e => e.currentTarget.style.borderColor = '#d2c4b4'">
+                <option value="">Seleccionar producto...</option>
+                <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }} ({{ p.sku }})</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="dt-card overflow-hidden">
@@ -48,6 +63,7 @@ import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { inventoryAPI, productsAPI } from '../../api';
 import InventoryTabs from '../../components/inventory/InventoryTabs.vue';
+import PageHeader from '../../components/shared/PageHeader.vue';
 import DataTable from '../../components/shared/DataTable.vue';
 import { formatDate } from '../../utils';
 

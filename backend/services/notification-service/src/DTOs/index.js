@@ -45,6 +45,11 @@ export const SendOrderNotificationDTO = z.object({
 
 export const NotificationQueryDTO = z.object({
   limit: z.coerce.number().int().positive().optional().default(50),
+  page: z.coerce.number().int().positive().optional().default(1),
   offset: z.coerce.number().int().nonnegative().optional().default(0),
   unread: z.enum(['true', 'false']).optional(),
+  search: z.string().max(200).optional(),
+  from_date: z.string().optional(),
+  to_date: z.string().optional(),
+  sort: z.enum(['recent', 'oldest', 'unread_first']).optional().default('recent'),
 });

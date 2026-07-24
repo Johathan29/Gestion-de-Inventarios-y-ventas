@@ -8,6 +8,18 @@ import {
   EmailSentEvent, WhatsAppSentEvent,
 } from '../events/index.js';
 
+export class GetNotificationUseCase {
+  constructor({ notifRepo }) {
+    this._notifRepo = notifRepo;
+  }
+
+  async execute({ id, userId }) {
+    const notif = await this._notifRepo.findById(id);
+    if (!notif || notif.userId !== userId) throw new Error('NOT_FOUND');
+    return notif;
+  }
+}
+
 export class ListNotificationsUseCase {
   constructor({ notifRepo }) {
     this._notifRepo = notifRepo;

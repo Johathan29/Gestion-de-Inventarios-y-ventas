@@ -141,6 +141,56 @@ const createProduct = async (req, res, next) => {
       throw error;
     }
 
+    // Notificar a todos los clientes activos sobre el nuevo producto
+    try {
+      const { data: clients } = await supabase
+        .from('clients')
+        .select('id, user_id')
+        .not('email', 'is', null);
+
+      if (clients && clients.length > 0) {
+        const notifications = clients.map(c => ({
+          user_id: c.user_id,
+          type: 'new_product',
+          title: '¡Nuevo producto agregado!',
+          message: `${product.name} ya está disponible en nuestra tienda.`,
+          is_read: false,
+          created_at: new Date().toISOString()
+        })).filter(n => n.user_id);
+        if (notifications.length > 0) {
+          await supabase.from('notifications').insert(notifications);
+        }
+      }
+
+      // También notificar por correo a admins
+      try {
+        const EMAIL_SERVICE_URL = process.env.EMAIL_SERVICE_URL || 'http://localhost:3014';
+        const { data: admins } = await supabase
+          .from('users')
+          .select('email, name')
+          .eq('is_active', true)
+          .in('role', ['admin', 'supervisor']);
+        if (admins) {
+          for (const admin of admins) {
+            await fetch(`${EMAIL_SERVICE_URL}/api/email/new-products`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: admin.email,
+                adminName: admin.name || 'Admin',
+                productName: product.name,
+                productId: product.id
+              })
+            }).catch(() => {});
+          }
+        }
+      } catch (emailErr) {
+        console.error('[ProductService] Error sending new product email:', emailErr.message);
+      }
+    } catch (notifErr) {
+      console.error('[ProductService] Error creating notifications:', notifErr.message);
+    }
+
     res.status(201).json({ success: true, data: product });
   } catch (error) {
     next(error);
@@ -508,14 +558,37 @@ const getProductVariants = async (req, res, next) => {
 const createProductVariant = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, sku, price, stock, attributes } = req.body;
+    const { name, sku, price, stock, attributes, images, compare_price, is_active, sort_order } = req.body;
+
+    // Auto-generate SKU from product if not provided
+    let variantSku = sku;
+    if (!variantSku || !variantSku.trim()) {
+      const { data: product } = await supabase
+        .from('products')
+        .select('sku')
+        .eq('id', id)
+        .single();
+      const baseSku = product?.sku || 'VAR';
+      const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+      variantSku = `${baseSku}-${randomSuffix}`;
+    }
+
+    const insertData = {
+      product_id: id,
+      name,
+      sku: variantSku.trim().toUpperCase(),
+      price: price || null,
+      stock: stock || 0,
+      attributes: attributes || {},
+      images: images || [],
+      compare_price: compare_price || null,
+      is_active: is_active !== undefined ? is_active : true,
+      sort_order: sort_order || 0
+    };
 
     const { data: variant, error } = await supabase
       .from('product_variants')
-      .insert({
-        product_id: id, name, sku: sku.toUpperCase(),
-        price, stock: stock || 0, attributes: attributes || {}
-      })
+      .insert(insertData)
       .select()
       .single();
 
@@ -527,9 +600,66 @@ const createProductVariant = async (req, res, next) => {
   }
 };
 
+/**
+ * Actualizar variante de producto
+ */
+const updateProductVariant = async (req, res, next) => {
+  try {
+    const { id, variantId } = req.params;
+    const { name, sku, price, stock, attributes, images, is_active, compare_price, sort_order } = req.body;
+
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (sku !== undefined && sku.trim()) updateData.sku = sku.trim().toUpperCase();
+    if (price !== undefined) updateData.price = price;
+    if (stock !== undefined) updateData.stock = stock;
+    if (attributes !== undefined) updateData.attributes = attributes;
+    if (images !== undefined) updateData.images = images;
+    if (is_active !== undefined) updateData.is_active = is_active;
+    if (compare_price !== undefined) updateData.compare_price = compare_price;
+    if (sort_order !== undefined) updateData.sort_order = sort_order;
+    updateData.updated_at = new Date().toISOString();
+
+    const { data: variant, error } = await supabase
+      .from('product_variants')
+      .update(updateData)
+      .eq('id', variantId)
+      .eq('product_id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({ success: true, data: variant });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Eliminar variante de producto
+ */
+const deleteProductVariant = async (req, res, next) => {
+  try {
+    const { id, variantId } = req.params;
+
+    const { error } = await supabase
+      .from('product_variants')
+      .delete()
+      .eq('id', variantId)
+      .eq('product_id', id);
+
+    if (error) throw error;
+
+    res.json({ success: true, message: 'Variante eliminada correctamente' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProducts, getProductById, createProduct, updateProduct, deleteProduct,
   getFeaturedProducts, getProductsByCategory, getLowStockProducts,
   uploadProductImage, uploadProductImageByUrl, deleteProductImage,
-  getProductVariants, createProductVariant
+  getProductVariants, createProductVariant, updateProductVariant, deleteProductVariant
 };

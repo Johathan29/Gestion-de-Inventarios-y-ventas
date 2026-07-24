@@ -4,8 +4,8 @@
     <div class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/30 p-6 md:p-8">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 class="text-2xl font-bold text-gray-900">Notificaciones</h2>
-          <p class="text-gray-500 text-sm mt-1">Mantente al día con tus compras, envíos y más</p>
+          <h2 class="text-[2.5rem] font-bold tracking-tight" style="color: rgb(126, 63, 238); font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;">Notificaciones</h2>
+          <p class="text-sm font-medium mt-1" style="color: #64748b; font-family: 'Inter', sans-serif;">Mantente al día con tus compras, envíos y más</p>
         </div>
         <button
           @click="markAllRead"

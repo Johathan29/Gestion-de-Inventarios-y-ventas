@@ -1,35 +1,36 @@
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4"
-           @click.self="$emit('close')">
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+  <Transition name="modal">
+    <div
+      v-if="show"
+      class="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      @click.self="$emit('close')"
+    >
+      <!-- Backdrop -->
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
-        <!-- Modal -->
-        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
-             :class="sizeClass">
-          <!-- Header -->
-          <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ title }}</h3>
-            <button @click="$emit('close')" class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400">
-              <span class="material-icons-outlined">close</span>
-            </button>
-          </div>
+      <!-- Modal Card -->
+      <div
+        class="relative bg-surface-container-lowest border border-white/10 rounded-2xl shadow-2xl w-full max-h-[90vh] overflow-y-auto animate-in"
+        :class="sizeClass"
+      >
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-5 border-b border-white/10">
+          <h3 class="text-lg font-semibold text-on-surface">{{ title }}</h3>
+          <button
+            @click="$emit('close')"
+            class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors text-on-surface-variant"
+          >
+            <span class="material-icons-outlined">close</span>
+          </button>
+        </div>
 
-          <!-- Body -->
-          <div class="p-4 overflow-y-auto max-h-[calc(90vh-8rem)]">
-            <slot />
-          </div>
-
-          <!-- Footer -->
-          <div v-if="$slots.footer" class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
-            <slot name="footer" />
-          </div>
+        <!-- Body (default slot) -->
+        <div class="px-6 py-5">
+          <slot />
         </div>
       </div>
-    </Transition>
-  </Teleport>
+    </div>
+  </Transition>
 </template>
 
 <script setup>
@@ -43,15 +44,35 @@ const props = defineProps({
 
 defineEmits(['close']);
 
-const sizeClass = computed(() => ({
-  sm: 'max-w-md',
-  md: 'max-w-2xl',
-  lg: 'max-w-4xl',
-  xl: 'max-w-6xl'
-}[props.size] || 'max-w-2xl'));
+const sizeClass = computed(() => {
+  const sizes = {
+    sm: 'max-w-sm',
+    md: 'max-w-lg',
+    lg: 'max-w-2xl',
+    xl: 'max-w-4xl',
+    full: 'max-w-[95vw]'
+  };
+  return sizes[props.size] || sizes.md;
+});
 </script>
 
 <style scoped>
-.modal-enter-active, .modal-leave-active { transition: all 0.2s ease; }
-.modal-enter-from, .modal-leave-to { opacity: 0; transform: scale(0.95); }
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.25s ease;
+}
+.modal-enter-active .animate-in,
+.modal-leave-active .animate-in {
+  transition: transform 0.25s ease;
+}
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+.modal-enter-from .animate-in {
+  transform: scale(0.95) translateY(10px);
+}
+.modal-leave-to .animate-in {
+  transform: scale(0.95) translateY(10px);
+}
 </style>

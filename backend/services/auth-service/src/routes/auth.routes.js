@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { login, register, refreshToken, logout, requestPasswordReset, resetPassword, getCurrentUser } = require('../controllers/auth.controller');
+const { login, register, refreshToken, logout, requestPasswordReset, resetPassword, getCurrentUser, verifyPassword } = require('../controllers/auth.controller');
 const { authenticate, validate, loginSchema, registerSchema } = require('@inventory/shared');
 
 // POST /api/auth/login - Inicio de sesión
@@ -23,5 +23,8 @@ router.post('/reset-password', resetPassword);
 
 // GET /api/auth/me - Obtener usuario actual desde el token
 router.get('/me', authenticate(), getCurrentUser);
+
+// POST /api/auth/verify-password - Verificar contraseña (operaciones sensibles)
+router.post('/verify-password', authenticate(), verifyPassword);
 
 module.exports = { authRouter: router };

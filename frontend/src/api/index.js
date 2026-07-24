@@ -77,7 +77,8 @@ export const authAPI = {
   logout: (data) => api.post('/auth/logout', data),
   forgotPassword: (data) => api.post('/auth/forgot-password', data),
   resetPassword: (data) => api.post('/auth/reset-password', data),
-  me: () => api.get('/auth/me')
+  me: () => api.get('/auth/me'),
+  verifyPassword: (data) => api.post('/auth/verify-password', data)
 };
 
 export const usersAPI = {
@@ -149,6 +150,7 @@ export const purchasesAPI = {
   updateStatus: (id, data) => api.put(`/purchases/${id}/status`, data),
   cancel: (id) => api.put(`/purchases/${id}/cancel`),
   sendToInventory: (id) => api.post(`/purchases/${id}/send-to-inventory`),
+  verify: (id, data) => api.post(`/purchases/${id}/verify`, data),
   updateItem: (id, itemId, data) => api.put(`/purchases/${id}/items/${itemId}`, data),
   deleteItem: (id, itemId) => api.delete(`/purchases/${id}/items/${itemId}`)
 };
@@ -166,7 +168,7 @@ export const salesAPI = {
   getById: (id) => api.get(`/sales/${id}`),
   create: (data) => api.post('/sales', data),
   cancel: (id) => api.put(`/sales/${id}/cancel`),
-  getClientSales: (params) => api.get('/sales/client', { params })
+  getClientSales: (params) => api.get('/sales/my-sales', { params })
 };
 
 export const invoicesAPI = {
@@ -180,9 +182,9 @@ export const invoicesAPI = {
 
 export const cartAPI = {
   getCart: () => api.get('/cart'),
-  addItem: (data) => api.post('/cart', data),
-  updateItem: (id, data) => api.put(`/cart/${id}`, data),
-  removeItem: (id) => api.delete(`/cart/${id}`),
+  addItem: (data) => api.post('/cart/items', data),
+  updateItem: (id, data) => api.put(`/cart/items/${id}`, data),
+  removeItem: (id) => api.delete(`/cart/items/${id}`),
   clearCart: () => api.delete('/cart')
 };
 
@@ -197,7 +199,7 @@ export const ecommerceAPI = {
   createBanner: (data) => api.post('/ecommerce/banners', data),
   updateBanner: (id, data) => api.put(`/ecommerce/banners/${id}`, data),
   deleteBanner: (id) => api.delete(`/ecommerce/banners/${id}`),
-  getOffers: () => api.get('/ecommerce/offers'),
+  getOffers: (params) => api.get('/ecommerce/offers', { params }),
   createOffer: (data) => api.post('/ecommerce/offers', data),
   updateOffer: (id, data) => api.put(`/ecommerce/offers/${id}`, data),
   deleteOffer: (id) => api.delete(`/ecommerce/offers/${id}`),
@@ -227,6 +229,8 @@ export const ecommerceAPI = {
   // WhatsApp Config
   getWhatsappConfig: () => api.get('/ecommerce/whatsapp-config'),
   updateWhatsappConfig: (data) => api.put('/ecommerce/whatsapp-config', data),
+  // Contact Messages
+  createContactMessage: (data) => api.post('/ecommerce/contact', data),
   // Reviews
   getFeaturedReviews: () => api.get('/ecommerce/reviews/featured'),
   getProductReviews: (productId, params) => api.get(`/ecommerce/reviews/product/${productId}`, { params }),
@@ -242,19 +246,20 @@ export const catalogAPI = {
 };
 
 export const clientsAPI = {
-  getAll: (params) => api.get('/users', { params }),
-  getById: (id) => api.get(`/users/${id}`),
-  getByUserId: (userId) => api.get(`/users/by-user/${userId}`),
-  create: (data) => api.post('/users', data),
-  update: (id, data) => api.put(`/users/${id}`, data),
-  delete: (id) => api.delete(`/users/${id}`),
+  getAll: (params) => api.get('/clients', { params }),
+  getById: (id) => api.get(`/clients/${id}`),
+  getByUserId: (userId) => api.get(`/clients/by-user/${userId}`),
+  create: (data) => api.post('/clients', data),
+  update: (id, data) => api.put(`/clients/${id}`, data),
+  delete: (id) => api.delete(`/clients/${id}`),
   // Cuenta de crédito
-  getCreditAccount: () => api.get('/users/credit-account'),
-  createCreditAccount: (data) => api.post('/users/credit-account', data),
-  updateCreditAccount: (id, data) => api.put(`/users/credit-account/${id}`, data),
+  getCreditAccount: () => api.get('/clients/credit-account'),
+  createCreditAccount: (data) => api.post('/clients/credit-account', data),
+  updateCreditAccount: (id, data) => api.put(`/clients/credit-account/${id}`, data),
   // Preferencias de notificación
-  getNotificationPreferences: () => api.get('/users/notification-prefs'),
-  updateNotificationPreferences: (data) => api.put('/users/notification-prefs', data)
+  getNotificationPreferences: () => api.get('/clients/notification-prefs'),
+  updateNotificationPreferences: (data) => api.put('/clients/notification-prefs', data),
+  sendPasswordReset: (email) => api.post('/auth/forgot-password', { email })
 };
 
 export const reportsAPI = {
@@ -268,6 +273,7 @@ export const reportsAPI = {
 
 export const notificationsAPI = {
   getAll: (params) => api.get('/notifications', { params }),
+  getById: (id) => api.get(`/notifications/${id}`),
   markAsRead: (id) => api.put(`/notifications/${id}/read`),
   markAllAsRead: () => api.put('/notifications/read-all'),
   delete: (id) => api.delete(`/notifications/${id}`)
@@ -275,6 +281,7 @@ export const notificationsAPI = {
 
 export const auditAPI = {
   getAll: (params) => api.get('/audit', { params }),
+  getById: (id) => api.get(`/audit/${id}`),
   getRecent: () => api.get('/audit/recent'),
   getStats: () => api.get('/audit/stats')
 };
@@ -295,6 +302,81 @@ export const emailAPI = {
 export const whatsappAPI = {
   send: (data) => api.post('/whatsapp/send', data),
   sendOrderNotification: (data) => api.post('/whatsapp/order-notification', data)
+};
+
+// ================================================================
+// Wishlist API
+// ================================================================
+export const wishlistAPI = {
+  getAll: (params) => api.get('/wishlist', { params }),
+  addItem: (data) => api.post('/wishlist', data),
+  removeItem: (productId) => api.delete(`/wishlist/${productId}`),
+  checkItem: (productId) => api.get(`/wishlist/${productId}`)
+};
+
+// ================================================================
+// Coupons & Promotions API
+// ================================================================
+export const couponsAPI = {
+  getAll: (params) => api.get('/coupons', { params }),
+  getById: (id) => api.get(`/coupons/${id}`),
+  create: (data) => api.post('/coupons', data),
+  update: (id, data) => api.put(`/coupons/${id}`, data),
+  delete: (id) => api.delete(`/coupons/${id}`),
+  validate: (code) => api.post('/coupons/validate', { code }),
+  getUsage: (id) => api.get(`/coupons/${id}/usage`)
+};
+
+export const promotionsAPI = {
+  getAll: (params) => api.get('/promotions', { params }),
+  getById: (id) => api.get(`/promotions/${id}`),
+  create: (data) => api.post('/promotions', data),
+  update: (id, data) => api.put(`/promotions/${id}`, data),
+  delete: (id) => api.delete(`/promotions/${id}`),
+  getActive: () => api.get('/promotions/active')
+};
+
+// ================================================================
+// Cash Register API
+// ================================================================
+export const cashRegisterAPI = {
+  getSessions: (params) => api.get('/cash-register/sessions', { params }),
+  openSession: (data) => api.post('/cash-register/sessions/open', data),
+  closeSession: (id, data) => api.post(`/cash-register/sessions/${id}/close`, data),
+  getMovements: (sessionId, params) => api.get(`/cash-register/sessions/${sessionId}/movements`, { params }),
+  registerMovement: (data) => api.post('/cash-register/movements', data),
+  getCurrentSession: () => api.get('/cash-register/current'),
+  getSummary: (params) => api.get('/cash-register/summary', { params }),
+  verifyAdmin: (data) => api.post('/cash-register/verify-admin', data)
+};
+
+// ================================================================
+// Credit Notes API
+// ================================================================
+export const creditNotesAPI = {
+  getAll: (params) => api.get('/credit-notes', { params }),
+  getById: (id) => api.get(`/credit-notes/${id}`),
+  create: (data) => api.post('/credit-notes', data),
+  cancel: (id) => api.put(`/credit-notes/${id}/cancel`)
+};
+
+// ================================================================
+// Sale Payments API
+// ================================================================
+export const salePaymentsAPI = {
+  getBySale: (saleId) => api.get(`/sales/${saleId}/payments`),
+  register: (saleId, data) => api.post(`/sales/${saleId}/payments`, data),
+  delete: (saleId, paymentId) => api.delete(`/sales/${saleId}/payments/${paymentId}`)
+};
+
+// ================================================================
+// System Configurations API
+// ================================================================
+export const systemConfigAPI = {
+  getAll: (params) => api.get('/config/system', { params }),
+  getSection: (section) => api.get(`/config/system/${section}`),
+  update: (section, data) => api.put(`/config/system/${section}`, data),
+  resetToDefaults: (section) => api.post(`/config/system/${section}/reset`)
 };
 
 export default api;

@@ -48,8 +48,20 @@ export function createCatalogRouter({ appService }) {
   // ================================================================
 
   router.get('/categories', authenticate, asyncHandler(async (req, res) => {
-    const categories = await appService.getCategories();
-    res.json(apiResponse({ data: CategoryMapper.toDTOList(categories) }));
+    const { page, limit, search } = req.query;
+    const filters = {};
+    if (page) filters.page = parseInt(page);
+    if (limit) filters.limit = parseInt(limit);
+    if (search) filters.search = search;
+    const categories = await appService.getCategories(filters);
+    if (filters.page && filters.limit) {
+      res.json(apiResponse({
+        data: CategoryMapper.toDTOList(categories.data),
+        pagination: { page: filters.page, limit: filters.limit, total: categories.total, totalPages: Math.ceil(categories.total / filters.limit) },
+      }));
+    } else {
+      res.json(apiResponse({ data: CategoryMapper.toDTOList(categories) }));
+    }
   }));
 
   router.get('/categories/:id', authenticate, asyncHandler(async (req, res) => {

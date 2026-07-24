@@ -1,49 +1,68 @@
 <template>
-  <div>
-    <button @click="$router.push('/app/reports')"
-      class="shrink-0 flex items-center gap-2 font-semibold py-2 px-4 rounded-lg transition-all duration-200 mb-4 border-2"
-      style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
-      @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-      @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
-      <span class="material-icons-outlined" style="font-size: 1.125rem;">arrow_back</span> Volver a Reportes
-    </button>
+  <div class="space-y-4 aurora-entrance">
+    <!-- Mesh-gradient PageHeader -->
+    <div
+      class="mesh-gradient-header"
+      style="
+        background: radial-gradient(circle at 100% 100%, #f0c04d 0%, #9154dc 50%, #7738c1 100%);"
+    >
+      <div class="header-icon-container">
+        <span class="material-symbols-outlined animate-header-icon"> trending_up </span>
+      </div>
+      <div class="header-glass">
+        <div class="header-information">
+          <PageHeader
+            title="Productos Más Vendidos"
+            description="Ranking de productos con mayores ventas"
+            tag="h1"
+          />
+        </div>
+        <div class="header-actions">
+          <button @click="$router.push('/app/reports')" class="aurora-header-button aurora-header-button-secondary">
+            <span class="material-symbols-outlined" style="font-size: 1.125rem;">arrow_back</span>
+            Volver
+          </button>
+          <button @click="handleDownloadPDF" class="aurora-header-button aurora-header-button-primary">
+            <span class="material-symbols-outlined"> picture_as_pdf </span>
+            PDF
+          </button>
+          <button @click="handleDownloadExcel" class="aurora-header-button aurora-header-button-secondary">
+            <span class="material-symbols-outlined"> table_chart </span>
+            Excel
+          </button>
+        </div>
+      </div>
+    </div>
 
-    <div class="dt-card overflow-hidden">
+    <div class="nexus-card overflow-hidden">
     <!-- Filter/Sort Bar -->
-    <div class="filter-bar-container p-4 border-b border-[#d2c4b4]/30 flex justify-between items-center" style="background: #ffffff;">
+    <div class="filter-bar-container p-4 border-b border-gray-100 flex justify-between items-center" style="background: #ffffff;">
       <div class="flex gap-2">
         <button @click="showFilters = !showFilters"
-          class="px-3 py-1.5 text-sm font-medium border border-[#d2c4b4] rounded-md flex items-center gap-1 hover:bg-[#eff4ff] transition-colors bg-white relative"
-          :class="{ 'ring-2 ring-[rgba(98,66,0,0.2)] border-[#624200]': showFilters }"
-          style="font-family: 'Inter', sans-serif; color: #4f4539;">
-          <span class="material-icons-outlined" style="font-size: 1rem;">filter_list</span>
+          class="border !px-3 !py-1.5 flex items-center gap-1 border-[var(--aurora-outline-variant)] hover:!bg-[#9161f4] hover:text-white transition-colors duration-200 rounded-md text-[#9161f4] bg-white aurora-pressed"
+          :class="{ '!bg-[#9161f4] !text-white': showFilters }">
+          <span class="material-symbols-outlined" style="font-size: 1rem;">filter_list</span>
           Filtrar
         </button>
       </div>
       <div class="flex items-center gap-2">
-        <button @click="downloadPDF"
-          class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
-          style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
-          @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-          @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
+        <button @click="handleDownloadPDF"
+          class="btn btn-sm btn-ghost">
           <span class="material-icons-outlined" style="font-size: 1.125rem;">picture_as_pdf</span> PDF
         </button>
-        <button @click="downloadExcel"
-          class="shrink-0 flex items-center gap-2 font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 border-2"
-          style="border-color: #d2c4b4; color: #624200; font-family: Inter, sans-serif; font-size: 0.875rem; line-height: 1.5;"
-          @mouseenter="e => { e.currentTarget.style.borderColor = '#624200'; e.currentTarget.style.background = 'rgba(98,66,0,0.02)'; }"
-          @mouseleave="e => { e.currentTarget.style.borderColor = '#d2c4b4'; e.currentTarget.style.background = ''; }">
+        <button @click="handleDownloadExcel"
+          class="btn btn-sm btn-ghost">
           <span class="material-icons-outlined" style="font-size: 1.125rem;">table_chart</span> Excel
         </button>
       </div>
     </div>
 
     <!-- Filter Panel -->
-    <div v-if="showFilters" class="filter-panel-container px-4 py-4 border-b border-[#d2c4b4]/30" style="background: #faf9f6;">
+    <div v-if="showFilters" class="filter-panel-container px-4 py-4 border-b border-gray-100" style="background: #f8fafc;">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label class="block mb-1 font-medium" style="font-family: 'Inter', sans-serif; font-size: 0.75rem; color: #4f4539;">Límite</label>
-          <select v-model="limit" @change="fetchData" class="w-full rounded-lg px-3 py-2 text-sm appearance-none bg-white transition-all" style="font-family: 'Inter', sans-serif; color: #0b1c30; border: 1.5px solid #E5E7EB;">
+          <label class="block mb-1 font-medium text-xs" style="color: #64748b;">Límite</label>
+          <select v-model="limit" @change="fetchData" class="w-full rounded-lg px-3 py-2 text-sm appearance-none bg-white transition-all border" style="color: #1e293b; border-color: #e2e8f0;">
             <option value="5">5</option><option value="10">10</option><option value="20">20</option>
           </select>
         </div>
@@ -51,38 +70,88 @@
     </div>
 
     <div class="p-6">
+      <!-- Summary Cards — Stitch style with counter animation -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <StatCard label="Productos en Top" :value="products.length" icon="star" cardBg="#ffffff" iconBg="rgba(124,58,237,0.12)" iconColor="#7c3aed" :subtext="`Mostrando ${limit} productos`" :stagger-delay="0" :animate="true" />
+        <StatCard label="Ingresos Totales" :value="totalRevenue" type="currency" icon="trending_up" cardBg="#ffffff" iconBg="rgba(22,163,74,0.12)" iconColor="#16a34a" :stagger-delay="100" :animate="true" />
+        <StatCard label="Unidades Vendidas" :value="totalUnits" icon="inventory" cardBg="#ffffff" iconBg="rgba(217,119,6,0.12)" iconColor="#d97706" :stagger-delay="200" :animate="true" />
+      </div>
+
       <!-- Chart -->
-      <div class="rounded-xl p-4 mb-6" style="background: rgba(98,66,0,0.03);">
-        <p class="font-semibold mb-3" style="color: #0b1c30;">Top Productos por Ventas</p>
+      <div class="nexus-card !p-4 mb-6">
+        <p class="font-semibold mb-3" style="color: #1e293b;">Top Productos por Ventas</p>
         <div class="chart-container" style="height: 300px;">
           <canvas ref="chartRef"></canvas>
         </div>
       </div>
 
+      <!-- Product List Header -->
+      <div class="flex items-center justify-between mb-4">
+        <p class="font-semibold" style="color: #1e293b;">Listado de Productos</p>
+        <p class="text-xs" style="color: #94a3b8;">Mostrando {{ paginatedProducts.length }} de {{ products.length }} productos</p>
+      </div>
+
     <div class="space-y-3">
-      <div v-for="(p, idx) in products" :key="idx" class="flex items-center gap-4 p-3 rounded-xl" style="transition: background 0.15s;" @mouseenter="e => e.currentTarget.style.background = 'rgba(98,66,0,0.03)'" @mouseleave="e => e.currentTarget.style.background = ''">
-        <span class="w-8 h-8 rounded-full font-bold flex items-center justify-center text-sm"
-              :class="idx === 0 ? 'bg-yellow-100 text-yellow-700' : idx === 1 ? 'bg-gray-200 text-gray-600' : idx === 2 ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500'">
-          {{ idx + 1 }}
+      <div v-for="(p, idx) in paginatedProducts" :key="p.id || idx" class="flex items-center gap-4 p-3 rounded-xl transition-colors hover:bg-purple-50/30">
+        <span class="w-8 h-8 rounded-full font-bold flex items-center justify-center text-sm shrink-0"
+              :class="idx + displayOffset === 0 ? 'bg-yellow-100 text-yellow-700' : idx + displayOffset === 1 ? 'bg-gray-200 text-gray-600' : idx + displayOffset === 2 ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500'">
+          {{ idx + 1 + displayOffset }}
         </span>
-        <div class="flex-1"><p class="font-medium" style="color: #0b1c30;">{{ p.name }}</p><p class="dt-caption">SKU: {{ p.sku }}</p></div>
-        <div class="text-right"><p class="font-semibold" style="color: #0b1c30;">{{ p.total_quantity }} vendidos</p><p class="dt-body-sm" style="color: #4f4539;">{{ formatTable(p.total_sales) }}</p></div>
+        <div class="flex-1 min-w-0">
+          <p class="font-medium truncate" style="color: #1e293b;">{{ p.name }}</p>
+          <p class="text-xs font-mono" style="color: #94a3b8;">SKU: {{ p.sku }} · {{ p.total_quantity }} vendidos</p>
+        </div>
+        <div class="text-right shrink-0">
+          <p class="font-semibold" style="color: #1e293b;">{{ formatTable(p.total_sales) }}</p>
+          <p class="text-xs" style="color: #94a3b8;">{{ p.total_quantity }} uds.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+      <span class="text-xs" style="color: #94a3b8;">Página {{ displayPage }} de {{ displayTotalPages }}</span>
+      <div class="flex gap-2">
+        <button :disabled="displayPage <= 1" @click="displayPage--"
+          class="px-3 py-1.5 text-sm font-medium border rounded-md transition-colors hover:bg-gray-50 disabled:opacity-40 disabled:cursor-default"
+          style="border-color: #e2e8f0; color: #64748b; background: white;">
+          Anterior
+        </button>
+        <button :disabled="displayPage >= displayTotalPages" @click="displayPage++"
+          class="px-3 py-1.5 text-sm font-medium border rounded-md transition-colors hover:bg-gray-50 disabled:opacity-40 disabled:cursor-default"
+          style="border-color: #e2e8f0; color: #64748b; background: white;">
+          Siguiente
+        </button>
       </div>
     </div>
   </div>
   </div>
 </div>
+
+    <!-- Download Progress Modal -->
+    <AuroraDownloadModal
+      :visible="showDownloadModal"
+      :title="modalTitle"
+      :subtitle="modalSubtitle"
+      :success-message="modalSuccessMessage"
+      :file-name="modalFileName"
+      :download-fn="currentDownloadFn"
+      @close="showDownloadModal = false"
+    />
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { reportsAPI } from '../../api';
 import { useCurrency } from '../../composables/useCurrency';
+import StatCard from '../../components/shared/StatCard.vue';
+import AuroraDownloadModal from '../../components/shared/AuroraDownloadModal.vue';
+import PageHeader from '../../components/shared/PageHeader.vue';
 
 const { formatTable } = useCurrency();
 import { Chart, registerables } from 'chart.js';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { autoTable } from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 Chart.register(...registerables);
 
@@ -91,9 +160,49 @@ const showFilters = ref(false);
 const products = ref([]);
 const chartRef = ref(null);
 let chart = null;
+const displayPage = ref(1);
+const displayPageSize = 10;
+
+// Download modal state
+const showDownloadModal = ref(false);
+const currentDownloadFn = ref(null);
+const modalTitle = ref('Generating PDF Report...');
+const modalSubtitle = ref('Please wait while Aurora ERP compiles your data and performance metrics.');
+const modalSuccessMessage = ref('Your report is ready for download.');
+const modalFileName = ref('report.pdf');
+
+const handleDownloadPDF = () => {
+  modalTitle.value = 'Generating Top Products Report...';
+  modalSubtitle.value = 'Compiling best-selling products data and revenue metrics.';
+  modalSuccessMessage.value = 'Your top products report is ready.';
+  modalFileName.value = 'top-productos.pdf';
+  currentDownloadFn.value = downloadPDF;
+  showDownloadModal.value = true;
+};
+
+const handleDownloadExcel = () => {
+  modalTitle.value = 'Generating Excel Report...';
+  modalSubtitle.value = 'Structuring products data tables and preparing spreadsheet export.';
+  modalSuccessMessage.value = 'Your Excel report is ready.';
+  modalFileName.value = 'top-productos.xlsx';
+  currentDownloadFn.value = downloadExcel;
+  showDownloadModal.value = true;
+};
+
+const displayOffset = computed(() => (displayPage.value - 1) * displayPageSize);
+
+const totalRevenue = computed(() => products.value.reduce((sum, p) => sum + Number(p.total_sales || 0), 0));
+const totalUnits = computed(() => products.value.reduce((sum, p) => sum + Number(p.total_quantity || 0), 0));
+
+const paginatedProducts = computed(() => {
+  const start = displayOffset.value;
+  return products.value.slice(start, start + displayPageSize);
+});
+
+const displayTotalPages = computed(() => Math.max(1, Math.ceil(products.value.length / displayPageSize)));
 
 const fetchData = async () => {
-  try { const res = await reportsAPI.topProducts({ limit: limit.value }); products.value = res.data || []; }
+  try { const res = await reportsAPI.topProducts({ limit: limit.value }); products.value = res.data || []; displayPage.value = 1; }
   catch (e) { /* ignore */ }
 };
 
@@ -103,7 +212,7 @@ const downloadPDF = () => {
   doc.setFontSize(10);
   doc.text(`Productos listados: ${products.value.length}`, 14, 32);
   const tableData = products.value.map((p, i) => [String(i + 1), p.name, p.sku, String(p.total_quantity || 0), `$${Number(p.total_sales || 0).toLocaleString('es-CO')}`]);
-  doc.autoTable({ startY: 40, head: [['#', 'Producto', 'SKU', 'Cant. Vendida', 'Total']], body: tableData, headStyles: { fillColor: [106, 27, 138] } });
+  autoTable(doc, { startY: 40, head: [['#', 'Producto', 'SKU', 'Cant. Vendida', 'Total']], body: tableData, headStyles: { fillColor: [106, 27, 138] } });
   doc.save('top-productos.pdf');
 };
 

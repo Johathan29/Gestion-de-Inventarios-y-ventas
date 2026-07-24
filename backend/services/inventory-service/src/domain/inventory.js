@@ -20,7 +20,7 @@ export const MOVEMENT_TYPES = {
 export const VALID_MOVEMENT_TYPES = Object.values(MOVEMENT_TYPES);
 
 export class InventoryItem extends Entity {
-  constructor({ id, productId, product, warehouse, stock, totalCost, unitCost, minStock, maxStock, createdAt, updatedAt }) {
+  constructor({ id, productId, product, warehouse, stock, totalCost, unitCost, minStock, maxStock, createdAt, updatedAt, status }) {
     super(id);
     this._productId = productId;
     this._product = product || null;
@@ -32,6 +32,7 @@ export class InventoryItem extends Entity {
     this._maxStock = maxStock || null;
     this._createdAt = createdAt || new Date();
     this._updatedAt = updatedAt || new Date();
+    this._status = status || 'available';
   }
 
   get productId() { return this._productId; }
@@ -44,6 +45,10 @@ export class InventoryItem extends Entity {
   get maxStock() { return this._maxStock; }
   get createdAt() { return this._createdAt; }
   get updatedAt() { return this._updatedAt; }
+  get status() { return this._status; }
+  get isPending() { return this._status === 'pending'; }
+  get isAvailable() { return this._status === 'available'; }
+  get isBlocked() { return this._status === 'blocked'; }
 
   get isLowStock() { return this._stock <= this._minStock && this._stock > 0; }
   get isOutOfStock() { return this._stock <= 0; }
@@ -89,7 +94,7 @@ export class InventoryItem extends Entity {
 }
 
 export class InventoryMovement extends Entity {
-  constructor({ id, productId, warehouse, type, quantity, previousStock, newStock, unitCost, totalCost, referenceType, referenceId, reason, notes, userId, createdAt }) {
+  constructor({ id, productId, warehouse, type, quantity, previousStock, newStock, unitCost, totalCost, referenceType, referenceId, reason, notes, userId, createdAt, variantId }) {
     super(id);
     this._productId = productId;
     this._warehouse = warehouse;
@@ -105,6 +110,7 @@ export class InventoryMovement extends Entity {
     this._notes = notes;
     this._userId = userId;
     this._createdAt = createdAt || new Date();
+    this._variantId = variantId || null;
   }
 
   get productId() { return this._productId; }
@@ -121,6 +127,7 @@ export class InventoryMovement extends Entity {
   get notes() { return this._notes; }
   get userId() { return this._userId; }
   get createdAt() { return this._createdAt; }
+  get variantId() { return this._variantId; }
 
   toJSON() {
     return {
@@ -139,6 +146,7 @@ export class InventoryMovement extends Entity {
       notes: this._notes,
       userId: this._userId,
       createdAt: this._createdAt,
+      variantId: this._variantId,
     };
   }
 }

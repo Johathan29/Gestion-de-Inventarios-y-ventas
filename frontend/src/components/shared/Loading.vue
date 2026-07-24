@@ -1,16 +1,13 @@
 <template>
-  <div class="flex flex-col items-center justify-center py-12" :class="{ 'h-64': fullPage }">
-    <div class="relative">
-      <div class="w-10 h-10 border-4 border-primary-200 dark:border-primary-900 rounded-full"></div>
-      <div class="absolute top-0 left-0 w-10 h-10 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+  <div class="w-full flex flex-col items-center justify-center py-16">
+    <div class="relative w-12 h-12">
+      <div class="absolute inset-0 border-4 border-white/10 rounded-full" />
+      <div class="absolute inset-0 border-4 border-transparent border-t-primary rounded-full animate-spin" />
     </div>
-    <p v-if="text" class="mt-3 text-sm text-gray-500 dark:text-gray-400">{{ text }}</p>
+    <span class="mt-4 text-sm text-on-surface-variant">Cargando...</span>
   </div>
 </template>
 
 <script setup>
-defineProps({
-  text: { type: String, default: 'Cargando...' },
-  fullPage: { type: Boolean, default: false }
-});
+// Simple loading spinner — used as <Loading v-if="loading" />
 </script>

@@ -9,6 +9,7 @@ export const StockQueryDTO = paginationSchema.extend({
   warehouse: z.string().optional(),
   search: z.string().optional(),
   categoryId: uuidSchema.optional(),
+  status: z.enum(['available', 'pending', 'blocked']).optional(),
 });
 
 export const CreateEntryDTO = z.object({
@@ -18,6 +19,7 @@ export const CreateEntryDTO = z.object({
   unitCost: z.number().nonnegative().optional().default(0),
   notes: z.string().max(500).optional(),
   reference: z.string().max(200).optional(),
+  variantId: uuidSchema.optional(),
 });
 
 export const CreateExitDTO = z.object({
@@ -26,6 +28,7 @@ export const CreateExitDTO = z.object({
   quantity: z.number().positive('Quantity must be positive'),
   notes: z.string().max(500).optional(),
   reference: z.string().max(200).optional(),
+  variantId: uuidSchema.optional(),
 });
 
 export const CreateAdjustmentDTO = z.object({

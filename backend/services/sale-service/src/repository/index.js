@@ -12,7 +12,7 @@ export class SupabaseSaleRepository {
   async findById(id) {
     const { data, error } = await this._supabase
       .from('sales')
-      .select('*, clients(*), users!sales_user_id_fkey(name), sale_items(*, products(name, sku, price, barcode, images))')
+      .select('*, clients(*), users!sales_user_id_fkey(name), sale_items(*, products(name, sku, price, barcode, images)), invoices!invoice_id(invoice_number)')
       .eq('id', id)
       .single();
 
@@ -30,25 +30,39 @@ export class SupabaseSaleRepository {
     return SaleMapper.toDomain(data);
   }
 
-  async findMany({ page = 1, limit = 10, status, clientId, fromDate, toDate } = {}) {
+  async findMany({ page = 1, limit = 10, search, status, payment, clientId, fromDate, toDate } = {}) {
     const from = (page - 1) * limit;
     const toVal = from + limit - 1;
 
     let query = this._supabase
       .from('sales')
-      .select('*, clients(name, email), users!sales_user_id_fkey(name)', { count: 'exact' });
+      .select('*, clients(name, email), users!sales_user_id_fkey(name), invoices!invoice_id(invoice_number)', { count: 'exact' });
 
+    if (search) {
+      query = query.or(
+        `invoice_number.ilike.%${search}%,clients.name.ilike.%${search}%`
+      );
+    }
     if (status) query = query.eq('status', status);
+    if (payment) {
+      const pmt = payment.toLowerCase();
+      if (pmt === 'cash') query = query.or('payment_type.eq.cash,payment_type.eq.efectivo');
+      else if (pmt === 'card') query = query.or('payment_type.eq.card,payment_type.eq.tarjeta,payment_type.eq.credit_card,payment_type.eq.debit_card');
+      else if (pmt === 'transfer') query = query.or('payment_type.eq.transfer,payment_type.eq.transferencia,payment_type.eq.bank_transfer');
+    }
     if (clientId) query = query.eq('client_id', clientId);
-    if (fromDate) query = query.gte('created_at', fromDate);
-    if (toDate) query = query.lte('created_at', toDate);
+    if (fromDate) query = query.gte('updated_at', fromDate);
+    if (toDate) query = query.lte('updated_at', toDate);
 
     const { data, count, error } = await query
-      .range(from, toVal)
-      .order('created_at', { ascending: false });
+      .order('updated_at', { ascending: false })
+      .range(from, toVal);
 
     if (error) throw error;
-    return { data: (data || []).map(r => SaleMapper.toDomain(r)), count: count || 0 };
+    return {
+      data: (data || []).map(r => SaleMapper.toDomain(r)),
+      pagination: { page, limit, total: count || 0, totalPages: Math.ceil((count || 0) / limit) },
+    };
   }
 
   async findByClient(clientId, { page = 1, limit = 12 } = {}) {
@@ -85,6 +99,22 @@ export class SupabaseSaleRepository {
           ...i,
           product_name: i.product_name || productMap[i.product_id]?.name || '',
           sku: i.sku || productMap[i.product_id]?.sku || null,
+        }));
+      }
+
+      // Fill in missing variant_name / variant_attributes by querying product_variants
+      const itemsMissingVariant = itemsData.filter(i => i.variant_id && !i.variant_name);
+      if (itemsMissingVariant.length > 0) {
+        const variantIds = [...new Set(itemsMissingVariant.map(i => i.variant_id))];
+        const { data: variants } = await this._supabase
+          .from('product_variants')
+          .select('id, name, attributes')
+          .in('id', variantIds);
+        const variantMap = Object.fromEntries((variants || []).map(v => [v.id, v]));
+        itemsData = itemsData.map(i => ({
+          ...i,
+          variant_name: i.variant_name || variantMap[i.variant_id]?.name || null,
+          variant_attributes: i.variant_attributes || variantMap[i.variant_id]?.attributes || null,
         }));
       }
 
@@ -139,9 +169,9 @@ export class SupabaseCartRepository {
   async findByUser(userId) {
     const { data, error } = await this._supabase
       .from('carts')
-      .select('*, cart_items(*, products(id, name, sku, price, images, stock))')
+      .select('*, cart_items(*, products(id, name, sku, price, images))')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') throw error;
     return CartMapper.toDomain(data || null);
@@ -164,14 +194,44 @@ export class SupabaseCartRepository {
     return cart;
   }
 
-  async addItem(cartId, productId, quantity, unitPrice) {
-    // Check if product already in cart
-    const { data: existing } = await this._supabase
+  async addItem(cartId, productId, quantity, unitPrice, variantId) {
+    // If unitPrice not provided, fetch from products or variant
+    if (!unitPrice) {
+      if (variantId) {
+        const { data: variant, error: varErr } = await this._supabase
+          .from('product_variants')
+          .select('price, name, attributes')
+          .eq('id', variantId)
+          .single();
+        if (varErr) throw varErr;
+        if (!variant) throw new Error(`Variant ${variantId} not found`);
+        unitPrice = variant.price;
+      } else {
+        const { data: product, error: prodErr } = await this._supabase
+          .from('products')
+          .select('price')
+          .eq('id', productId)
+          .single();
+        if (prodErr) throw prodErr;
+        if (!product) throw new Error(`Product ${productId} not found`);
+        unitPrice = product.price;
+      }
+    }
+
+    // Check if same product+variant already in cart
+    let query = this._supabase
       .from('cart_items')
       .select('id, quantity')
       .eq('cart_id', cartId)
-      .eq('product_id', productId)
-      .single();
+      .eq('product_id', productId);
+
+    if (variantId) {
+      query = query.eq('variant_id', variantId);
+    } else {
+      query = query.is('variant_id', null);
+    }
+
+    const { data: existing } = await query.maybeSingle();
 
     if (existing) {
       const { error } = await this._supabase
@@ -180,9 +240,29 @@ export class SupabaseCartRepository {
         .eq('id', existing.id);
       if (error) throw error;
     } else {
+      const insertData = {
+        cart_id: cartId,
+        product_id: productId,
+        quantity,
+        unit_price: unitPrice,
+      };
+
+      // If variant, fetch name/attributes and set variant fields
+      if (variantId) {
+        const { data: variant } = await this._supabase
+          .from('product_variants')
+          .select('name, attributes')
+          .eq('id', variantId)
+          .single();
+
+        insertData.variant_id = variantId;
+        insertData.variant_name = variant?.name || null;
+        insertData.variant_attributes = variant?.attributes || null;
+      }
+
       const { error } = await this._supabase
         .from('cart_items')
-        .insert({ cart_id: cartId, product_id: productId, quantity, unit_price: unitPrice });
+        .insert(insertData);
       if (error) throw error;
     }
   }
@@ -214,7 +294,7 @@ export class SupabaseCartRepository {
   async getItemWithProduct(itemId) {
     const { data, error } = await this._supabase
       .from('cart_items')
-      .select('*, products(id, name, price, stock, status)')
+      .select('*, products(id, name, price, stock, status), product_variants!cart_items_variant_id_fkey(id, name, price, stock, attributes)')
       .eq('id', itemId)
       .single();
 

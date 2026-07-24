@@ -5,7 +5,7 @@ const { PERMISSIONS } = require('@inventory/shared');
 const {
   getPurchases, getPurchaseById, createPurchase, getNextPurchaseNumber,
   updatePurchaseStatus, cancelPurchase, sendToInventory,
-  updatePurchaseItem, deletePurchaseItem
+  updatePurchaseItem, deletePurchaseItem, verifyPurchase
 } = require('../controllers/purchase.controller');
 
 router.use(authenticate());
@@ -17,6 +17,7 @@ router.post('/', hasPermission(PERMISSIONS.PURCHASE_CREATE), createPurchase);
 router.patch('/:id/status', hasPermission(PERMISSIONS.PURCHASE_UPDATE), updatePurchaseStatus);
 router.post('/:id/cancel', hasPermission(PERMISSIONS.PURCHASE_CANCEL), cancelPurchase);
 router.post('/:id/send-to-inventory', hasPermission(PERMISSIONS.PURCHASE_UPDATE), sendToInventory);
+router.post('/:id/verify', hasPermission(PERMISSIONS.PURCHASE_UPDATE), verifyPurchase);
 router.put('/:id/items/:itemId', hasPermission(PERMISSIONS.PURCHASE_UPDATE), updatePurchaseItem);
 router.delete('/:id/items/:itemId', hasPermission(PERMISSIONS.PURCHASE_UPDATE), deletePurchaseItem);
 

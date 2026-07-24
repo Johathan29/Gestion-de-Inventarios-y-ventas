@@ -1,17 +1,39 @@
 <template>
-  <InventoryTabs />
-  <div>
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="font-headline-lg-mobile md:font-headline-lg" style="font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.25; font-weight: 700; color: #0b1c30; letter-spacing: -0.02em; font-family: 'Plus Jakarta Sans', sans-serif;">Movimientos de Inventario</h2>
-      <select v-model="typeFilter" @change="fetchMovements" class="dt-input" style="width: 12rem;">
-        <option value="">Todos los tipos</option>
-        <option value="entry">Entrada</option>
-        <option value="exit">Salida</option>
-        <option value="adjustment">Ajuste</option>
-        <option value="transfer">Transferencia</option>
-      </select>
+  <InventoryMovementsSkeleton v-if="loading" />
+  <div v-else>
+    <InventoryTabs />
+    <div>
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+      <div
+        class="mesh-gradient-header"
+        style="
+          background: radial-gradient(circle at 100% 100%, #f0c04d 0%, #9154dc 50%, #7738c1 100%);
+        "
+      >
+        <div class="header-icon-container">
+          <span class="material-symbols-outlined animate-header-icon"> swap_horiz </span>
+        </div>
+        <div class="header-glass">
+          <div class="header-information">
+            <PageHeader
+              title="Movimientos de Inventario"
+              description="Movimientos registrados en el sistema"
+              tag="h1"
+            />
+          </div>
+          <div class="header-actions">
+            <select v-model="typeFilter" @change="fetchMovements" class="w-full sm:w-48">
+              <option value="">Todos los tipos</option>
+              <option value="entry">Entrada</option>
+              <option value="exit">Salida</option>
+              <option value="adjustment">Ajuste</option>
+              <option value="transfer">Transferencia</option>
+            </select>
+          </div>
+        </div>
+      </div>
     </div>
-    <DataTable :columns="columns" :data="movements" searchable @rowClick="openDetail">
+    <DataTable :columns="columns" :data="movements" :server-pagination="true" :total="total" :current-page-prop="page" :per-page="limit" @page-change="changePage" @rowClick="openDetail">
       <template #cell-type="{ row }">
         <span class="dt-badge" :class="row.type === 'entry' ? 'dt-badge-success' : row.type === 'exit' ? 'dt-badge-danger' : row.type === 'adjustment' ? 'dt-badge-warning' : 'dt-badge-info'">
           {{ row.type === 'entry' ? 'Entrada' : row.type === 'exit' ? 'Salida' : row.type === 'adjustment' ? 'Ajuste' : 'Transferencia' }}
@@ -21,6 +43,41 @@
         <span class="font-mono text-xs" style="color: #624200;">#{{ row.product_id }}</span>
       </template>
     </DataTable>
+
+    <!-- Mobile Cards -->
+    <div class="md:hidden space-y-4">
+      <div v-for="mov in movements" :key="mov.id"
+           class="dt-card-sm p-4 cursor-pointer dt-shadow-hover"
+           @click="openDetail(mov)">
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-mono text-xs" style="color: #624200;">#{{ mov.product_id }}</span>
+          <span class="dt-badge" :class="mov.type === 'entry' ? 'dt-badge-success' : mov.type === 'exit' ? 'dt-badge-danger' : mov.type === 'adjustment' ? 'dt-badge-warning' : 'dt-badge-info'">
+            {{ mov.type === 'entry' ? 'Entrada' : mov.type === 'exit' ? 'Salida' : mov.type === 'adjustment' ? 'Ajuste' : 'Transferencia' }}
+          </span>
+        </div>
+        <p class="font-medium text-sm mb-2" style="color: #0b1c30;">{{ mov.product_name || '—' }}</p>
+        <div class="grid grid-cols-2 gap-2 text-sm">
+          <div>
+            <span class="text-xs opacity-60" style="color: #4f4539;">Cantidad</span>
+            <p class="font-bold" :class="mov.type === 'entry' ? 'text-green-600' : 'text-red-600'">
+              {{ mov.type === 'entry' ? '+' : '-' }}{{ mov.quantity }}
+            </p>
+          </div>
+          <div>
+            <span class="text-xs opacity-60" style="color: #4f4539;">Referencia</span>
+            <p class="font-medium truncate" style="color: #0b1c30;">{{ mov.reference || '—' }}</p>
+          </div>
+          <div class="col-span-2">
+            <span class="text-xs opacity-60" style="color: #4f4539;">Fecha</span>
+            <p style="color: #4f4539;">{{ formatDateTime(mov.created_at) }}</p>
+          </div>
+        </div>
+      </div>
+      <div v-if="movements.length === 0" class="dt-empty-state py-8">
+        <span class="dt-empty-icon material-icons-outlined">swap_horiz</span>
+        <p style="color: #4f4539; font-family: 'Inter', sans-serif;">No hay movimientos registrados</p>
+      </div>
+    </div>
 
     <!-- Movement Detail Modal -->
     <Teleport to="body">
@@ -88,6 +145,7 @@
     </Teleport>
 
     
+    </div>
   </div>
 </template>
 
@@ -95,13 +153,18 @@
 import { ref, onMounted } from 'vue';
 import { inventoryAPI } from '../../api';
 import InventoryTabs from '../../components/inventory/InventoryTabs.vue';
+import PageHeader from '../../components/shared/PageHeader.vue';
 import DataTable from '../../components/shared/DataTable.vue';
 import { formatDateTime } from '../../utils';
+import InventoryMovementsSkeleton from '../../components/skeletons/InventoryMovementsSkeleton.vue';
 
 const movements = ref([]);
+const page = ref(1);
+const limit = 15;
+const total = ref(0);
 const typeFilter = ref('');
 const selectedMovement = ref(null);
-
+const loading = ref(true);
 const columns = [
   { key: 'product_id', label: 'ID', type: 'custom' },
   { key: 'product_name', label: 'Producto' },
@@ -115,12 +178,18 @@ function openDetail(row) {
   selectedMovement.value = row;
 }
 
+const changePage = (p) => { page.value = p; fetchMovements(); };
+
 const fetchMovements = async () => {
   try {
-    const params = typeFilter.value ? { type: typeFilter.value } : {};
+    loading.value = true;
+    const params = { page: page.value, limit };
+    if (typeFilter.value) params.type = typeFilter.value;
     const res = await inventoryAPI.getMovements(params);
     movements.value = res.data || [];
+    total.value = res.pagination?.total || 0;
   } catch (e) { /* ignore */ }
+  finally { loading.value = false; }
 };
 
 onMounted(fetchMovements);
