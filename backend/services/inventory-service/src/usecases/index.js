@@ -43,28 +43,27 @@ export class CreateEntryUseCase {
   }
 
   async execute({ productId, warehouse, quantity, unitCost = 0, notes, reference, userId, variantId }) {
-    const existing = await this._inventoryRepository.findOne(productId, warehouse);
-    const prevStock = existing?.stock || 0;
-
-    const updated = await this._inventoryRepository.upsert(productId, warehouse, {
-      stock: prevStock + quantity,
-      total_cost: (existing?.totalCost || 0) + (quantity * unitCost),
-      unit_cost: unitCost,
+    // Entrada atómica (RPC fn_stock_entry): el stock se incrementa en UNA
+    // sentencia (INSERT ON CONFLICT DO UPDATE + RETURNING) → sin TOCTOU.
+    // El RPC inserta el kardex en la misma transacción (migración 065).
+    const { previousStock, newStock, movementId, inventory } = await this._inventoryRepository.atomicEntry({
+      productId, warehouse: warehouse || 'principal', quantity, unitCost,
+      reason: notes, referenceType: reference?.type, referenceId: reference?.id,
+      userId, variantId,
     });
 
     const movement = new InventoryMovement({
-      id: crypto.randomUUID(),
-      productId, warehouse, type: MOVEMENT_TYPES.ENTRY,
-      quantity, previousStock: prevStock, newStock: updated.stock,
+      id: movementId,
+      productId, warehouse: warehouse || 'principal', type: MOVEMENT_TYPES.ENTRY,
+      quantity, previousStock, newStock,
       unitCost, totalCost: quantity * unitCost,
       reason: notes || 'Manual entry',
       notes, reference, userId, variantId,
     });
 
-    const saved = await this._movementRepository.save(movement);
-    await this._eventBus.publish(new StockEntryCreatedEvent(saved));
+    await this._eventBus.publish(new StockEntryCreatedEvent(movement));
 
-    return { inventory: updated, movement: saved };
+    return { inventory, movement };
   }
 }
 
@@ -76,43 +75,38 @@ export class CreateExitUseCase {
   }
 
   async execute({ productId, warehouse, quantity, notes, reference, userId, variantId }) {
-    const existing = await this._inventoryRepository.findOne(productId, warehouse);
-    if (!existing || existing.stock < quantity) {
-      throw new Error('INSUFFICIENT_STOCK');
-    }
-
-    const prevStock = existing.stock;
-    existing.removeStock(quantity);
-
-    await this._inventoryRepository.upsert(productId, warehouse, {
-      stock: existing.stock,
-      total_cost: existing.totalCost,
-      unit_cost: existing.unitCost,
+    // Salida atómica (RPC fn_stock_exit): UPDATE condicional stock >= qty.
+    // Bajo concurrencia la fila queda lockeada → imposible stock negativo.
+    // Lanza INSUFFICIENT_STOCK si no hay stock (mismo contrato que antes).
+    // El RPC inserta el kardex en la misma transacción (migración 065).
+    const { previousStock, newStock, movementId, inventory } = await this._inventoryRepository.atomicExit({
+      productId, warehouse: warehouse || 'principal', quantity,
+      reason: notes, referenceType: reference?.type, referenceId: reference?.id,
+      userId, variantId,
     });
 
     const movement = new InventoryMovement({
-      id: crypto.randomUUID(),
-      productId, warehouse, type: MOVEMENT_TYPES.EXIT,
-      quantity, previousStock: prevStock, newStock: existing.stock,
+      id: movementId,
+      productId, warehouse: warehouse || 'principal', type: MOVEMENT_TYPES.EXIT,
+      quantity, previousStock, newStock,
       reason: notes || 'Manual exit',
       notes, reference, userId, variantId,
     });
 
-    const saved = await this._movementRepository.save(movement);
-    await this._eventBus.publish(new StockExitCreatedEvent(saved));
+    await this._eventBus.publish(new StockExitCreatedEvent(movement));
 
     // Check for alerts
-    if (existing.isOutOfStock) {
-      await this._eventBus.publish(new OutOfStockEvent({ productId, warehouse }));
-    } else if (existing.isLowStock) {
+    if (inventory?.isOutOfStock) {
+      await this._eventBus.publish(new OutOfStockEvent({ productId, warehouse: warehouse || 'principal' }));
+    } else if (inventory?.isLowStock) {
       await this._eventBus.publish(new LowStockAlertEvent({
-        productId, warehouse,
-        currentStock: existing.stock,
-        minStock: existing.minStock,
+        productId, warehouse: warehouse || 'principal',
+        currentStock: newStock,
+        minStock: inventory.minStock,
       }));
     }
 
-    return { inventory: existing, movement: saved };
+    return { inventory, movement };
   }
 }
 
@@ -124,30 +118,34 @@ export class CreateAdjustmentUseCase {
   }
 
   async execute({ productId, warehouse, newQuantity, reason, userId }) {
-    const existing = await this._inventoryRepository.findOne(productId, warehouse);
-    const oldQuantity = existing?.stock || 0;
-    const difference = newQuantity - oldQuantity;
+    // Ajuste atómico (RPC fn_stock_adjust): SELECT FOR UPDATE + UPDATE →
+    // previous_stock correcto incluso con operaciones concurrentes.
+    // El RPC inserta el kardex en la misma transacción (migración 065);
+    // movementId es null si no hubo cambio real (new == prev).
+    const { previousStock, newStock, movementId, inventory } = await this._inventoryRepository.atomicAdjust({
+      productId, warehouse: warehouse || 'principal', newQuantity, reason, userId,
+    });
 
+    const difference = newStock - previousStock;
     const adjustmentType = difference > 0
       ? MOVEMENT_TYPES.ADJUSTMENT_POSITIVE
       : MOVEMENT_TYPES.ADJUSTMENT_NEGATIVE;
 
-    await this._inventoryRepository.upsert(productId, warehouse, { stock: newQuantity });
-
     const movement = new InventoryMovement({
-      id: crypto.randomUUID(),
-      productId, warehouse, type: adjustmentType,
+      id: movementId,
+      productId, warehouse: warehouse || 'principal', type: adjustmentType,
       quantity: Math.abs(difference),
-      previousStock: oldQuantity,
-      newStock: newQuantity,
-      reason: reason || `Adjustment from ${oldQuantity} to ${newQuantity}`,
+      previousStock,
+      newStock,
+      reason: reason || `Adjustment from ${previousStock} to ${newStock}`,
       userId,
     });
 
-    const saved = await this._movementRepository.save(movement);
-    await this._eventBus.publish(new StockAdjustedEvent(saved));
+    if (movementId) {
+      await this._eventBus.publish(new StockAdjustedEvent(movement));
+    }
 
-    return { inventory: { productId, warehouse, stock: newQuantity }, movement: saved };
+    return { inventory: inventory || { productId, warehouse: warehouse || 'principal', stock: newStock }, movement };
   }
 }
 
@@ -159,44 +157,46 @@ export class CreateTransferUseCase {
   }
 
   async execute({ productId, fromWarehouse, toWarehouse, quantity, notes, userId }) {
-    // Check source stock
-    const source = await this._inventoryRepository.findOne(productId, fromWarehouse);
-    if (!source || source.stock < quantity) {
-      throw new Error('INSUFFICIENT_STOCK');
-    }
-
-    const sourcePrevStock = source.stock;
-    source.removeStock(quantity);
-    await this._inventoryRepository.upsert(productId, fromWarehouse, { stock: source.stock });
-
-    // Add to destination
-    const dest = await this._inventoryRepository.findOne(productId, toWarehouse);
-    const destPrevStock = dest?.stock || 0;
-    await this._inventoryRepository.upsert(productId, toWarehouse, {
-      stock: destPrevStock + quantity,
+    // Salida atómica del origen (valida stock bajo lock) + entrada atómica
+    // del destino → el par origen/destino nunca puede quedar inconsistente
+    // por una lectura intermedia obsoleta. Ambos RPCs insertan su kardex
+    // (type 'transfer') en la misma transacción que el cambio de stock.
+    const sourceResult = await this._inventoryRepository.atomicExit({
+      productId, warehouse: fromWarehouse, quantity,
+      reason: `Transfer to ${toWarehouse}: ${notes || ''}`,
+      referenceType: 'transfer', userId, movementType: 'transfer',
     });
+    const sourcePrevStock = sourceResult.previousStock;
+    const sourceNewStock = sourceResult.newStock;
+
+    const destResult = await this._inventoryRepository.atomicEntry({
+      productId, warehouse: toWarehouse, quantity,
+      reason: `Transfer from ${fromWarehouse}: ${notes || ''}`,
+      referenceType: 'transfer', userId, movementType: 'transfer',
+    });
+    const destPrevStock = destResult.previousStock;
+    const destNewStock = destResult.newStock;
 
     const fromMovement = new InventoryMovement({
+      id: sourceResult.movementId,
       productId, warehouse: fromWarehouse, type: MOVEMENT_TYPES.TRANSFER_OUT,
-      quantity, previousStock: sourcePrevStock, newStock: source.stock,
+      quantity, previousStock: sourcePrevStock, newStock: sourceNewStock,
       reason: `Transfer to ${toWarehouse}: ${notes || ''}`, userId,
     });
 
     const toMovement = new InventoryMovement({
+      id: destResult.movementId,
       productId, warehouse: toWarehouse, type: MOVEMENT_TYPES.TRANSFER_IN,
-      quantity, previousStock: destPrevStock, newStock: destPrevStock + quantity,
+      quantity, previousStock: destPrevStock, newStock: destNewStock,
       reason: `Transfer from ${fromWarehouse}: ${notes || ''}`, userId,
     });
 
-    const savedFrom = await this._movementRepository.save(fromMovement);
-    const savedTo = await this._movementRepository.save(toMovement);
-
     await this._eventBus.publish(new StockTransferCreatedEvent({
-      fromMovement: savedFrom,
-      toMovement: savedTo,
+      fromMovement,
+      toMovement,
     }));
 
-    return { fromMovement: savedFrom, toMovement: savedTo };
+    return { fromMovement, toMovement };
   }
 }
 

@@ -77,6 +77,89 @@ export class SupabaseInventoryRepository {
     }
   }
 
+  /**
+   * ENTRADA ATÓMICA vía RPC fn_stock_entry (INSERT ON CONFLICT DO UPDATE
+   * + RETURNING en una sola sentencia → sin TOCTOU bajo concurrencia).
+   * El RPC inserta TAMBIÉN el movimiento de kardex en la misma transacción
+   * (migración 065) → kardex contiguo y sin ventana de auditoría.
+   * Retorna { previousStock, newStock, movementId, inventory }.
+   */
+  async atomicEntry({ productId, warehouse = 'principal', quantity, unitCost = 0, reason, referenceType, referenceId, userId, variantId, movementType }) {
+    const companyId = tenantStorage.getStore()?.companyId || null;
+    const { data, error } = await this._supabase.rpc('fn_stock_entry', {
+      p_product_id: productId,
+      p_quantity: quantity,
+      p_warehouse: warehouse,
+      p_unit_cost: unitCost,
+      p_reason: reason || null,
+      p_reference_type: referenceType || null,
+      p_reference_id: referenceId || null,
+      p_user_id: userId || null,
+      p_variant_id: variantId || null,
+      p_company_id: companyId,
+      p_movement_type: movementType || null,
+    });
+    if (error) {
+      if ((error.message || '').includes('INVALID_QUANTITY')) throw new Error('INVALID_QUANTITY');
+      throw error;
+    }
+    const inventory = await this.findOne(productId, warehouse);
+    return { previousStock: data.previous_stock, newStock: data.new_stock, movementId: data.movement_id, inventory };
+  }
+
+  /**
+   * SALIDA ATÓMICA vía RPC fn_stock_exit (UPDATE condicional stock >= qty
+   * → imposible stock negativo, incluso con operaciones concurrentes).
+   * Error INSUFFICIENT_STOCK si no hay stock suficiente.
+   * El RPC inserta el kardex en la misma transacción.
+   */
+  async atomicExit({ productId, warehouse = 'principal', quantity, reason, referenceType, referenceId, userId, variantId, movementType }) {
+    const companyId = tenantStorage.getStore()?.companyId || null;
+    const { data, error } = await this._supabase.rpc('fn_stock_exit', {
+      p_product_id: productId,
+      p_quantity: quantity,
+      p_warehouse: warehouse,
+      p_reason: reason || null,
+      p_reference_type: referenceType || null,
+      p_reference_id: referenceId || null,
+      p_user_id: userId || null,
+      p_variant_id: variantId || null,
+      p_company_id: companyId,
+      p_movement_type: movementType || null,
+    });
+    if (error) {
+      if ((error.message || '').includes('INSUFFICIENT_STOCK')) throw new Error('INSUFFICIENT_STOCK');
+      if ((error.message || '').includes('PRODUCT_NOT_FOUND')) throw new Error('PRODUCT_NOT_FOUND');
+      throw error;
+    }
+    const inventory = await this.findOne(productId, warehouse);
+    return { previousStock: data.previous_stock, newStock: data.new_stock, movementId: data.movement_id, inventory };
+  }
+
+  /**
+   * AJUSTE ATÓMICO vía RPC fn_stock_adjust (SELECT FOR UPDATE + UPDATE →
+   * previous_stock correcto bajo concurrencia). Fija stock absoluto.
+   * El RPC inserta el kardex en la misma transacción (movement_id null
+   * si no hubo cambio real).
+   */
+  async atomicAdjust({ productId, warehouse = 'principal', newQuantity, reason, userId }) {
+    const companyId = tenantStorage.getStore()?.companyId || null;
+    const { data, error } = await this._supabase.rpc('fn_stock_adjust', {
+      p_product_id: productId,
+      p_new_quantity: newQuantity,
+      p_warehouse: warehouse,
+      p_reason: reason || null,
+      p_user_id: userId || null,
+      p_company_id: companyId,
+    });
+    if (error) {
+      if ((error.message || '').includes('INVALID_QUANTITY')) throw new Error('INVALID_QUANTITY');
+      throw error;
+    }
+    const inventory = await this.findOne(productId, warehouse);
+    return { previousStock: data.previous_stock, newStock: data.new_stock, movementId: data.movement_id, inventory };
+  }
+
   async getAlerts(threshold = 5) {
     const [lowStock, outOfStock] = await Promise.all([
       this._supabase
