@@ -32,12 +32,33 @@ const GLOBAL_TABLES_ALLOWLIST = new Set([
   'fiscal_document_types',
   'currencies',
   'audit_field_changes',
+  // --- Plataforma SaaS (global por diseño) ---
+  'companies',
+  'business_types',
+  'business_type_dashboards',
+  'permissions',
+  'role_permissions',
+  'user_permissions',
+  'saas_plans',
+  'plan_features',
+  'saas_coupons',
+  'platform_metrics',
+  'integration_catalog',
+  'cms_component_registry',
+  'dashboard_widgets',
+  'languages',
+  'webhook_event_types',
+  'impersonation_logs',
+  'permission_audit_log',
+  'audit_logs',
 ]);
 
 const EXCLUDE_TABLES = new Set([
   'schema_migrations',
   '_prisma_migrations',
   'supabase_migrations',
+  '_backup_cart_legacy',
+  '_backup_hero_settings',
 ]);
 
 // ---------- CLIENT (Management API v1) ----------
