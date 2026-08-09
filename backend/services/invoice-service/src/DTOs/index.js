@@ -21,6 +21,8 @@ export const InvoiceQueryDTO = paginationSchema.extend({
   fromDate: z.string().optional(),
   toDate: z.string().optional(),
   search: z.string().optional(),
+  sortBy: z.enum(['invoice_number', 'invoiceNumber', 'total', 'created_at', 'createdAt', 'paid_at', 'paidAt', 'client_name', 'clientName']).optional().default('created_at'),
+  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
 });
 
 export const UpdatePaymentStatusDTO = z.object({

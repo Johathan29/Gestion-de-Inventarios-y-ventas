@@ -1,12 +1,11 @@
-const { getSupabaseClient } = require('@inventory/shared');
-
-const supabase = getSupabaseClient();
+const { createTenantClient } = require('@inventory/shared');
 
 /**
  * Listar proveedores
  */
 const getSuppliers = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { page = 1, limit = 20, search, is_active } = req.query;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
@@ -48,6 +47,7 @@ const getSuppliers = async (req, res, next) => {
  */
 const getSupplierById = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     const { data: supplier, error } = await supabase
@@ -74,6 +74,7 @@ const getSupplierById = async (req, res, next) => {
  */
 const createSupplier = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { name, contact_name, email, phone, address, city, tax_id, payment_terms, notes } = req.body;
 
     if (!name || !name.trim()) {
@@ -120,6 +121,7 @@ const createSupplier = async (req, res, next) => {
  */
 const updateSupplier = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
     const { name, contact_name, email, phone, address, city, tax_id, payment_terms, notes, is_active } = req.body;
 
@@ -170,6 +172,7 @@ const updateSupplier = async (req, res, next) => {
  */
 const deleteSupplier = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     // Verificar si tiene compras asociadas

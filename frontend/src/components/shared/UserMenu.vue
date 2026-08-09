@@ -155,7 +155,7 @@ const defaultMenuItems = computed(() => {
     }
     items.push(
       { to: '/account/notifications', label: 'Notificaciones', icon: 'notifications', iconColor: '#3b82f6', badge: props.unreadCount },
-      { to: '/account/credit', label: 'Configuración', icon: 'settings', iconColor: '#64748b' }
+      { to: '/account/profile', label: 'Configuración', icon: 'settings', iconColor: '#64748b' }
     );
     items.push({ divider: true });
     items.push({ action: 'logout', label: 'Cerrar Sesión', icon: 'logout', danger: true });

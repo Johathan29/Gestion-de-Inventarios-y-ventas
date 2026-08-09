@@ -1,12 +1,14 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const express = require('express');
+const { tenantContext } = require('@inventory/shared');
 const { authRouter } = require('./routes/auth.routes');
 
 const app = express();
 const PORT = process.env.AUTH_SERVICE_PORT || 3001;
 
 app.use(express.json());
+app.use(tenantContext);
 
 // Health check
 app.get('/health', (req, res) => {

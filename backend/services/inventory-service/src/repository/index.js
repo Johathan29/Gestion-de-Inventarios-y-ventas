@@ -2,11 +2,16 @@
 // Supabase Inventory Repository Adapters
 // ============================================================
 
+import { tenantStorage } from '@erp/shared-kernel';
 import { InventoryItemMapper, MovementMapper, ReservationMapper, WarehouseMapper } from '../mappers/index.js';
 
 export class SupabaseInventoryRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findStock({ page = 1, limit = 20, warehouse, search, categoryId, status } = {}) {
@@ -121,7 +126,11 @@ export class SupabaseInventoryRepository {
 
 export class SupabaseMovementRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findMany({ page = 1, limit = 20, type, productId, fromDate, toDate } = {}) {
@@ -157,8 +166,13 @@ export class SupabaseMovementRepository {
     let balance = 0;
     return (data || []).map(m => {
       const domain = MovementMapper.toDomain(m);
-      balance += (m.type === 'entry' || m.type === 'transfer_in' || m.type === 'purchase_entry' || m.type === 'return_in')
-        ? m.quantity : -m.quantity;
+      if (m.type === 'transfer' || m.type === 'count') {
+        // neutral: no change to overall balance
+      } else if (['entry', 'entry_purchase', 'return_client', 'adjustment_plus', 'initial_balance', 'production', 'release'].includes(m.type)) {
+        balance += m.quantity;
+      } else {
+        balance -= m.quantity;
+      }
       return { ...domain.toJSON(), balance };
     });
   }
@@ -178,7 +192,11 @@ export class SupabaseMovementRepository {
 
 export class SupabaseReservationRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findActiveByProduct(productId) {
@@ -224,7 +242,11 @@ export class SupabaseReservationRepository {
 
 export class SupabaseWarehouseRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findAll() {

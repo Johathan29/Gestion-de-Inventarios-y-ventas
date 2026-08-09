@@ -3,6 +3,8 @@
 // ============================================================
 
 import { IEventBus } from '@erp/shared-kernel';
+import { OutboxRelay } from './outbox-relay.js';
+export { OutboxRelay } from './outbox-relay.js';
 
 /**
  * Event Bus implementation using AMQP (RabbitMQ)
@@ -172,4 +174,4 @@ export class InMemoryEventBus extends IEventBus {
   }
 }
 
-export default { RabbitMQEventBus, InMemoryEventBus };
+export default { RabbitMQEventBus, InMemoryEventBus, OutboxRelay };

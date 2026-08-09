@@ -84,8 +84,9 @@ export class MovementMapper {
 
   static toPersistence(domain) {
     return {
+      id: domain.id,
       product_id: domain.productId,
-      warehouse_id: domain.warehouse,
+      warehouse: domain.warehouse,
       type: domain.type,
       quantity: domain.quantity,
       previous_stock: domain.previousStock,

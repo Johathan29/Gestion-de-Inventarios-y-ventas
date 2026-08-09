@@ -1,1 +1,7 @@
-node_modules
+﻿node_modules
+*.log
+temp_*
+.env
+.env.*
+scripts/test-flows/report*.json
+scripts/test-database/report*.json

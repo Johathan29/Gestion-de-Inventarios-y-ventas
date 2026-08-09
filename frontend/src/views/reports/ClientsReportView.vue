@@ -111,6 +111,7 @@
       :download-fn="currentDownloadFn"
       @close="showDownloadModal = false"
     />
+    </div>
 </template>
 
 <script setup>

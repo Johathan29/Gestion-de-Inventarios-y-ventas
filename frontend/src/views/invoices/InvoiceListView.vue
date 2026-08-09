@@ -105,7 +105,7 @@
     </div>
 
     <div class="aurora-raised-card !p-0 overflow-hidden">
-      <DataTable :columns="columns" :data="invoices" title="Lista de Facturas" :server-pagination="true" :total="total" :current-page-prop="page" :per-page="limit" @page-change="changePage">
+      <DataTable :columns="columns" :data="invoices" title="Lista de Facturas" :server-pagination="true" :total="total" :current-page-prop="page" :per-page="limit" @page-change="changePage" @sort-change="onSortChange">
         <template #cell-status="{ row }">
           <span class="aurora-badge" :class="row.status === 'paid' ? 'aurora-badge-success' : row.status === 'issued' ? 'aurora-badge-warning' : 'aurora-badge-danger'">
             {{ statusLabel(row.status) }}
@@ -197,6 +197,8 @@ const invoices = ref([]);
 const page = ref(1);
 const limit = 15;
 const total = ref(0);
+const sortKey = ref('createdAt');
+const sortDir = ref('desc');
 const filters = reactive({ search: '', status: '', dateFrom: '', dateTo: '' });
 let searchTimeout = null;
 
@@ -286,6 +288,13 @@ const markAsPaid = async (row) => {
 
 const changePage = (p) => { page.value = p; fetchInvoices(); };
 
+const onSortChange = ({ key, dir }) => {
+  sortKey.value = key;
+  sortDir.value = dir;
+  page.value = 1;
+  fetchInvoices();
+};
+
 const downloadPDF = async (row) => {
   try {
     const response = await invoicesAPI.getPdf(row.id);
@@ -314,7 +323,7 @@ async function fetchInvoices() {
     // También enviar como fromDate/toDate para compatibilidad
     if (filters.dateFrom) cleanFilters.fromDate = filters.dateFrom;
     if (filters.dateTo) cleanFilters.toDate = filters.dateTo;
-    const res = await invoicesAPI.getAll({ ...cleanFilters, page: page.value, limit });
+    const res = await invoicesAPI.getAll({ ...cleanFilters, page: page.value, limit, sortBy: sortKey.value, sortOrder: sortDir.value });
     invoices.value = res.data || [];
     total.value = res.pagination?.total || 0;
   } catch (e) {

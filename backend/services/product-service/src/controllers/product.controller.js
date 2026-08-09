@@ -1,7 +1,5 @@
-const { getSupabaseClient } = require('@inventory/shared');
+const { createTenantClient } = require('@inventory/shared');
 const path = require('path');
-
-const supabase = getSupabaseClient();
 
 const STORAGE_BUCKET = 'product-images';
 
@@ -10,10 +8,14 @@ const STORAGE_BUCKET = 'product-images';
  */
 const getProducts = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { 
       page = 1, limit = 10, search, category_id, brand, 
-      min_price, max_price, status, featured, sort_by, sort_order 
+      min_price, max_price, status, featured, available_for_sale, is_catalog_only, sort_by, sort_order 
     } = req.query;
+
+    // `active` es un alias de status='active' (usado por el Punto de Venta)
+    const effectiveStatus = status || (req.query.active === 'true' ? 'active' : undefined);
 
     const from = (page - 1) * limit;
     const to = from + limit - 1;
@@ -25,10 +27,12 @@ const getProducts = async (req, res, next) => {
     // Filtros
     if (category_id) query = query.eq('category_id', category_id);
     if (brand) query = query.eq('brand', brand);
-    if (status) query = query.eq('status', status);
+    if (effectiveStatus) query = query.eq('status', effectiveStatus);
     if (featured) query = query.eq('featured', featured === 'true');
     if (min_price) query = query.gte('price', parseFloat(min_price));
     if (max_price) query = query.lte('price', parseFloat(max_price));
+    if (available_for_sale !== undefined) query = query.eq('available_for_sale', available_for_sale === 'true');
+    if (is_catalog_only !== undefined) query = query.eq('is_catalog_only', is_catalog_only === 'true');
     if (search) {
       query = query.or(
         `name.ilike.%${search}%,description.ilike.%${search}%,sku.ilike.%${search}%`
@@ -75,6 +79,7 @@ const getProducts = async (req, res, next) => {
  */
 const getProductById = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     const { data: product, error } = await supabase
@@ -106,6 +111,7 @@ const getProductById = async (req, res, next) => {
  */
 const createProduct = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const {
       name, description, sku, barcode, price, cost_price, category_id,
       brand, unit, min_stock, max_stock, images, featured, status
@@ -202,6 +208,7 @@ const createProduct = async (req, res, next) => {
  */
 const updateProduct = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
     const updateData = { ...req.body };
     delete updateData.created_by;
@@ -226,6 +233,7 @@ const updateProduct = async (req, res, next) => {
  */
 const deleteProduct = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     const { error } = await supabase
@@ -246,6 +254,7 @@ const deleteProduct = async (req, res, next) => {
  */
 const getFeaturedProducts = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: products, error } = await supabase
       .from('products')
       .select('*, categories(name)')
@@ -266,6 +275,7 @@ const getFeaturedProducts = async (req, res, next) => {
  */
 const getProductsByCategory = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { categoryId } = req.params;
 
     const { data: products, error } = await supabase
@@ -287,6 +297,7 @@ const getProductsByCategory = async (req, res, next) => {
  */
 const getLowStockProducts = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: products, error } = await supabase
       .from('products')
       .select('*')
@@ -311,6 +322,7 @@ const getLowStockProducts = async (req, res, next) => {
  */
 const uploadProductImage = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     if (!req.file) {
@@ -405,6 +417,7 @@ const uploadProductImage = async (req, res, next) => {
  */
 const uploadProductImageByUrl = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
     const { image_url } = req.body;
 
@@ -480,6 +493,7 @@ const uploadProductImageByUrl = async (req, res, next) => {
  */
 const deleteProductImage = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
     const { image_url } = req.body;
 
@@ -537,6 +551,7 @@ const deleteProductImage = async (req, res, next) => {
  */
 const getProductVariants = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     const { data: variants, error } = await supabase
@@ -557,6 +572,7 @@ const getProductVariants = async (req, res, next) => {
  */
 const createProductVariant = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
     const { name, sku, price, stock, attributes, images, compare_price, is_active, sort_order } = req.body;
 
@@ -605,6 +621,7 @@ const createProductVariant = async (req, res, next) => {
  */
 const updateProductVariant = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id, variantId } = req.params;
     const { name, sku, price, stock, attributes, images, is_active, compare_price, sort_order } = req.body;
 
@@ -641,6 +658,7 @@ const updateProductVariant = async (req, res, next) => {
  */
 const deleteProductVariant = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id, variantId } = req.params;
 
     const { error } = await supabase

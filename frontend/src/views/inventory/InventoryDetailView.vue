@@ -76,13 +76,13 @@
             <span class="aurora-badge" :class="{
               'aurora-badge-success': inventoryStatus === 'available',
               'aurora-badge-warning': inventoryStatus === 'pending',
-              'aurora-badge-danger': inventoryStatus === 'blocked'
+              'aurora-badge-danger': inventoryStatus === 'blocked' || inventoryStatus === 'not_available'
             }">
               <span class="w-1.5 h-1.5 rounded-full" style="display: inline-block; margin-right: 0.375rem;"
                 :style="{
                   background: inventoryStatus === 'available' ? '#16a34a' : inventoryStatus === 'pending' ? '#eab308' : '#ef4444'
                 }"></span>
-              {{ inventoryStatus === 'available' ? 'Disponible' : inventoryStatus === 'pending' ? 'Pendiente' : 'Bloqueado' }}
+              {{ inventoryStatus === 'available' ? 'Disponible' : inventoryStatus === 'pending' ? 'Pendiente' : inventoryStatus === 'not_available' ? 'No Disponible' : 'Bloqueado' }}
             </span>
           </div>
           <div class="flex flex-wrap" style="gap: var(--aurora-base); margin-top: var(--aurora-base);">
@@ -269,9 +269,9 @@
                     <span class="aurora-badge" :class="{
                       'aurora-badge-success': (wh.status || 'available') === 'available',
                       'aurora-badge-warning': wh.status === 'pending',
-                      'aurora-badge-danger': wh.status === 'blocked'
+                      'aurora-badge-danger': wh.status === 'blocked' || wh.status === 'not_available'
                     }">
-                      {{ wh.status === 'available' ? 'Disponible' : wh.status === 'pending' ? 'Pendiente' : 'Bloqueado' }}
+                      {{ wh.status === 'available' ? 'Disponible' : wh.status === 'pending' ? 'Pendiente' : wh.status === 'not_available' ? 'No Disponible' : 'Bloqueado' }}
                     </span>
                   </div>
                 </div>
@@ -346,6 +346,7 @@ const inventoryStatus = computed(() => {
   // Return the most restrictive status
   const statuses = warehouseData.value.map(w => w.status || 'available');
   if (statuses.some(s => s === 'blocked')) return 'blocked';
+  if (statuses.some(s => s === 'not_available')) return 'not_available';
   if (statuses.some(s => s === 'pending')) return 'pending';
   return 'available';
 });

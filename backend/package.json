@@ -27,7 +27,12 @@
     "dev:audit": "cd services/audit-service && npm run dev",
     "dev:config": "cd services/config-service && npm run dev",
     "dev:payment": "cd services/payment-service && npm run dev",
-    "start:all": "concurrently \"npm run dev:gateway\" \"npm run dev:auth\" \"npm run dev:users\" \"npm run dev:products\" \"npm run dev:categories\" \"npm run dev:inventory\" \"npm run dev:purchases\" \"npm run dev:sales\" \"npm run dev:reports\" \"npm run dev:invoices\" \"npm run dev:cart\" \"npm run dev:checkout\" \"npm run dev:ecommerce\" \"npm run dev:catalog\" \"npm run dev:email\" \"npm run dev:whatsapp\" \"npm run dev:notifications\" \"npm run dev:audit\" \"npm run dev:config\" \"npm run dev:payment\""
+    "dev:cms": "cd services/cms-service && npm run dev",
+    "dev:forms": "cd services/form-builder-service && npm run dev",
+    "dev:site": "cd services/site-builder-service && npm run dev",
+    "dev:integrations": "cd services/integration-service && npm run dev",
+    "dev:platform-admin": "cd services/platform-admin-service && npm run dev",
+    "start:all": "concurrently \"npm run dev:gateway\" \"npm run dev:auth\" \"npm run dev:users\" \"npm run dev:products\" \"npm run dev:categories\" \"npm run dev:inventory\" \"npm run dev:purchases\" \"npm run dev:sales\" \"npm run dev:reports\" \"npm run dev:invoices\" \"npm run dev:cart\" \"npm run dev:checkout\" \"npm run dev:ecommerce\" \"npm run dev:catalog\" \"npm run dev:email\" \"npm run dev:whatsapp\" \"npm run dev:notifications\" \"npm run dev:audit\" \"npm run dev:config\" \"npm run dev:payment\" \"npm run dev:cms\" \"npm run dev:forms\" \"npm run dev:site\" \"npm run dev:integrations\" \"npm run dev:platform-admin\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

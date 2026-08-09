@@ -29,7 +29,7 @@ export function authenticate(req, res, next) {
       email: decoded.email,
       role: decoded.role,
       permissions: decoded.permissions || [],
-      companyId: decoded.companyId,
+      companyId: decoded.companyId || decoded.company_id || null,
     };
 
     next();

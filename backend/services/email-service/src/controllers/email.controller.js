@@ -1,5 +1,5 @@
 const { MailtrapClient } = require('mailtrap');
-const { getSupabaseClient } = require('@inventory/shared');
+const { createTenantClient } = require('@inventory/shared');
 const {
   welcomeClient,
   passwordReset,
@@ -12,8 +12,6 @@ const {
   orderStatusUpdate,
   registrationData
 } = require('../templates/email-templates');
-
-const supabase = getSupabaseClient();
 
 // ─── Mailtrap Client ─────────────────────────────────────────
 const mailtrapToken = process.env.MAILTRAP_TOKEN;
@@ -32,7 +30,7 @@ if (mailtrapToken) {
 }
 
 // ─── Helper: enviar a través de Mailtrap ─────────────────────
-async function sendMail({ to, subject, html, text, category }) {
+async function sendMail(supabaseClient, { to, subject, html, text, category }) {
   if (!mailtrapEnabled) {
     console.log(`[EmailService] Mailtrap deshabilitado. No se envió: "${subject}" a ${to}`);
     return { messageId: null, accepted: [] };
@@ -56,7 +54,7 @@ async function sendMail({ to, subject, html, text, category }) {
 
     // Registrar envío en Supabase
     try {
-      await supabase.from('email_logs').insert({
+      await supabaseClient.from('email_logs').insert({
         to: recipients.map(r => r.email).join(', '),
         subject,
         status: 'sent',
@@ -77,8 +75,8 @@ async function sendMail({ to, subject, html, text, category }) {
 }
 
 // ─── Helper: obtener usuarios por rol ────────────────────────
-async function getUsersByRole(roleName) {
-  const { data, error } = await supabase
+async function getUsersByRole(supabaseClient, roleName) {
+  const { data, error } = await supabaseClient
     .from('users')
     .select('id, name, email')
     .eq('roles.name', roleName)
@@ -91,7 +89,7 @@ async function getUsersByRole(roleName) {
 
   // También buscar en la tabla clients si el rol es 'cliente'
   if (roleName === 'cliente') {
-    const { data: clients } = await supabase
+    const { data: clients } = await supabaseClient
       .from('clients')
       .select('name, email')
       .not('email', 'is', null);
@@ -109,8 +107,8 @@ async function getUsersByRole(roleName) {
 }
 
 // ─── Helper: obtener todos los admins ────────────────────────
-async function getAdminEmails() {
-  const { data } = await supabase
+async function getAdminEmails(supabaseClient) {
+  const { data } = await supabaseClient
     .from('users')
     .select('name, email')
     .eq('is_active', true)
@@ -119,7 +117,7 @@ async function getAdminEmails() {
   if (data && data.length > 0) return data;
 
   // Fallback: buscar por email de admin en la tabla
-  const { data: fallback } = await supabase
+  const { data: fallback } = await supabaseClient
     .from('users')
     .select('name, email')
     .eq('is_active', true);
@@ -137,6 +135,7 @@ async function getAdminEmails() {
  */
 const sendEmail = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { to, subject, html, text, category } = req.body;
     if (!to || !subject || (!html && !text)) {
       return res.status(400).json({
@@ -144,7 +143,7 @@ const sendEmail = async (req, res, next) => {
         error: { code: 'VALIDATION_ERROR', message: 'Destinatario, asunto y contenido (html o text) requeridos' }
       });
     }
-    const result = await sendMail({ to, subject, html, text, category });
+    const result = await sendMail(supabase, { to, subject, html, text, category });
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -157,6 +156,7 @@ const sendEmail = async (req, res, next) => {
  */
 const sendWelcomeEmail = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { email, name } = req.body;
     if (!email || !name) {
       return res.status(400).json({
@@ -164,7 +164,7 @@ const sendWelcomeEmail = async (req, res, next) => {
       });
     }
     const html = welcomeClient({ name, email });
-    await sendMail({ to: email, subject: `¡Bienvenido a ${process.env.EMAIL_FROM_NAME || 'Sistema de Inventarios'}!`, html, category: 'welcome' });
+    await sendMail(supabase, { to: email, subject: `\u00a1Bienvenido a ${process.env.EMAIL_FROM_NAME || 'Sistema de Inventarios'}!`, html, category: 'welcome' });
     res.json({ success: true, message: 'Correo de bienvenida enviado' });
   } catch (error) { next(error); }
 };
@@ -175,6 +175,7 @@ const sendWelcomeEmail = async (req, res, next) => {
  */
 const sendRegistrationDataEmail = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { email, name, phone, role } = req.body;
     if (!email || !name) {
       return res.status(400).json({
@@ -182,7 +183,7 @@ const sendRegistrationDataEmail = async (req, res, next) => {
       });
     }
     const html = registrationData({ name, email, phone, role: role || 'cliente' });
-    await sendMail({ to: email, subject: 'Tus datos de registro - Sistema de Inventarios', html, category: 'registration' });
+    await sendMail(supabase, { to: email, subject: 'Tus datos de registro - Sistema de Inventarios', html, category: 'registration' });
     res.json({ success: true, message: 'Datos de registro enviados' });
   } catch (error) { next(error); }
 };
@@ -193,6 +194,7 @@ const sendRegistrationDataEmail = async (req, res, next) => {
  */
 const sendPasswordResetEmail = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { email, name, resetUrl } = req.body;
     if (!email || !resetUrl) {
       return res.status(400).json({
@@ -200,7 +202,7 @@ const sendPasswordResetEmail = async (req, res, next) => {
       });
     }
     const html = passwordReset({ name: name || 'Usuario', resetUrl });
-    await sendMail({ to: email, subject: 'Recuperación de Contraseña - Sistema de Inventarios', html, category: 'password_reset' });
+    await sendMail(supabase, { to: email, subject: 'Recuperaci\u00f3n de Contraseña - Sistema de Inventarios', html, category: 'password_reset' });
     res.json({ success: true, message: 'Correo de recuperación enviado' });
   } catch (error) { next(error); }
 };
@@ -212,6 +214,7 @@ const sendPasswordResetEmail = async (req, res, next) => {
  */
 const sendNewProductsNotification = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { products, role, email, name } = req.body;
     if (!products || !Array.isArray(products) || products.length === 0) {
       return res.status(400).json({
@@ -220,21 +223,21 @@ const sendNewProductsNotification = async (req, res, next) => {
     }
 
     if (email && name) {
-      // Enviar a un destinatario específico
+      // Enviar a un destinatario especifico
       const html = newProducts({ name, products, role: role || 'cliente' });
-      await sendMail({ to: email, subject: `🆕 ${products.length} nuevo(s) producto(s) disponibles`, html, category: 'new_products' });
-      return res.json({ success: true, message: 'Notificación enviada' });
+      await sendMail(supabase, { to: email, subject: `\ud83c\udd95 ${products.length} nuevo(s) producto(s) disponibles`, html, category: 'new_products' });
+      return res.json({ success: true, message: 'Notificacion enviada' });
     }
 
     // Enviar por rol
     const targetRole = role || 'cliente';
-    const users = await getUsersByRole(targetRole);
+    const users = await getUsersByRole(supabase, targetRole);
     let sentCount = 0;
 
     for (const user of users) {
       const html = newProducts({ name: user.name, products, role: targetRole });
       try {
-        await sendMail({ to: user.email, subject: `🆕 ${products.length} nuevo(s) producto(s) disponibles`, html, category: 'new_products' });
+        await sendMail(supabase, { to: user.email, subject: `🆕 ${products.length} nuevo(s) producto(s) disponibles`, html, category: 'new_products' });
         sentCount++;
       } catch (err) {
         console.error(`[EmailService] Error al notificar a ${user.email}:`, err.message);
@@ -251,6 +254,7 @@ const sendNewProductsNotification = async (req, res, next) => {
  */
 const sendPurchaseConfirmation = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { sale_id } = req.body;
     if (!sale_id) {
       return res.status(400).json({
@@ -297,7 +301,7 @@ const sendPurchaseConfirmation = async (req, res, next) => {
       }
     });
 
-    await sendMail({
+    await sendMail(supabase, {
       to: clientEmail,
       subject: '✅ Compra Confirmada - Sistema de Inventarios',
       html,
@@ -314,6 +318,7 @@ const sendPurchaseConfirmation = async (req, res, next) => {
  */
 const sendInvoiceEmail = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { invoice_id } = req.params;
     const { data: invoice } = await supabase
       .from('invoices')
@@ -345,7 +350,7 @@ const sendInvoiceEmail = async (req, res, next) => {
       </div>
     `;
 
-    await sendMail({
+    await sendMail(supabase, {
       to: invoice.clients.email,
       subject: `Factura ${invoice.invoice_number} - ${senderName}`,
       html,
@@ -362,6 +367,7 @@ const sendInvoiceEmail = async (req, res, next) => {
  */
 const sendNewOfferNotification = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { offer, role, email, name } = req.body;
     if (!offer) {
       return res.status(400).json({
@@ -371,29 +377,29 @@ const sendNewOfferNotification = async (req, res, next) => {
 
     if (email && name) {
       const html = newOffer({ name, offer, role: role || 'vendedor' });
-      await sendMail({ to: email, subject: `🔥 Nueva oferta: ${offer.title || offer.name || ''}`, html, category: 'new_offer' });
-      return res.json({ success: true, message: 'Notificación de oferta enviada' });
+      await sendMail(supabase, { to: email, subject: `\ud83d\udd25 Nueva oferta: ${offer.title || offer.name || ''}`, html, category: 'new_offer' });
+      return res.json({ success: true, message: 'Notificacion de oferta enviada' });
     }
 
     const targetRole = role || 'vendedor';
-    const users = await getUsersByRole(targetRole);
+    const users = await getUsersByRole(supabase, targetRole);
     let sentCount = 0;
 
     for (const user of users) {
       const html = newOffer({ name: user.name, offer, role: targetRole });
       try {
-        await sendMail({ to: user.email, subject: `🔥 Nueva oferta: ${offer.title || offer.name || ''}`, html, category: 'new_offer' });
+        await sendMail(supabase, { to: user.email, subject: `🔥 Nueva oferta: ${offer.title || offer.name || ''}`, html, category: 'new_offer' });
         sentCount++;
       } catch (err) { /* ignore */ }
     }
 
     // También notificar a admins si el rol no es admin
     if (targetRole !== 'admin') {
-      const admins = await getAdminEmails();
+      const admins = await getAdminEmails(supabase);
       for (const admin of admins) {
         const html = newOffer({ name: admin.name, offer, role: 'admin' });
         try {
-          await sendMail({ to: admin.email, subject: `🔥 Nueva oferta: ${offer.title || offer.name || ''}`, html, category: 'new_offer' });
+          await sendMail(supabase, { to: admin.email, subject: `\ud83d\udd25 Nueva oferta: ${offer.title || offer.name || ''}`, html, category: 'new_offer' });
           sentCount++;
         } catch (err) { /* ignore */ }
       }
@@ -409,22 +415,23 @@ const sendNewOfferNotification = async (req, res, next) => {
  */
 const sendSaleNotification = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { sale, role, email, name } = req.body;
 
     if (email && name) {
       const html = saleNotification({ name, sale, role: role || 'vendedor' });
-      await sendMail({ to: email, subject: `💰 Venta registrada - $${Number(sale.total).toLocaleString('es-MX')}`, html, category: 'sale' });
-      return res.json({ success: true, message: 'Notificación de venta enviada' });
+      await sendMail(supabase, { to: email, subject: `\ud83d\udcb0 Venta registrada - $${Number(sale.total).toLocaleString('es-MX')}`, html, category: 'sale' });
+      return res.json({ success: true, message: 'Notificacion de venta enviada' });
     }
 
     const targetRole = role || 'vendedor';
-    const users = await getUsersByRole(targetRole);
+    const users = await getUsersByRole(supabase, targetRole);
     let sentCount = 0;
 
     for (const user of users) {
       const html = saleNotification({ name: user.name, sale, role: targetRole });
       try {
-        await sendMail({ to: user.email, subject: `💰 Venta registrada - $${Number(sale.total).toLocaleString('es-MX')}`, html, category: 'sale' });
+        await sendMail(supabase, { to: user.email, subject: `💰 Venta registrada - $${Number(sale.total).toLocaleString('es-MX')}`, html, category: 'sale' });
         sentCount++;
       } catch (err) { /* ignore */ }
     }
@@ -439,22 +446,23 @@ const sendSaleNotification = async (req, res, next) => {
  */
 const sendRestockPurchaseNotification = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { purchase, role, email, name } = req.body;
 
     if (email && name) {
       const html = restockPurchase({ name, purchase, role: role || 'vendedor' });
-      await sendMail({ to: email, subject: `📦 Orden de reposición #${purchase.order_number || purchase.id}`, html, category: 'restock' });
-      return res.json({ success: true, message: 'Notificación de reposición enviada' });
+      await sendMail(supabase, { to: email, subject: `\ud83d\udce6 Orden de reposicion #${purchase.order_number || purchase.id}`, html, category: 'restock' });
+      return res.json({ success: true, message: 'Notificacion de reposicion enviada' });
     }
 
     const targetRole = role || 'vendedor';
-    const users = await getUsersByRole(targetRole);
+    const users = await getUsersByRole(supabase, targetRole);
     let sentCount = 0;
 
     for (const user of users) {
       const html = restockPurchase({ name: user.name, purchase, role: targetRole });
       try {
-        await sendMail({ to: user.email, subject: `📦 Orden de reposición #${purchase.order_number || purchase.id}`, html, category: 'restock' });
+        await sendMail(supabase, { to: user.email, subject: `📦 Orden de reposición #${purchase.order_number || purchase.id}`, html, category: 'restock' });
         sentCount++;
       } catch (err) { /* ignore */ }
     }
@@ -469,6 +477,7 @@ const sendRestockPurchaseNotification = async (req, res, next) => {
  */
 const sendSystemEventNotification = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { event } = req.body;
     if (!event) {
       return res.status(400).json({
@@ -476,13 +485,13 @@ const sendSystemEventNotification = async (req, res, next) => {
       });
     }
 
-    const admins = await getAdminEmails();
+    const admins = await getAdminEmails(supabase);
     let sentCount = 0;
 
     for (const admin of admins) {
       const html = systemEvent({ name: admin.name, event });
       try {
-        await sendMail({
+        await sendMail(supabase, {
           to: admin.email,
           subject: `🔔 Evento del sistema: ${event.type || event.event_type || 'Notificación'}`,
           html,
@@ -502,6 +511,7 @@ const sendSystemEventNotification = async (req, res, next) => {
  */
 const sendOrderStatusUpdate = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { email, name, order, status } = req.body;
     if (!email || !order || !status) {
       return res.status(400).json({
@@ -513,7 +523,7 @@ const sendOrderStatusUpdate = async (req, res, next) => {
     const statusTitles = { shipped: '🚚 Pedido Enviado', delivered: '📦 Pedido Entregado', cancelled: '❌ Pedido Cancelado' };
     const subject = statusTitles[status] || `📋 Actualización de pedido #${order.folio || order.id}`;
 
-    await sendMail({ to: email, subject, html, category: `order_${status}` });
+    await sendMail(supabase, { to: email, subject, html, category: `order_${status}` });
     res.json({ success: true, message: 'Notificación de estado enviada' });
   } catch (error) { next(error); }
 };

@@ -2,11 +2,16 @@
 // Supabase CRM Repository Adapters
 // ============================================================
 
+import { tenantStorage } from '@erp/shared-kernel';
 import { ClientMapper, CreditAccountMapper, NotificationPreferenceMapper } from '../mappers/index.js';
 
 export class SupabaseClientRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findAll({ page = 1, limit = 20, search, isActive } = {}) {
@@ -89,7 +94,11 @@ export class SupabaseClientRepository {
 
 export class SupabaseCreditAccountRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findByClientId(clientId) {
@@ -137,7 +146,11 @@ export class SupabaseCreditAccountRepository {
 
 export class SupabaseNotificationPreferenceRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findByClientId(clientId) {

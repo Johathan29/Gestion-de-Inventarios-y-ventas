@@ -1,12 +1,11 @@
-const { getSupabaseClient } = require('@inventory/shared');
-
-const supabase = getSupabaseClient();
+const { createTenantClient } = require('@inventory/shared');
 
 /**
  * Obtener logs de auditoría
  */
 const getAuditLogs = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { page = 1, limit = 50, user_id, entity, action, start_date, end_date } = req.query;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
@@ -47,6 +46,7 @@ const getAuditLogs = async (req, res, next) => {
  */
 const logAuditEvent = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { user_id, action, entity, entity_id, old_values, new_values, ip_address, user_agent } = req.body;
 
     if (!user_id || !action || !entity) {
@@ -84,6 +84,7 @@ const logAuditEvent = async (req, res, next) => {
  */
 const getRecentActivity = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { limit = 20 } = req.query;
 
     const { data: activities, error } = await supabase
@@ -104,6 +105,7 @@ const getRecentActivity = async (req, res, next) => {
  */
 const getAuditStats = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const today = new Date().toISOString().split('T')[0];
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
 

@@ -7,32 +7,76 @@ const http = require('http');
 
 const SERVICE_TIMEOUT = 5000; // 5s timeout por servicio
 
-// Lista de servicios a monitorear
+// En Docker los contenedores se resuelven por nombre de servicio (red bridge);
+// en desarrollo local se usa localhost. Configurable vía SERVICES_HOST.
+//   local  → SERVICES_HOST=localhost (default)
+//   docker → SERVICES_HOST=docker   (usa los nombres de contenedor de docker-compose)
+const SERVICES_HOST = process.env.SERVICES_HOST || 'localhost';
+const IS_DOCKER = SERVICES_HOST === 'docker';
+
+// Mapeo servicio → nombre de contenedor en docker-compose
+const DOCKER_HOST_MAP = {
+  auth: 'auth-service',
+  users: 'user-service',
+  products: 'product-service',
+  categories: 'category-service',
+  inventory: 'inventory-service',
+  purchases: 'purchase-service',
+  sales: 'sale-service',
+  reports: 'report-service',
+  invoices: 'invoice-service',
+  ecommerce: 'ecommerce-service',
+  catalog: 'catalog-service',
+  email: 'email-service',
+  whatsapp: 'whatsapp-service',
+  notifications: 'notification-service',
+  audit: 'audit-service',
+  config: 'config-service',
+  payments: 'payment-service',
+  'platform-admin': 'platform-admin-service',
+  cms: 'cms-service',
+  'form-builder': 'form-builder-service',
+  'site-builder': 'site-builder-service',
+  integration: 'integration-service',
+};
+
+function resolveHost(serviceName) {
+  return IS_DOCKER ? (DOCKER_HOST_MAP[serviceName] || serviceName) : SERVICES_HOST;
+}
+
+// Lista de servicios a monitorear (host se resuelve dinámicamente)
 const SERVICE_LIST = {
-  auth: { host: 'localhost', port: 3001, path: '/health' },
-  users: { host: 'localhost', port: 3002, path: '/health' },
-  products: { host: 'localhost', port: 3003, path: '/health' },
-  categories: { host: 'localhost', port: 3004, path: '/health' },
-  inventory: { host: 'localhost', port: 3005, path: '/health' },
-  purchases: { host: 'localhost', port: 3006, path: '/health' },
-  sales: { host: 'localhost', port: 3007, path: '/health' },
-  reports: { host: 'localhost', port: 3008, path: '/health' },
-  invoices: { host: 'localhost', port: 3009, path: '/health' },
-  ecommerce: { host: 'localhost', port: 3012, path: '/health' },
-  catalog: { host: 'localhost', port: 3013, path: '/health' },
-  email: { host: 'localhost', port: 3014, path: '/health' },
-  whatsapp: { host: 'localhost', port: 3015, path: '/health' },
-  notifications: { host: 'localhost', port: 3016, path: '/health' },
-  audit: { host: 'localhost', port: 3017, path: '/health' },
-  config: { host: 'localhost', port: 3018, path: '/health' }
+  auth: { port: 3001, path: '/health' },
+  users: { port: 3002, path: '/health' },
+  products: { port: 3003, path: '/health' },
+  categories: { port: 3004, path: '/health' },
+  inventory: { port: 3005, path: '/health' },
+  purchases: { port: 3006, path: '/health' },
+  sales: { port: 3007, path: '/health' },
+  reports: { port: 3008, path: '/health' },
+  invoices: { port: 3009, path: '/health' },
+  ecommerce: { port: 3012, path: '/health' },
+  catalog: { port: 3013, path: '/health' },
+  email: { port: 3014, path: '/health' },
+  whatsapp: { port: 3015, path: '/health' },
+  notifications: { port: 3016, path: '/health' },
+  audit: { port: 3017, path: '/health' },
+  config: { port: 3018, path: '/health' },
+  payments: { port: 3019, path: '/health' },
+  'platform-admin': { port: 3020, path: '/health' },
+  cms: { port: 3021, path: '/health' },
+  'form-builder': { port: 3022, path: '/health' },
+  'site-builder': { port: 3023, path: '/health' },
+  integration: { port: 3024, path: '/health' },
 };
 
 /**
  * Verifica la salud de un servicio individual
  */
 function checkService(serviceName, { host, port, path }) {
+  const hostname = host || resolveHost(serviceName);
   return new Promise((resolve) => {
-    const req = http.get({ hostname: host, port, path, timeout: SERVICE_TIMEOUT }, (res) => {
+    const req = http.get({ hostname, port, path, timeout: SERVICE_TIMEOUT }, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
@@ -82,7 +126,7 @@ function checkService(serviceName, { host, port, path }) {
  */
 async function checkAllServices() {
   const checks = Object.entries(SERVICE_LIST).map(([name, config]) =>
-    checkService(name, config)
+    checkService(name, { ...config, host: resolveHost(name) })
   );
   const results = await Promise.all(checks);
 

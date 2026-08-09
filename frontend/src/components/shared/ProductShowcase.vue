@@ -118,6 +118,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { productsAPI, cartAPI } from '../../api/index.js';
 import { useRouter } from 'vue-router';
+import { useToast } from '../../composables/useToast';
 
 const props = defineProps({
   title: {
@@ -149,6 +150,7 @@ const props = defineProps({
 const emit = defineEmits(['view-all', 'added-to-cart', 'error']);
 
 const router = useRouter();
+const toast = useToast();
 const products = ref([]);
 const loading = ref(true);
 const error = ref(null);
@@ -223,12 +225,13 @@ async function addToCart(product) {
 
   addingToCart.value = product.id;
   try {
-    await cartAPI.addItem({ product_id: product.id, quantity: 1 });
+    await cartAPI.addItem({ productId: product.id, quantity: 1 });
     emit('added-to-cart', product);
-    // Visual feedback is managed by the button state reset below
+    toast.success(`${product.name} agregado al carrito`);
   } catch (err) {
     const message = err.response?.data?.error?.message || 'Could not add to cart';
     emit('error', message);
+    toast.error(message);
   } finally {
     addingToCart.value = null;
   }

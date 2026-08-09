@@ -28,6 +28,28 @@ services:
       retries: 5
     logging: *default-logging
 
+  # RabbitMQ (Event Bus — publica/consuma eventos de dominio entre servicios)
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI (guest/guest)
+    networks:
+      - inventory-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
   # API Gateway
   api-gateway:
     build:
@@ -39,6 +61,8 @@ services:
     depends_on:
       redis:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
       auth-service:
         condition: service_started
       user-service:
@@ -71,6 +95,11 @@ services:
         condition: service_started
       config-service:
         condition: service_started
+      payment-service:
+        condition: service_started
+    environment:
+      # Healthchecks: resuelve servicios por nombre de contenedor (red bridge)
+      SERVICES_HOST: docker
     networks:
       - inventory-network
     restart: unless-stopped
@@ -96,6 +125,8 @@ services:
     build: { context: ./backend, dockerfile: services/user-service/Dockerfile }
     ports: ["3002:3002"]
     env_file: ./backend/.env
+    environment:
+      RABBITMQ_URL: amqp://rabbitmq:5672
     networks: [inventory-network]
     restart: unless-stopped
     healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"] }
@@ -146,9 +177,23 @@ services:
     build: { context: ./backend, dockerfile: services/sale-service/Dockerfile }
     ports: ["3007:3007"]
     env_file: ./backend/.env
+    environment:
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      OUTBOX_RELAY: 'true'
     networks: [inventory-network]
     restart: unless-stopped
     healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3007/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.3', memory: 256M } } }
+
+  # Reportes (dashboard, ventas, inventario, top productos)
+  report-service:
+    build: { context: ./backend, dockerfile: services/report-service/Dockerfile }
+    ports: ["3008:3008"]
+    env_file: ./backend/.env
+    networks: [inventory-network]
+    restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3008/health"] }
     logging: *default-logging
     deploy: { resources: { limits: { cpus: '0.3', memory: 256M } } }
 
@@ -157,6 +202,8 @@ services:
     build: { context: ./backend, dockerfile: services/invoice-service/Dockerfile }
     ports: ["3009:3009"]
     env_file: ./backend/.env
+    environment:
+      RABBITMQ_URL: amqp://rabbitmq:5672
     networks: [inventory-network]
     restart: unless-stopped
     healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3009/health"] }
@@ -207,6 +254,8 @@ services:
     build: { context: ./backend, dockerfile: services/notification-service/Dockerfile }
     ports: ["3016:3016"]
     env_file: ./backend/.env
+    environment:
+      RABBITMQ_URL: amqp://rabbitmq:5672
     networks: [inventory-network]
     restart: unless-stopped
     healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3016/health"] }
@@ -227,9 +276,76 @@ services:
     build: ./backend/services/config-service
     ports: ["3018:3018"]
     env_file: ./backend/.env
+    environment:
+      RABBITMQ_URL: amqp://rabbitmq:5672
     networks: [inventory-network]
     restart: unless-stopped
     healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3018/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.2', memory: 128M } } }
+
+  # Pagos y caja registradora (métodos, transacciones, sesiones de caja)
+  payment-service:
+    build: { context: ./backend, dockerfile: services/payment-service/Dockerfile }
+    ports: ["3019:3019"]
+    env_file: ./backend/.env
+    environment:
+      RABBITMQ_URL: amqp://rabbitmq:5672
+    networks: [inventory-network]
+    restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3019/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.3', memory: 256M } } }
+
+  # ── SaaS Platform Services ──
+
+  platform-admin-service:
+    build: ./backend/services/platform-admin-service
+    ports: ["3020:3020"]
+    env_file: ./backend/.env
+    networks: [inventory-network]
+    restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3020/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.2', memory: 128M } } }
+
+  cms-service:
+    build: ./backend/services/cms-service
+    ports: ["3021:3021"]
+    env_file: ./backend/.env
+    networks: [inventory-network]
+    restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3021/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.2', memory: 128M } } }
+
+  form-builder-service:
+    build: ./backend/services/form-builder-service
+    ports: ["3022:3022"]
+    env_file: ./backend/.env
+    networks: [inventory-network]
+    restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3022/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.2', memory: 128M } } }
+
+  site-builder-service:
+    build: ./backend/services/site-builder-service
+    ports: ["3023:3023"]
+    env_file: ./backend/.env
+    networks: [inventory-network]
+    restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3023/health"] }
+    logging: *default-logging
+    deploy: { resources: { limits: { cpus: '0.2', memory: 128M } } }
+
+  integration-service:
+    build: ./backend/services/integration-service
+    ports: ["3024:3024"]
+    env_file: ./backend/.env
+    networks: [inventory-network]
+    restart: unless-stopped
+    healthcheck: { <<: *service-healthcheck, test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3024/health"] }
     logging: *default-logging
     deploy: { resources: { limits: { cpus: '0.2', memory: 128M } } }
 

@@ -7,6 +7,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { createClient } from '@supabase/supabase-js';
 import { loadConfig, createLogger, errorHandler } from '@erp/common';
+import { tenantContext } from '@erp/shared-kernel';
 import { InMemoryEventBus } from '@erp/event-bus';
 import { SupabaseUserRepository } from './repository/SupabaseUserRepository.js';
 import { IdentityApplicationService } from './application/IdentityApplicationService.js';
@@ -36,6 +37,11 @@ const jwtConfig = {
   expiresIn: config.JWT_EXPIRES_IN,
   refreshSecret: config.JWT_REFRESH_SECRET,
   refreshExpiresIn: config.JWT_REFRESH_EXPIRES_IN,
+  // La infraestructura legacy (@inventory/shared) verifica tokens con
+  // issuer 'inventory-system'; el auth-service legacy firmaba con este
+  // issuer. Sin él, los servicios legacy rechazan el token con
+  // "jwt issuer invalid" -> 401 "Token inválido".
+  issuer: config.JWT_ISSUER || 'inventory-system',
 };
 
 // Application service
@@ -66,6 +72,7 @@ async function registerSubscribers() {
 app.use(helmet());
 app.use(cors({ origin: config.CORS_ORIGIN, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
+app.use(tenantContext);
 
 // Health check
 app.get('/health', (req, res) => {

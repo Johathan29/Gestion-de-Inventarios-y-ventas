@@ -5,18 +5,19 @@
 import { Router } from 'express';
 import { authenticate, authorize, validate, asyncHandler } from '@erp/common';
 import { ROLES } from '@erp/common';
+import { tenantContext } from '@erp/shared-kernel';
 import { GenerateInvoiceDTO, InvoiceQueryDTO, UpdatePaymentStatusDTO, SendEmailDTO } from './DTOs/index.js';
 
 export function createBillingRouter(appService) {
   const router = Router();
 
   // All routes require authentication
-  router.use(authenticate);
+  router.use(authenticate, tenantContext);
 
   // ==================== INVOICES ====================
 
   router.get('/',
-    authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.SALESMAN),
+    authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.SELLER),
     validate(InvoiceQueryDTO, 'query'),
     asyncHandler(async (req, res) => {
       const result = await appService.listInvoices(req.validatedQuery);
@@ -40,7 +41,7 @@ export function createBillingRouter(appService) {
   );
 
   router.get('/:id',
-    authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.SALESMAN),
+    authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.SELLER),
     asyncHandler(async (req, res) => {
       const invoice = await appService.getInvoice(req.params.id);
       res.json({ success: true, data: invoice });

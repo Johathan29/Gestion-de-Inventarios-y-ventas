@@ -35,9 +35,9 @@
       >
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
           <div>
-            <span class="text-sm text-gray-500">#{{ sale.sale_number }}</span>
+            <span class="text-sm text-gray-500">#{{ sale.saleNumber }}</span>
             <span class="mx-2 text-gray-300">|</span>
-            <span class="text-sm text-gray-500">{{ formatDate(sale.created_at) }}</span>
+            <span class="text-sm text-gray-500">{{ formatDate(sale.createdAt) }}</span>
           </div>
           <div class="flex items-center gap-2">
             <span
@@ -51,7 +51,7 @@
         <div class="space-y-2 mb-3">
           <div v-for="item in sale.items" :key="item.id" class="flex items-center justify-between text-sm">
             <div class="flex items-center gap-2">
-              <span class="text-gray-800 font-medium truncate max-w-[200px]">{{ item.product_name }}</span>
+              <span class="text-gray-800 font-medium truncate max-w-[200px]">{{ item.productName }}</span>
               <span class="text-gray-400">x{{ item.quantity }}</span>
             </div>
             <span class="text-gray-700 font-medium">${{ formatPrice(item.total) }}</span>
@@ -109,8 +109,10 @@
 import { ref, computed, onMounted } from 'vue';
 import { salesAPI, cartAPI } from '../../api';
 import { useAuthStore } from '../../stores/auth';
+import { useToast } from '../../composables/useToast';
 
 const authStore = useAuthStore();
+const toast = useToast();
 
 const purchases = ref([]);
 const loading = ref(true);
@@ -125,12 +127,11 @@ async function fetchPurchases() {
   loading.value = true;
   error.value = null;
   try {
-    const { data } = await salesAPI.getClientSales({
-      page: page.value,
-      limit: perPage,
-    });
-    purchases.value = data?.sales || [];
-    total.value = data?.total || 0;
+    // El interceptor unwrap: res.data ya es la lista; pagination en res.pagination
+    const res = await salesAPI.getClientSales({ page: page.value, limit: perPage });
+    const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+    purchases.value = list;
+    total.value = res.pagination?.total ?? res.data?.total ?? list.length;
   } catch (e) {
     error.value = 'Error al cargar el historial de compras';
   } finally {
@@ -146,11 +147,11 @@ function changePage(newPage) {
 async function buyAgain(sale) {
   try {
     for (const item of sale.items) {
-      await cartAPI.addItem({ product_id: item.product_id, quantity: item.quantity });
+      await cartAPI.addItem({ productId: item.productId, quantity: item.quantity });
     }
-    alert('Productos agregados al carrito');
+    toast.success('Productos agregados al carrito');
   } catch (e) {
-    alert('Error al agregar productos al carrito');
+    toast.error('Error al agregar productos al carrito');
   }
 }
 

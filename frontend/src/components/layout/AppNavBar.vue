@@ -3,21 +3,38 @@
     :style="{ top: 'var(--banner-height, 0px)' }">
     <div class="max-w-7xl mx-auto w-full bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl px-5 py-3 flex items-center justify-between transition-all duration-500"
       :class="{ 'bg-black/60 shadow-2xl shadow-primary/5': scrolled }">
-      <router-link to="/" class="font-headline-md text-headline-md font-bold text-white flex items-center gap-2 hover:text-primary transition-colors">
+      <router-link to="/" class="font-headline-md text-headline-md font-bold text-white !text-[20px] flex items-center gap-2 hover:text-primary transition-colors">
         <img v-if="settings?.logo_url" :src="settings.logo_url" :alt="storeName" class="h-8 w-auto object-contain brightness-0 invert" />
         <span class="hidden sm:inline">{{ storeName }}</span>
       </router-link>
       <div class="hidden md:flex gap-1 items-center">
-        <a
-          v-for="link in anchorLinks"
-          :key="link.id"
-          :class="navLinkClass(link.id)"
-          :href="isOnHome ? '#' : `/#${link.id}`"
-          @click.prevent="scrollToSection(link.id)"
-        >
-          <span class="material-symbols-outlined !text-[1.4rem] align-middle">{{ link.icon }}</span>
-          {{ link.label }}
-        </a>
+        <!-- Menú desde Site Builder (navegación) si se provee o si hay menú header -->
+        <template v-if="menuLinks.length">
+          <a
+            v-for="link in menuLinks"
+            :key="link.id"
+            :class="menuLinkClass(link)"
+            :href="link.url"
+            :target="link.target === '_blank' ? '_blank' : undefined"
+            @click.prevent="onMenuClick(link)"
+          >
+            <span v-if="link.icon" class="material-symbols-outlined !text-[1.4rem] align-middle">{{ link.icon }}</span>
+            {{ link.label }}
+          </a>
+        </template>
+        <!-- Enlaces por defecto (anclas de la home) -->
+        <template v-else>
+          <a
+            v-for="link in anchorLinks"
+            :key="link.id"
+            :class="navLinkClass(link.id)"
+            :href="isOnHome ? '#' : `/#${link.id}`"
+            @click.prevent="scrollToSection(link.id)"
+          >
+            <span class="material-symbols-outlined !text-[1.4rem] align-middle">{{ link.icon }}</span>
+            {{ link.label }}
+          </a>
+        </template>
       </div>
 
       <div class="flex items-center gap-3">
@@ -116,10 +133,15 @@ import { ref, computed, onMounted, onUnmounted, onBeforeMount, watch } from 'vue
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 import { useAppStore } from '../../stores/app';
-import { cartAPI, notificationsAPI, ecommerceAPI } from '../../api';
+import { cartAPI, notificationsAPI, ecommerceAPI, siteBuilderAPI } from '../../api';
 import { formatRelativeTime } from '../../utils';
 import { useEcommerceSettings } from '../../composables/useEcommerceSettings';
 import UserMenu from '../shared/UserMenu.vue';
+
+// Props opcionales: ítems de menú del Site Builder (navegación) para la landing
+const props = defineProps({
+  menuItems: { type: Array, default: null }
+});
 
 const route = useRoute();
 const router = useRouter();
@@ -160,6 +182,78 @@ const anchorLinks = computed(() => {
   }
   return links;
 });
+
+// ── Menú desde Site Builder ────────────────────────────────────────────
+// Si no se pasa la prop `menuItems`, se carga automáticamente el menú de
+// ubicación 'header' configurado en Site Builder → Navegación (mismo origen
+// de datos que el footer, para navegación estandarizada en toda la tienda).
+const localMenuItems = ref(null);
+
+async function fetchHeaderMenu() {
+  try {
+    if (!settings.value?.company_id) {
+      await fetchSettings();
+    }
+    const companyId = settings.value?.company_id;
+    if (!companyId) { localMenuItems.value = null; return; }
+    const res = await siteBuilderAPI.getPublicMenus(companyId);
+    const menus = res?.data || [];
+    const header = menus.find(m => m.location === 'header');
+    localMenuItems.value = header?.items?.length ? header.items : null;
+  } catch (err) {
+    console.error('[AppNavBar] header menu:', err.message);
+    localMenuItems.value = null;
+  }
+}
+
+const menuLinks = computed(() => {
+  const items = props.menuItems ?? localMenuItems.value;
+  return (items || [])
+    .filter(i => i.is_active !== false)
+    .map(item => ({
+      id: item.id,
+      label: item.label || 'Enlace',
+      url: item.url || '#',
+      target: item.target || '_self',
+      icon: item.icon || ''
+    }));
+});
+
+function isExternalUrl(url) {
+  return /^(https?:)?\/\//i.test(url);
+}
+
+function menuLinkClass(link) {
+  const isInternalPath = link.url.startsWith('/') && !link.url.includes('#');
+  const isActive = isInternalPath && route.path === link.url.split(/[?#]/)[0];
+  return [
+    'font-body-md text-body-md transition-all duration-300 px-4 py-2 rounded-full flex items-center gap-[0.4rem] justify-between',
+    isActive
+      ? 'text-primary font-bold bg-primary/10 border border-primary/30'
+      : 'text-white/70 hover:text-primary hover:bg-white/5'
+  ];
+}
+
+function onMenuClick(link) {
+  const url = link.url || '#';
+  // Anclas del menú: pueden venir como "#seccion" o "/#seccion"
+  if (url.startsWith('#') || url.startsWith('/#')) {
+    const sectionId = url.slice(url.indexOf('#') + 1);
+    scrollToSection(sectionId);
+    return;
+  }
+  if (isExternalUrl(url)) {
+    if (link.target === '_blank') {
+      window.open(url, '_blank', 'noopener');
+    } else {
+      window.location.href = url;
+    }
+  } else if (link.target === '_blank') {
+    window.open(url, '_blank', 'noopener');
+  } else {
+    router.push(url);
+  }
+}
 
 const activeSection = ref('hero');
 const scrolled = ref(false);
@@ -289,6 +383,7 @@ function handleScroll() {
 onMounted(() => {
   fetchSettings();
   checkActiveOffers();
+  fetchHeaderMenu();
   window.addEventListener('scroll', handleScroll, { passive: true });
   const allIds = [...anchorLinks.value.map(l => l.id), 'products'];
 

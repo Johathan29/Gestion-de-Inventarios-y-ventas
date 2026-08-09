@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import { authenticate, authorize, validate, asyncHandler } from '@erp/common';
 import { ROLES } from '@erp/common';
+import { tenantContext } from '@erp/shared-kernel';
 import {
   CreateSaleDTO,
   SaleQueryDTO,
@@ -18,7 +19,7 @@ export function createSalesRouter(appService) {
   const router = Router();
 
   // All routes require authentication
-  router.use(authenticate);
+  router.use(authenticate, tenantContext);
 
   // ─── Sales ────────────────────────────────────────────────
 

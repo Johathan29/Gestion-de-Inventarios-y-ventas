@@ -4,6 +4,9 @@ module.exports = {
   
   // Middleware
   ...require('./middleware/auth'),
+  ...require('./middleware/tenant'),
+  ...require('./middleware/tenantClient'),
+  ...require('./middleware/permissions'),
   ...require('./middleware/errorHandler'),
   ...require('./middleware/security'),
   ...require('./middleware/rateLimiter'),

@@ -6,6 +6,20 @@ import { Sale, SaleItem, SALE_STATUSES, PAYMENT_STATUSES } from '../domain/sales
 import { SaleCreatedEvent, SaleCancelledEvent, SaleCompletedEvent, CheckoutCompletedEvent } from '../events/index.js';
 
 /**
+ * Stock real de un producto base = suma de `inventory.stock` en todos los
+ * almacenes. `products` NO tiene columna `stock`; el inventario vive en `inventory`.
+ */
+async function getProductStock(supabase, productId) {
+  const { data, error } = await supabase
+    .from('inventory')
+    .select('stock')
+    .eq('product_id', productId)
+    .is('deleted_at', null);
+  if (error) throw error;
+  return (data || []).reduce((sum, r) => sum + (Number(r.stock) || 0), 0);
+}
+
+/**
  * Reduce inventory stock and record movement for each sale item
  */
 async function updateInventoryStock(supabase, items, saleId, userId, isRestore = false) {
@@ -304,15 +318,25 @@ export class CreateSaleUseCase {
     sale._tax = (sale._subtotal - discount) * taxRate;
     sale._total = sale._subtotal - discount + sale._tax;
 
-    const saved = await this._saleRepository.save(sale);
+    const saved = await this._saleRepository.saveAtomic(sale);
 
     // Auto-generate invoice from the completed sale
     if (this._supabase && saved) {
-      await autoCreateInvoice(this._supabase, saved, userId, source || 'pos');
+      const invoice = await autoCreateInvoice(this._supabase, saved, userId, source || 'pos');
+      if (invoice) {
+        // Link the invoice back to the sale so GET /sales/:id returns invoiceId
+        await this._supabase.from('sales').update({ invoice_id: invoice.id }).eq('id', saved.id);
+        saved._invoiceId = invoice.id;
+      }
     }
 
-    await this._eventBus.publish(new SaleCreatedEvent(saved));
-    await this._eventBus.publish(new SaleCompletedEvent(saved));
+    // Con outbox (migración 049) los eventos ya se escribieron en la misma
+    // transacción y el relay los publica. Solo publicar manualmente si el RPC
+    // no existe (fallback al save() clásico) para no duplicar eventos.
+    if (!saved?._usedOutbox) {
+      await this._eventBus.publish(new SaleCreatedEvent(saved));
+      await this._eventBus.publish(new SaleCompletedEvent(saved));
+    }
 
     return saved;
   }
@@ -395,9 +419,18 @@ export class AddCartItemUseCase {
     this._supabase = supabase;
   }
 
-  async execute({ productId, quantity, unitPrice, userId, variantId }) {
-    // If unitPrice not provided, check for active offers first
-    if (!unitPrice && !variantId) {
+  async execute({ productId, quantity, userId, variantId }) {
+    // Seguridad: el precio SIEMPRE proviene del servidor, nunca del cliente.
+    const product = await this._resolveServerProduct(productId, variantId);
+    if (!product) throw new Error('PRODUCT_NOT_FOUND');
+
+    const qty = quantity || 1;
+    if (product.stock <= 0) throw new Error('OUT_OF_STOCK');
+
+    let unitPrice = product.price;
+
+    // Aplicar oferta activa si existe (solo para producto base, no variantes)
+    if (!variantId) {
       try {
         const { data: offer } = await this._supabase
           .from('offers')
@@ -408,15 +441,7 @@ export class AddCartItemUseCase {
           .maybeSingle();
 
         if (offer) {
-          const { data: product } = await this._supabase
-            .from('products')
-            .select('price')
-            .eq('id', productId)
-            .single();
-
-          if (product) {
-            unitPrice = product.price * (1 - Number(offer.discount_percent) / 100);
-          }
+          unitPrice = product.price * (1 - Number(offer.discount_percent) / 100);
         }
       } catch (err) {
         console.warn(`[AddCartItem] Error checking offers: ${err.message}`);
@@ -424,8 +449,34 @@ export class AddCartItemUseCase {
     }
 
     const cart = await this._cartRepository.findOrCreate(userId);
-    await this._cartRepository.addItem(cart.id, productId, quantity, unitPrice, variantId);
+    await this._cartRepository.addItem(cart.id, productId, qty, unitPrice, variantId);
     return this._cartRepository.findByUser(userId);
+  }
+
+  /**
+   * Resuelve producto o variante desde el servidor con su precio y stock reales.
+   */
+  async _resolveServerProduct(productId, variantId) {
+    if (variantId) {
+      const { data: variant, error } = await this._supabase
+        .from('product_variants')
+        .select('id, product_id, price, stock')
+        .eq('id', variantId)
+        .maybeSingle();
+      if (error) throw error;
+      return variant
+        ? { id: variant.product_id, price: Number(variant.price) || 0, stock: Number(variant.stock) || 0 }
+        : null;
+    }
+    const { data: product, error } = await this._supabase
+      .from('products')
+      .select('id, price')
+      .eq('id', productId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!product) return null;
+    const stock = await getProductStock(this._supabase, productId);
+    return { id: product.id, price: Number(product.price) || 0, stock };
   }
 }
 
@@ -470,9 +521,18 @@ export class CheckoutUseCase {
     this._supabase = supabase;
   }
 
-  async execute({ shippingAddress, paymentMethod, notes, userId, source }) {
+  async execute({ shipping, payment, shippingAddress, paymentMethod, notes, userId, source }) {
     const cart = await this._cartRepository.findByUser(userId);
     if (!cart || cart.items.length === 0) throw new Error('EMPTY_CART');
+
+    // Normalizar pago y envío: nueva forma { shipping, payment } o antigua (POS)
+    const method = payment?.method || paymentMethod || 'cash';
+    const address = shipping
+      ? [shipping.address, shipping.city, shipping.state].filter(Boolean).join(', ')
+      : shippingAddress || null;
+
+    // Seguridad: validar existencias antes de crear la venta
+    await this._validateStock(cart.items);
 
     // Resolve client from the authenticated user
     let clientId = null;
@@ -493,12 +553,32 @@ export class CheckoutUseCase {
       saleNumber,
       clientId,
       userId,
-      paymentMethod: paymentMethod || 'cash',
+      paymentMethod: method,
       paymentStatus: PAYMENT_STATUSES.PAID,
       status: SALE_STATUSES.COMPLETED,
       notes: notes || '',
-      shippingAddress: shippingAddress || null,
+      shippingAddress: address,
+      source: source || 'ecommerce',
     });
+
+    // ---------------------------------------------------------------
+    // Pago con tarjeta tokenizada → cobrar vía payment-service (pasarela)
+    // Se cobra ANTES de crear la venta: si el pago es rechazado, la
+    // venta ni siquiera se crea. El token NUNCA se persiste.
+    // ---------------------------------------------------------------
+    const token = payment?.token || null;
+    const savedCardId = payment?.savedCardId || null;
+
+    if (method === 'card' && (token || savedCardId)) {
+      const paymentStatus = await this._chargeWithGateway({
+        saleId: sale.id,
+        amount: sale.total,
+        token,
+        savedCardId,
+      });
+      if (paymentStatus === 'failed') throw new Error('PAYMENT_DECLINED');
+      sale._paymentStatus = paymentStatus; // 'paid' | 'pending'
+    }
 
     const saleItems = cart.items.map(i => new SaleItem({
       id: crypto.randomUUID(),
@@ -514,20 +594,121 @@ export class CheckoutUseCase {
     }));
 
     sale.setItems(saleItems);
-    const savedSale = await this._saleRepository.save(sale);
+    const savedSale = await this._saleRepository.saveAtomic(sale);
 
     // Auto-generate invoice from the completed sale
     if (this._supabase && savedSale) {
-      await autoCreateInvoice(this._supabase, savedSale, userId, source || 'ecommerce');
+      const invoice = await autoCreateInvoice(this._supabase, savedSale, userId, source || 'ecommerce');
+      if (invoice) {
+        // Link the invoice back to the sale so GET /sales/:id returns invoiceId
+        await this._supabase.from('sales').update({ invoice_id: invoice.id }).eq('id', savedSale.id);
+        savedSale._invoiceId = invoice.id;
+      }
     }
 
     // Clear cart
     await this._cartRepository.clearCart(cart.id);
 
-    await this._eventBus.publish(new CheckoutCompletedEvent({ cart, sale: savedSale }));
-    await this._eventBus.publish(new SaleCreatedEvent(savedSale));
-    await this._eventBus.publish(new SaleCompletedEvent(savedSale));
+    // Con outbox (migración 049) los eventos ya se escribieron en la misma
+    // transacción y el relay los publica. Solo publicar manualmente si el RPC
+    // no existe (fallback al save() clásico) para no duplicar eventos.
+    if (!savedSale?._usedOutbox) {
+      await this._eventBus.publish(new CheckoutCompletedEvent({ cart, sale: savedSale }));
+      await this._eventBus.publish(new SaleCreatedEvent(savedSale));
+      await this._eventBus.publish(new SaleCompletedEvent(savedSale));
+    }
 
     return savedSale;
+  }
+
+  /**
+   * Cobra el pago con tarjeta tokenizada vía payment-service.
+   * Devuelve 'paid' | 'pending' | 'failed'.
+   * Fallback tolerante: si payment-service no responde, la venta se
+   * crea con payment_status 'pending' (se cobrará/verificará luego).
+   */
+  async _chargeWithGateway({ saleId, amount, token, savedCardId }) {
+    const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost:3019';
+    const payload = {
+      saleId,
+      paymentMethodCode: 'card',
+      amount,
+      idempotencyKey: saleId, // reintentos seguros: misma venta = mismo cobro
+      ...(token ? { token } : {}),
+      ...(savedCardId ? { cardId: savedCardId } : {}),
+    };
+
+    try {
+      const resp = await fetch(`${PAYMENT_SERVICE_URL}/api/payments/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!resp.ok) {
+        const errBody = await resp.json().catch(() => ({}));
+        const message = errBody.message || errBody.error || '';
+        // Si el error indica tarjeta rechazada → fallar el checkout
+        if (/declin|rechaz|PAYMENT_DECLINED/i.test(message)) return 'failed';
+        return 'pending';
+      }
+
+      const body = await resp.json();
+      const status = body?.data?.status;
+      if (status === 'completed') return 'paid';
+      if (status === 'failed') return 'failed';
+      return 'pending';
+    } catch (err) {
+      console.warn(`[Checkout] payment-service no disponible (${err.message}); venta marcada como pending`);
+      return 'pending';
+    }
+  }
+
+  /**
+   * Verifica que exista stock suficiente para cada item del carrito
+   * (productos y variantes) antes de crear la venta.
+   */
+  async _validateStock(items) {
+    if (!this._supabase) return;
+
+    // Productos base — el stock real se agrega desde `inventory` (products no tiene columna stock)
+    const productIds = [...new Set(items.filter(i => !i.variantId).map(i => i.productId))];
+    if (productIds.length > 0) {
+      const { data: invRows, error } = await this._supabase
+        .from('inventory')
+        .select('product_id, stock')
+        .in('product_id', productIds)
+        .is('deleted_at', null);
+      if (error) throw error;
+      const stockMap = {};
+      for (const row of invRows || []) {
+        stockMap[row.product_id] = (stockMap[row.product_id] || 0) + (Number(row.stock) || 0);
+      }
+      for (const item of items) {
+        if (item.variantId) continue;
+        const available = stockMap[item.productId] ?? 0;
+        if (available < item.quantity) {
+          throw new Error(`INSUFFICIENT_STOCK:${item.productId}`);
+        }
+      }
+    }
+
+    // Variantes
+    const variantIds = [...new Set(items.filter(i => i.variantId).map(i => i.variantId))];
+    if (variantIds.length > 0) {
+      const { data: variants, error } = await this._supabase
+        .from('product_variants')
+        .select('id, stock')
+        .in('id', variantIds);
+      if (error) throw error;
+      const stockMap = Object.fromEntries((variants || []).map(v => [v.id, Number(v.stock) || 0]));
+      for (const item of items) {
+        if (!item.variantId) continue;
+        const available = stockMap[item.variantId] ?? 0;
+        if (available < item.quantity) {
+          throw new Error(`INSUFFICIENT_STOCK:${item.variantId}`);
+        }
+      }
+    }
   }
 }

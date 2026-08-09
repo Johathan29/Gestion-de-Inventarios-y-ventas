@@ -220,7 +220,9 @@ import CardGridSkeleton from '../../components/skeletons/CardGridSkeleton.vue';
 import Loading from '../../components/shared/Loading.vue';
 import DataTable from '../../components/shared/DataTable.vue';
 import PageHeader from '../../components/shared/PageHeader.vue';
+import { useToast } from '../../composables/useToast';
 
+const toast = useToast();
 const suppliers = ref([]);
 const loading = ref(true);
 const search = ref('');
@@ -309,13 +311,16 @@ const saveSupplier = async () => {
   try {
     if (editingId.value) {
       await suppliersAPI.update(editingId.value, form.value);
+      toast.success('Proveedor actualizado correctamente');
     } else {
       await suppliersAPI.create(form.value);
+      toast.success('Proveedor creado correctamente');
     }
     closeModal();
     fetchSuppliers();
   } catch (err) {
     formError.value = err.response?.data?.error?.message || 'Error al guardar proveedor';
+    toast.error(formError.value);
   } finally {
     saving.value = false;
   }
@@ -334,8 +339,9 @@ const deleteSupplier = async () => {
     showDeleteConfirm.value = false;
     deletingSupplier.value = null;
     fetchSuppliers();
+    toast.success('Proveedor eliminado');
   } catch (err) {
-    alert(err.response?.data?.error?.message || 'Error al eliminar proveedor');
+    toast.error(err.response?.data?.error?.message || 'Error al eliminar proveedor');
   } finally {
     deleting.value = false;
   }

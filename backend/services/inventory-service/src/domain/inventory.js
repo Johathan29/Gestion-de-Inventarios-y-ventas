@@ -7,14 +7,14 @@ import { AggregateRoot, Entity } from '@erp/shared-kernel';
 export const MOVEMENT_TYPES = {
   ENTRY: 'entry',
   EXIT: 'exit',
-  ADJUSTMENT_POSITIVE: 'adjustment_positive',
-  ADJUSTMENT_NEGATIVE: 'adjustment_negative',
-  TRANSFER_OUT: 'transfer_out',
-  TRANSFER_IN: 'transfer_in',
-  SALE_EXIT: 'sale_exit',
-  PURCHASE_ENTRY: 'purchase_entry',
-  RETURN_IN: 'return_in',
-  RETURN_OUT: 'return_out',
+  ADJUSTMENT_POSITIVE: 'adjustment_plus',
+  ADJUSTMENT_NEGATIVE: 'adjustment_minus',
+  TRANSFER_OUT: 'transfer',
+  TRANSFER_IN: 'transfer',
+  SALE_EXIT: 'exit_sale',
+  PURCHASE_ENTRY: 'entry_purchase',
+  RETURN_IN: 'return_client',
+  RETURN_OUT: 'return_supplier',
 };
 
 export const VALID_MOVEMENT_TYPES = Object.values(MOVEMENT_TYPES);

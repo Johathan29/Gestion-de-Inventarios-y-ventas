@@ -252,6 +252,56 @@
         label: 'Punto de Venta',
         icon: 'point_of_sale',
         show: can('sales', 'create')
+      },
+      // Platform Admin — only for role_id = 1 (super admin)
+      {
+        path: '/app/crm',
+        label: '🔄 CRM Pipeline',
+        icon: 'leaderboard',
+        show: can('clients', 'read')
+      },
+      // ── SaaS Platform Features ──
+      {
+        path: '/app/dashboard-dynamic',
+        label: '📊 Dashboard Dinámico',
+        icon: 'auto_graph',
+        show: true
+      },
+      {
+        path: '/app/cms',
+        label: '📄 CMS & Páginas',
+        icon: 'web',
+        show: can('ecommerce', 'manage')
+      },
+      {
+        path: '/app/forms',
+        label: '📝 Form Builder',
+        icon: 'edit_note',
+        show: can('ecommerce', 'manage')
+      },
+      {
+        path: '/app/site',
+        label: '🎨 Site Builder',
+        icon: 'palette',
+        show: can('ecommerce', 'manage')
+      },
+      {
+        path: '/app/integrations',
+        label: '⚡ Integraciones',
+        icon: 'sync_alt',
+        show: can('ecommerce', 'manage')
+      },
+      {
+        path: '/app/rbac',
+        label: '🔐 Roles & Permisos',
+        icon: 'shield',
+        show: authStore.user?.role_id === 1
+      },
+      {
+        path: '/app/platform',
+        label: '⚙️ Platform Admin',
+        icon: 'admin_panel_settings',
+        show: authStore.user?.role_id === 1
       }
     ].filter((item) => item.show)
   );

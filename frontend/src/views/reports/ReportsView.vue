@@ -36,11 +36,8 @@
           <p class="text-sm font-medium text-on-surface-variant">{{ r.desc }}</p>
         </div>
       </div>
-      </div>
-    </template>
+    </div>
 
-    <!-- Child routes render here -->
-    <router-view />
   </div>
 </template>
 

@@ -85,6 +85,7 @@ export class PaymentTransactionMapper {
       processedBy: raw.processed_by,
       processedAt: raw.processed_at,
       notes: raw.notes || '',
+      idempotencyKey: raw.idempotency_key || null,
       createdAt: raw.created_at,
       updatedAt: raw.updated_at,
     });
@@ -102,6 +103,7 @@ export class PaymentTransactionMapper {
       processed_by: domain.processedBy,
       processed_at: domain.processedAt?.toISOString(),
       notes: domain.notes,
+      idempotency_key: domain.idempotencyKey || null,
     };
   }
 

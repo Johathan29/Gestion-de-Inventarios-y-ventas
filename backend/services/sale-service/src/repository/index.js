@@ -2,11 +2,16 @@
 // Supabase Sales Repository Adapters
 // ============================================================
 
+import { tenantStorage } from '@erp/shared-kernel';
 import { SaleMapper, CartMapper } from '../mappers/index.js';
 
 export class SupabaseSaleRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findById(id) {
@@ -36,7 +41,7 @@ export class SupabaseSaleRepository {
 
     let query = this._supabase
       .from('sales')
-      .select('*, clients(name, email), users!sales_user_id_fkey(name), invoices!invoice_id(invoice_number)', { count: 'exact' });
+      .select('*, clients(name, email), users!sales_user_id_fkey(name), invoices!invoice_id(invoice_number), sale_items(*, products(id, name, sku, price, barcode, images))', { count: 'exact' });
 
     if (search) {
       query = query.or(
@@ -127,6 +132,61 @@ export class SupabaseSaleRepository {
     return this.findById(data.id);
   }
 
+  /**
+   * Guarda venta + items + decremento de stock + eventos outbox
+   * en UNA sola transacción SQL vía RPC `sp_create_sale`.
+   * Previene ventas huérfanas (sin items) y la sobreventa.
+   */
+  async saveAtomic(sale, { correlationId } = {}) {
+    const companyId = tenantStorage.getStore()?.companyId || sale.companyId || null;
+    const persistence = SaleMapper.toPersistence(sale);
+    const items = (sale.items || []).map(item => ({
+      product_id: item.productId,
+      product_name: item.productName,
+      sku: item.sku,
+      quantity: item.quantity,
+      unit_price: item.unitPrice,
+      discount: item.discount || 0,
+      tax: item.tax || 0,
+      total: item.total,
+      variant_id: item.variantId || null,
+      variant_name: item.variantName || null,
+      variant_attributes: item.variantAttributes || null,
+    }));
+
+    const { data, error } = await this._supabase.rpc('sp_create_sale', {
+      p_company_id: companyId,
+      p_user_id: sale.userId,
+      p_client_id: sale.clientId || null,
+      p_sale_data: {
+        status: persistence.status,
+        subtotal: persistence.subtotal,
+        tax: persistence.tax,
+        discount: persistence.discount,
+        total: persistence.total,
+        payment_method: persistence.payment_method,
+        payment_status: persistence.payment_status,
+        notes: persistence.notes,
+        shipping_address: persistence.shipping_address,
+        source: persistence.source,
+      },
+      p_items: items,
+      p_correlation_id: correlationId || null,
+    });
+
+    if (error) {
+      // Si el RPC no existe (migración 049 sin aplicar), degradar al save() clásico
+      if (error.code === 'PGRST202' || /function .* does not exist/i.test(error.message || '')) {
+        return this.save(sale);
+      }
+      throw error;
+    }
+
+    const saved = await this.findById(data.sale_id);
+    if (saved) saved._usedOutbox = true;
+    return saved;
+  }
+
   async updateStatus(id, status, paymentStatus) {
     const updateData = { status, updated_at: new Date().toISOString() };
     if (paymentStatus) updateData.payment_status = paymentStatus;
@@ -163,7 +223,11 @@ export class SupabaseSaleRepository {
 
 export class SupabaseCartRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findByUser(userId) {

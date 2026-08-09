@@ -2,11 +2,16 @@
 // Reporting Supabase Repository
 // ============================================================
 
+import { tenantStorage } from '@erp/shared-kernel';
 import { DashboardStats, SalesReport, ChartData } from '../domain/index.js';
 
 export class SupabaseReportRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async getDashboardStats() {

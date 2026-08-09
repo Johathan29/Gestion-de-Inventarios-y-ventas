@@ -2,11 +2,20 @@
 // Configuration — Supabase Repositories
 // ============================================================
 
+import { tenantStorage } from '@erp/shared-kernel';
 import { SystemConfig, EcommerceSettings, TaxRate, HeroSlide, FloatingBanner, WhatsAppConfig } from '../domain/index.js';
+
+// Helper to create a tenant-aware getter for the supabase client
+function _defineTenantClient(instance, baseClient) {
+  Object.defineProperty(instance, '_supabase', {
+    get() { return tenantStorage.getStore()?.supabase || baseClient; },
+    configurable: true, enumerable: true,
+  });
+}
 
 // ── System Config Repository ─────────────────────────────
 export class SupabaseSystemConfigRepository {
-  constructor(supabase) { this._supabase = supabase; }
+  constructor(supabase) { _defineTenantClient(this, supabase); }
 
   async findAll({ key, section } = {}) {
     let query = this._supabase.from('system_config').select('*').order('section').order('key');
@@ -72,7 +81,7 @@ export class SupabaseSystemConfigRepository {
 
 // ── Ecommerce Settings Repository (Singleton) ────────────
 export class SupabaseEcommerceRepository {
-  constructor(supabase) { this._supabase = supabase; }
+  constructor(supabase) { _defineTenantClient(this, supabase); }
   get FIXED_ID() { return '00000000-0000-0000-0000-000000000001'; }
 
   async get() {
@@ -129,7 +138,7 @@ export class SupabaseEcommerceRepository {
 
 // ── Tax Rate Repository ──────────────────────────────────
 export class SupabaseTaxRateRepository {
-  constructor(supabase) { this._supabase = supabase; }
+  constructor(supabase) { _defineTenantClient(this, supabase); }
 
   async findAll({ isActive } = {}) {
     let query = this._supabase.from('tax_rates').select('*').order('name');
@@ -196,7 +205,7 @@ export class SupabaseTaxRateRepository {
 
 // ── Hero Slide Repository ────────────────────────────────
 export class SupabaseHeroSlideRepository {
-  constructor(supabase) { this._supabase = supabase; }
+  constructor(supabase) { _defineTenantClient(this, supabase); }
 
   async findAll({ isActive } = {}) {
     let query = this._supabase.from('hero_slides').select('*').order('sort_order');
@@ -275,7 +284,7 @@ export class SupabaseHeroSlideRepository {
 
 // ── Floating Banner Repository ───────────────────────────
 export class SupabaseFloatingBannerRepository {
-  constructor(supabase) { this._supabase = supabase; }
+  constructor(supabase) { _defineTenantClient(this, supabase); }
 
   async findAll({ isActive } = {}) {
     let query = this._supabase.from('floating_banners').select('*').order('sort_order');
@@ -346,7 +355,7 @@ export class SupabaseFloatingBannerRepository {
 
 // ── WhatsApp Config Repository ───────────────────────────
 export class SupabaseWhatsAppConfigRepository {
-  constructor(supabase) { this._supabase = supabase; }
+  constructor(supabase) { _defineTenantClient(this, supabase); }
 
   async get() {
     const { data, error } = await this._supabase.from('whatsapp_config').select('*').limit(1).single();

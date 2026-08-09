@@ -78,14 +78,36 @@
               Método de Pago
             </h3>
 
+            <!-- Selector de método de pago -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-3">Método de pago</label>
+              <div class="grid grid-cols-3 gap-2">
+                <button type="button" @click="paymentMethod = 'card'"
+                  class="py-2.5 rounded-xl border-2 text-sm font-medium transition-all flex items-center justify-center gap-1"
+                  :class="paymentMethod === 'card' ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-gray-600 hover:border-gray-300'">
+                  <span class="material-symbols-outlined text-base">credit_card</span> Tarjeta
+                </button>
+                <button type="button" @click="paymentMethod = 'cash'"
+                  class="py-2.5 rounded-xl border-2 text-sm font-medium transition-all flex items-center justify-center gap-1"
+                  :class="paymentMethod === 'cash' ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-gray-600 hover:border-gray-300'">
+                  <span class="material-symbols-outlined text-base">payments</span> Efectivo
+                </button>
+                <button type="button" @click="paymentMethod = 'transfer'"
+                  class="py-2.5 rounded-xl border-2 text-sm font-medium transition-all flex items-center justify-center gap-1"
+                  :class="paymentMethod === 'transfer' ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-gray-600 hover:border-gray-300'">
+                  <span class="material-symbols-outlined text-base">account_balance</span> Transferencia
+                </button>
+              </div>
+            </div>
+
             <!-- Tarjetas guardadas -->
-            <div v-if="savedCards.length > 0" class="mb-6">
+            <div v-if="paymentMethod === 'card' && savedCards.length > 0" class="mb-6">
               <label class="block text-sm font-medium text-gray-700 mb-3">Selecciona una tarjeta guardada</label>
               <div class="space-y-2">
                 <div
                   v-for="card in savedCards"
                   :key="card.id"
-                  @click="selectedCard = card.id; showNewCardForm = false"
+                  @click="selectedCard = card.id"
                   class="flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer"
                   :class="selectedCard === card.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'"
                 >
@@ -100,43 +122,22 @@
                   <span v-if="card.is_default" class="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">Principal</span>
                 </div>
               </div>
-              <button
-                @click="showNewCardForm = !showNewCardForm; selectedCard = null"
+              <router-link
+                to="/account/cards"
                 class="mt-3 text-sm text-primary hover:underline flex items-center gap-1"
               >
                 <span class="material-symbols-outlined text-sm">add</span>
-                {{ showNewCardForm ? 'Usar tarjeta guardada' : 'Registrar nueva tarjeta' }}
-              </button>
+                Registrar nueva tarjeta
+              </router-link>
             </div>
 
-            <!-- Nueva tarjeta -->
-            <div v-if="showNewCardForm || savedCards.length === 0">
-              <p v-if="savedCards.length === 0" class="text-sm text-gray-500 mb-4">Registra una tarjeta para realizar el pago</p>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="md:col-span-2">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Titular <span class="text-red-500">*</span></label>
-                  <input v-model="newCard.cardholder_name" type="text" required
-                    class="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="Nombre en la tarjeta" />
-                </div>
-                <div class="md:col-span-2">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Número de Tarjeta <span class="text-red-500">*</span></label>
-                  <input v-model="newCard.card_number" type="text" required maxlength="19" placeholder="0000 0000 0000 0000"
-                    class="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
-                    @input="formatCardNumber" />
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Expiración <span class="text-red-500">*</span></label>
-                  <input v-model="newCard.expiry" type="text" required maxlength="5" placeholder="MM/AA"
-                    class="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
-                    @input="formatExpiry" />
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">CVV <span class="text-red-500">*</span></label>
-                  <input v-model="newCard.cvv" type="password" required maxlength="4" placeholder="***"
-                    class="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent" />
-                </div>
-              </div>
+            <!-- Aviso de seguridad: sin captura de datos de tarjeta en el checkout -->
+            <div v-if="savedCards.length === 0" class="flex items-start gap-2 p-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-sm">
+              <span class="material-symbols-outlined text-base mt-0.5">lock</span>
+              <p>
+                Guarda tu tarjeta en <router-link to="/account/cards" class="underline font-medium">Mis Tarjetas</router-link> para pagar.
+                Los datos se procesan de forma segura por la pasarela de pago — el CVV nunca se almacena ni viaja por nuestro servidor.
+              </p>
             </div>
           </div>
 
@@ -261,7 +262,7 @@ const errorMsg = ref('');
 const cartItems = ref([]);
 const savedCards = ref([]);
 const selectedCard = ref(null);
-const showNewCardForm = ref(false);
+const paymentMethod = ref('card');
 
 const form = reactive({
   full_name: authStore.user?.name || '',
@@ -273,14 +274,6 @@ const form = reactive({
   notes: ''
 });
 
-const newCard = reactive({
-  cardholder_name: '',
-  card_number: '',
-  expiry: '',
-  cvv: '',
-  brand: 'visa'
-});
-
 const subtotal = computed(() => cartItems.value.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0));
 const tax = computed(() => {
   const rate = taxRate.value / 100;
@@ -290,19 +283,6 @@ const tax = computed(() => {
 });
 const total = computed(() => taxIncluded.value ? subtotal.value : subtotal.value + tax.value);
 const itemCount = computed(() => cartItems.value.reduce((sum, item) => sum + item.quantity, 0));
-
-function formatCardNumber(e) {
-  let value = e.target.value.replace(/\D/g, '');
-  if (value.length > 16) value = value.slice(0, 16);
-  newCard.card_number = value.replace(/(\d{4})(?=\d)/g, '$1 ');
-}
-
-function formatExpiry(e) {
-  let value = e.target.value.replace(/\D/g, '');
-  if (value.length > 4) value = value.slice(0, 4);
-  if (value.length >= 2) newCard.expiry = value.slice(0, 2) + '/' + value.slice(2);
-  else newCard.expiry = value;
-}
 
 function formatPrice(value) {
   return formatTable(value);
@@ -331,12 +311,8 @@ async function fetchSavedCards() {
       if (defaultCard) selectedCard.value = defaultCard.id;
     }
   } catch (e) {
-    try {
-      const localCards = JSON.parse(localStorage.getItem('user_cards') || '[]');
-      savedCards.value = localCards;
-      const defaultCard = localCards.find(c => c.is_default);
-      if (defaultCard) selectedCard.value = defaultCard.id;
-    } catch { /* ignore */ }
+    // Sin fallback a localStorage: la fuente de verdad es el backend.
+    savedCards.value = [];
   }
 }
 
@@ -345,11 +321,17 @@ async function placeOrder() {
     errorMsg.value = 'Por favor completa todos los campos obligatorios de envío';
     return;
   }
+  if (paymentMethod.value === 'card' && !selectedCard.value) {
+    errorMsg.value = 'Selecciona una tarjeta guardada o regístrala en "Mis Tarjetas"';
+    return;
+  }
 
   processing.value = true;
   errorMsg.value = '';
 
   try {
+    // Seguridad: nunca se envían datos sensibles de tarjeta (cvv, card_number).
+    // El backend solo acepta método + savedCardId (token de pasarela si aplica).
     const payload = {
       shipping: {
         full_name: form.full_name,
@@ -359,14 +341,9 @@ async function placeOrder() {
         postal_code: form.postal_code,
         phone: form.phone
       },
-      payment: selectedCard.value
-        ? { saved_card_id: selectedCard.value }
-        : {
-            cardholder_name: newCard.cardholder_name,
-            card_number: newCard.card_number.replace(/\s/g, ''),
-            expiry: newCard.expiry,
-            cvv: newCard.cvv
-          },
+      payment: paymentMethod.value === 'card'
+        ? { method: 'card', savedCardId: selectedCard.value || undefined }
+        : { method: paymentMethod.value },
       notes: form.notes,
       source: 'ecommerce'
     };

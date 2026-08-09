@@ -11,7 +11,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 import express from 'express';
 import { createLogger, errorHandler } from '@erp/common';
-import { createSupabaseClient } from '@erp/shared-kernel';
+import { createSupabaseClient, tenantContext } from '@erp/shared-kernel';
 import { InMemoryEventBus } from '@erp/event-bus';
 import { RabbitMQEventBus } from '@erp/event-bus';
 import { SupabasePaymentMethodRepository, SupabaseCashRegisterRepository, SupabasePaymentTransactionRepository } from './repository/index.js';
@@ -26,6 +26,9 @@ const PORT = process.env.PAYMENT_SERVICE_PORT || 3019;
 async function main() {
   app.use(express.json({ limit: '10mb' }));
 
+  app.use(tenantContext);
+
+  // Health check
   app.get('/health', (req, res) => {
     res.json({ status: 'ok', service: 'payment-service', timestamp: new Date().toISOString() });
   });
@@ -36,7 +39,7 @@ async function main() {
   const transactionRepo = new SupabasePaymentTransactionRepository(supabase);
 
   const eventBus = process.env.RABBITMQ_URL
-    ? new RabbitMQEventBus(process.env.RABBITMQ_URL, 'payment-service')
+    ? new RabbitMQEventBus({ url: process.env.RABBITMQ_URL, exchange: 'erp.events' })
     : new InMemoryEventBus();
 
   await eventBus.connect();

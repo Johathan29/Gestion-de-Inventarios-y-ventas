@@ -86,7 +86,6 @@
     </div>
   </div>
     </div>
-  </div>
 
     <!-- Download Progress Modal -->
     <AuroraDownloadModal
@@ -98,6 +97,7 @@
       :download-fn="currentDownloadFn"
       @close="showDownloadModal = false"
     />
+  </div>
 </template>
 
 <script setup>

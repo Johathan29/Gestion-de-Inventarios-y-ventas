@@ -2,6 +2,7 @@
 // Sales Application Service — Façade
 // ============================================================
 
+import { tenantStorage, createSupabaseClient } from '@erp/shared-kernel';
 import {
   CreateSaleUseCase, GetSaleUseCase, ListSalesUseCase,
   GetClientSalesUseCase, CancelSaleUseCase,
@@ -33,8 +34,7 @@ export class SalesApplicationService {
 
   // Client self-service: look up client by user_id then get sales
   async getClientSalesByUserId(userId, query) {
-    const { createSupabaseClient } = await import('@erp/shared-kernel');
-    const supabase = createSupabaseClient();
+    const supabase = tenantStorage.getStore()?.supabase || createSupabaseClient();
     const { data: client } = await supabase
       .from('clients')
       .select('id')

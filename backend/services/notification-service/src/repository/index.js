@@ -2,13 +2,18 @@
 // Supabase Notification Repository + External Channel Services
 // ============================================================
 
+import { tenantStorage } from '@erp/shared-kernel';
 import { MailtrapClient } from 'mailtrap';
 import axios from 'axios';
 import { NotificationMapper } from '../mappers/index.js';
 
 export class SupabaseNotificationRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findByUser({ userId, limit = 50, page = 1, offset, unread, search, from_date, to_date, sort = 'recent' }) {

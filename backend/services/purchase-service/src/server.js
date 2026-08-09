@@ -1,6 +1,7 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const express = require('express');
+const { tenantContext } = require('@inventory/shared');
 const { purchaseRouter } = require('./routes/purchase.routes');
 const { supplierRouter } = require('./routes/supplier.routes');
 
@@ -8,6 +9,7 @@ const app = express();
 const PORT = process.env.PURCHASE_SERVICE_PORT || 3006;
 
 app.use(express.json());
+app.use(tenantContext);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'purchase-service' });

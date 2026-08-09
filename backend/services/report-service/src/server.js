@@ -11,7 +11,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 import express from 'express';
 import { createLogger, errorHandler } from '@erp/common';
-import { createSupabaseClient } from '@erp/shared-kernel';
+import { createSupabaseClient, tenantContext } from '@erp/shared-kernel';
 import { SupabaseReportRepository } from './repository/index.js';
 import { ReportApplicationService } from './application/index.js';
 import { createReportRouter } from './controller.js';
@@ -23,8 +23,11 @@ const PORT = process.env.REPORT_SERVICE_PORT || 3008;
 async function main() {
   app.use(express.json({ limit: '10mb' }));
 
+  app.use(tenantContext);
+
+  // Health check
   app.get('/health', (req, res) => {
-    res.json({ status: 'ok', service: 'report-service' });
+    res.json({ status: 'ok', service: 'report-service', timestamp: new Date().toISOString() });
   });
 
   const supabase = createSupabaseClient();

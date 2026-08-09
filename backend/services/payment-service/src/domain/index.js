@@ -117,7 +117,7 @@ export class CashRegister extends AggregateRoot {
 }
 
 export class PaymentTransaction extends AggregateRoot {
-  constructor({ id, saleId, invoiceId, paymentMethodId, paymentMethodName, amount, reference, status, processedBy, processedAt, notes, createdAt, updatedAt }) {
+  constructor({ id, saleId, invoiceId, paymentMethodId, paymentMethodName, amount, reference, status, processedBy, processedAt, notes, idempotencyKey, createdAt, updatedAt }) {
     super(id);
     this._saleId = saleId;
     this._invoiceId = invoiceId;
@@ -129,6 +129,7 @@ export class PaymentTransaction extends AggregateRoot {
     this._processedBy = processedBy;
     this._processedAt = processedAt || null;
     this._notes = notes || '';
+    this._idempotencyKey = idempotencyKey || null;
     this._createdAt = createdAt || new Date();
     this._updatedAt = updatedAt || new Date();
   }
@@ -143,6 +144,7 @@ export class PaymentTransaction extends AggregateRoot {
   get processedBy() { return this._processedBy; }
   get processedAt() { return this._processedAt; }
   get notes() { return this._notes; }
+  get idempotencyKey() { return this._idempotencyKey; }
   get createdAt() { return this._createdAt; }
   get updatedAt() { return this._updatedAt; }
 

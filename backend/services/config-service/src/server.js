@@ -11,7 +11,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 import express from 'express';
 import { createLogger, errorHandler } from '@erp/common';
-import { createSupabaseClient } from '@erp/shared-kernel';
+import { createSupabaseClient, tenantContext } from '@erp/shared-kernel';
 import { InMemoryEventBus, RabbitMQEventBus } from '@erp/event-bus';
 import {
   SupabaseSystemConfigRepository, SupabaseEcommerceRepository, SupabaseTaxRateRepository,
@@ -28,14 +28,12 @@ const PORT = process.env.CONFIG_SERVICE_PORT || 3018;
 async function main() {
   app.use(express.json({ limit: '10mb' }));
 
-  app.get('/health', (req, res) => {
-    res.json({ status: 'ok', service: 'config-service' });
-  });
+  app.use(tenantContext);
 
   const supabase = createSupabaseClient();
 
   const eventBus = process.env.NODE_ENV === 'production'
-    ? new RabbitMQEventBus(process.env.RABBITMQ_URL || 'amqp://localhost')
+    ? new RabbitMQEventBus({ url: process.env.RABBITMQ_URL || 'amqp://localhost', exchange: 'erp.events' })
     : new InMemoryEventBus();
   await eventBus.connect();
 

@@ -1,0 +1,21 @@
+{
+  "name": "@erp/platform-admin-service",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Platform admin service — global SaaS management, impersonation, company explorer",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "@erp/common": "file:../../packages/common",
+    "@erp/shared-kernel": "file:../../packages/shared-kernel",
+    "@erp/event-bus": "file:../../packages/event-bus",
+    "dotenv": "^16.4.7",
+    "@supabase/supabase-js": "^2.49.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0"
+  }
+}

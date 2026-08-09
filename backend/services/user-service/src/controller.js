@@ -5,12 +5,12 @@
 import { Router } from 'express';
 import { authenticate, authorize, validate, asyncHandler } from '@erp/common';
 import { ROLES } from '@erp/common';
+import { tenantContext } from '@erp/shared-kernel';
 import { CreateClientDTO, UpdateClientDTO, CreateCreditAccountDTO, UpdateCreditAccountDTO, UpdateNotificationPrefsDTO } from './DTOs/index.js';
 
-export function createCRMRouter(appService) {
+export function createCRMRouter(appService, crmRepos) {
   const router = Router();
-
-  router.use(authenticate);
+  router.use(authenticate, tenantContext);
 
   // ==================== CLIENTS ====================
 
@@ -74,9 +74,13 @@ export function createCRMRouter(appService) {
   router.post('/credit-account',
     validate(CreateCreditAccountDTO),
     asyncHandler(async (req, res) => {
+      // Seguridad: solo admin/supervisor pueden fijar límite de crédito.
+      // El cliente nunca puede auto-aumentarse el límite.
+      const isStaff = [ROLES.ADMIN, ROLES.SUPERVISOR].includes(req.user.role);
       const account = await appService.createCreditAccount({
         ...req.validatedBody,
-        clientId: req.user.id, // Will be resolved via client lookup in use case
+        creditLimit: isStaff ? (req.validatedBody.creditLimit ?? 0) : 0,
+        clientId: req.user.id,
       });
       res.status(201).json({ success: true, data: account });
     })
@@ -107,6 +111,232 @@ export function createCRMRouter(appService) {
       res.json({ success: true, data: prefs });
     })
   );
+
+  // ==================== CRM PIPELINES ====================
+  if (crmRepos) {
+    const { pipelineRepo, stageRepo, leadRepo, activityRepo, noteRepo, sourceRepo, taskRepo } = crmRepos;
+
+    router.get('/pipelines',
+      authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+      asyncHandler(async (req, res) => {
+        const data = await pipelineRepo.findAll(req.companyId);
+        res.json({ success: true, data });
+      })
+    );
+
+    router.get('/pipelines/:id',
+      authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+      asyncHandler(async (req, res) => {
+        const data = await pipelineRepo.findById(req.params.id, req.companyId);
+        if (!data) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Pipeline no encontrado' } });
+        res.json({ success: true, data });
+      })
+    );
+
+    router.post('/pipelines',
+      authorize(ROLES.ADMIN),
+      asyncHandler(async (req, res) => {
+        const data = await pipelineRepo.create({ ...req.body, company_id: req.companyId });
+        res.status(201).json({ success: true, data });
+      })
+    );
+
+    router.put('/pipelines/:id',
+      authorize(ROLES.ADMIN),
+      asyncHandler(async (req, res) => {
+        const data = await pipelineRepo.update(req.params.id, req.body);
+        res.json({ success: true, data });
+      })
+    );
+
+    router.delete('/pipelines/:id',
+      authorize(ROLES.ADMIN),
+      asyncHandler(async (req, res) => {
+        const result = await pipelineRepo.delete(req.params.id);
+        res.json({ success: true, ...result });
+      })
+    );
+
+    // Pipeline Stages
+    router.get('/pipelines/:pipelineId/stages',
+      authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+      asyncHandler(async (req, res) => {
+        const data = await stageRepo.findByPipeline(req.params.pipelineId);
+        res.json({ success: true, data });
+      })
+    );
+
+    router.post('/pipelines/:pipelineId/stages',
+      authorize(ROLES.ADMIN),
+      asyncHandler(async (req, res) => {
+        const data = await stageRepo.create({ ...req.body, pipeline_id: req.params.pipelineId, company_id: req.companyId });
+        res.status(201).json({ success: true, data });
+      })
+    );
+
+    router.put('/pipelines/:pipelineId/stages/:stageId',
+      authorize(ROLES.ADMIN),
+      asyncHandler(async (req, res) => {
+        const data = await stageRepo.update(req.params.stageId, req.body);
+        res.json({ success: true, data });
+      })
+    );
+
+    router.delete('/pipelines/:pipelineId/stages/:stageId',
+      authorize(ROLES.ADMIN),
+      asyncHandler(async (req, res) => {
+        const result = await stageRepo.delete(req.params.stageId);
+        res.json({ success: true, ...result });
+      })
+    );
+
+    // Leads
+    router.get('/leads',
+      authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+      asyncHandler(async (req, res) => {
+        const result = await leadRepo.findAll(req.companyId, req.query);
+        res.json({ success: true, ...result });
+      })
+    );
+
+    router.get('/leads/:id',
+      authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+      asyncHandler(async (req, res) => {
+        const data = await leadRepo.findById(req.params.id, req.companyId);
+        if (!data) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Lead no encontrado' } });
+        res.json({ success: true, data });
+      })
+    );
+
+    router.post('/leads',
+      authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+      asyncHandler(async (req, res) => {
+        const data = await leadRepo.create({
+          ...req.body,
+          company_id: req.companyId,
+          user_id: req.user.id,
+        });
+        res.status(201).json({ success: true, data });
+      })
+    );
+
+    router.put('/leads/:id',
+      authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+      asyncHandler(async (req, res) => {
+        const data = await leadRepo.update(req.params.id, req.body);
+        res.json({ success: true, data });
+      })
+    );
+
+    router.put('/leads/:id/move',
+      authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+      asyncHandler(async (req, res) => {
+        const data = await leadRepo.moveStage(req.params.id, req.body.stage_id);
+        res.json({ success: true, data });
+      })
+    );
+
+    router.post('/leads/:id/convert',
+      authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+      asyncHandler(async (req, res) => {
+        const data = await leadRepo.convertToClient(req.params.id);
+        res.json({ success: true, data });
+      })
+    );
+
+    router.delete('/leads/:id',
+      authorize(ROLES.ADMIN),
+      asyncHandler(async (req, res) => {
+        const result = await leadRepo.delete(req.params.id);
+        res.json({ success: true, ...result });
+      })
+    );
+
+    // Lead Activities
+    router.get('/leads/:leadId/activities',
+      asyncHandler(async (req, res) => {
+        const data = await activityRepo.findByLead(req.params.leadId);
+        res.json({ success: true, data });
+      })
+    );
+
+    router.post('/leads/:leadId/activities',
+      asyncHandler(async (req, res) => {
+        const data = await activityRepo.create({
+          ...req.body,
+          lead_id: req.params.leadId,
+          company_id: req.companyId,
+          user_id: req.user.id,
+        });
+        res.status(201).json({ success: true, data });
+      })
+    );
+
+    // Lead Notes
+    router.get('/leads/:leadId/notes',
+      asyncHandler(async (req, res) => {
+        const data = await noteRepo.findByLead(req.params.leadId);
+        res.json({ success: true, data });
+      })
+    );
+
+    router.post('/leads/:leadId/notes',
+      asyncHandler(async (req, res) => {
+        const data = await noteRepo.create({
+          ...req.body,
+          lead_id: req.params.leadId,
+          company_id: req.companyId,
+          user_id: req.user.id,
+        });
+        res.status(201).json({ success: true, data });
+      })
+    );
+
+    // Lead Sources
+    router.get('/lead-sources',
+      asyncHandler(async (req, res) => {
+        const data = await sourceRepo.findAll(req.companyId);
+        res.json({ success: true, data });
+      })
+    );
+
+    // Tasks
+    router.get('/tasks',
+      authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+      asyncHandler(async (req, res) => {
+        const result = await taskRepo.findAll(req.companyId, req.query);
+        res.json({ success: true, ...result });
+      })
+    );
+
+    router.post('/tasks',
+      authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+      asyncHandler(async (req, res) => {
+        const data = await taskRepo.create({
+          ...req.body,
+          company_id: req.companyId,
+          created_by: req.user.id,
+        });
+        res.status(201).json({ success: true, data });
+      })
+    );
+
+    router.put('/tasks/:id',
+      authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+      asyncHandler(async (req, res) => {
+        const data = await taskRepo.update(req.params.id, req.body);
+        res.json({ success: true, data });
+      })
+    );
+
+    router.put('/tasks/:id/complete',
+      authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+      asyncHandler(async (req, res) => {
+        const data = await taskRepo.complete(req.params.id);
+        res.json({ success: true, data });
+      })
+    );
+  }
 
   return router;
 }

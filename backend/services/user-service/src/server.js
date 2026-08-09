@@ -11,9 +11,10 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 import express from 'express';
 import { createLogger, errorHandler } from '@erp/common';
-import { createSupabaseClient } from '@erp/shared-kernel';
+import { createSupabaseClient, tenantContext } from '@erp/shared-kernel';
 import { InMemoryEventBus, RabbitMQEventBus } from '@erp/event-bus';
 import { SupabaseClientRepository, SupabaseCreditAccountRepository, SupabaseNotificationPreferenceRepository } from './repository/index.js';
+import { SupabasePipelineRepository, SupabasePipelineStageRepository, SupabaseLeadRepository, SupabaseLeadActivityRepository, SupabaseLeadNoteRepository, SupabaseLeadSourceRepository, SupabaseCRMTaskRepository } from './repository/CRMRepository.js';
 import { CRMApplicationService } from './application/index.js';
 import { createCRMRouter } from './controller.js';
 import { registerCRMSubscribers } from './subscribers/index.js';
@@ -24,10 +25,7 @@ const PORT = process.env.USER_SERVICE_PORT || 3002;
 
 async function main() {
   app.use(express.json({ limit: '10mb' }));
-
-  app.get('/health', (req, res) => {
-    res.json({ status: 'ok', service: 'user-service (CRM)' });
-  });
+  app.use(tenantContext);
 
   const supabase = createSupabaseClient();
   const clientRepo = new SupabaseClientRepository(supabase);
@@ -35,7 +33,7 @@ async function main() {
   const notifRepo = new SupabaseNotificationPreferenceRepository(supabase);
 
   const eventBus = process.env.RABBITMQ_URL
-    ? new RabbitMQEventBus(process.env.RABBITMQ_URL, 'user-service')
+    ? new RabbitMQEventBus({ url: process.env.RABBITMQ_URL, exchange: 'erp.events' })
     : new InMemoryEventBus();
 
   await eventBus.connect();
@@ -43,7 +41,17 @@ async function main() {
 
   const appService = new CRMApplicationService({ clientRepo, creditAccountRepo, notifRepo, eventBus });
 
-  app.use('/api/users', createCRMRouter(appService));
+  const crmRepos = {
+    pipelineRepo: new SupabasePipelineRepository(supabase),
+    stageRepo: new SupabasePipelineStageRepository(supabase),
+    leadRepo: new SupabaseLeadRepository(supabase),
+    activityRepo: new SupabaseLeadActivityRepository(supabase),
+    noteRepo: new SupabaseLeadNoteRepository(supabase),
+    sourceRepo: new SupabaseLeadSourceRepository(supabase),
+    taskRepo: new SupabaseCRMTaskRepository(supabase),
+  };
+
+  app.use('/api/users', createCRMRouter(appService, crmRepos));
   app.use(errorHandler);
 
   app.listen(PORT, () => {

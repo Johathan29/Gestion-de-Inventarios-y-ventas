@@ -1,12 +1,11 @@
-const { getSupabaseClient } = require('@inventory/shared');
-
-const supabase = getSupabaseClient();
+const { createTenantClient } = require('@inventory/shared');
 
 /**
  * Listar compras
  */
 const getPurchases = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { page = 1, limit = 10, status, verification_status, supplier_id, from_date, to_date, search } = req.query;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
@@ -50,6 +49,7 @@ const getPurchases = async (req, res, next) => {
  */
 const getPurchaseById = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     const { data: purchase, error } = await supabase
@@ -76,6 +76,7 @@ const getPurchaseById = async (req, res, next) => {
  */
 const createPurchase = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     let { supplier_id, items, notes } = req.body;
 
     if (!supplier_id || !items || !items.length) {
@@ -241,6 +242,7 @@ const createPurchase = async (req, res, next) => {
  */
 const updatePurchaseStatus = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
     const { status } = req.body;
 
@@ -272,6 +274,7 @@ const updatePurchaseStatus = async (req, res, next) => {
  */
 const getNextPurchaseNumber = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: lastPurchase } = await supabase
       .from('purchases')
       .select('purchase_number')
@@ -295,6 +298,7 @@ const getNextPurchaseNumber = async (req, res, next) => {
  */
 const cancelPurchase = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     const { data: purchase } = await supabase
@@ -372,6 +376,7 @@ const cancelPurchase = async (req, res, next) => {
  */
 const sendToInventory = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     const { data: purchase } = await supabase
@@ -548,6 +553,7 @@ const sendToInventory = async (req, res, next) => {
  */
 const updatePurchaseItem = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id, itemId } = req.params;
     const { product_name, quantity, unit_price, barcode, product_image } = req.body;
 
@@ -621,6 +627,7 @@ const updatePurchaseItem = async (req, res, next) => {
  */
 const deletePurchaseItem = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id, itemId } = req.params;
 
     // Verificar que la compra existe y no está cancelada
@@ -679,6 +686,7 @@ const deletePurchaseItem = async (req, res, next) => {
  */
 const verifyPurchase = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
     const { items: verificationItems } = req.body;
 

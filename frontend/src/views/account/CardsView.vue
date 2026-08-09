@@ -81,7 +81,7 @@
             />
           </div>
 
-          <!-- Número de tarjeta -->
+          <!-- Número de tarjeta (solo se usa para derivar last_four/brand; nunca se persiste) -->
           <div>
             <label class="block text-xs font-medium text-on-surface-variant/70 mb-1.5">Número de Tarjeta <span class="text-red-400">*</span></label>
             <div class="relative">
@@ -96,33 +96,21 @@
               />
               <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm text-on-surface-variant/40">credit_card</span>
             </div>
+            <p class="text-xs text-on-surface-variant/50 mt-1">Solo se guardan los últimos 4 dígitos. El número completo nunca se almacena en nuestros servidores.</p>
           </div>
 
-          <!-- Fecha de expiración y CVV -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-medium text-on-surface-variant/70 mb-1.5">Fecha Expiración <span class="text-red-400">*</span></label>
-              <input
-                v-model="form.expiry"
-                type="text"
-                required
-                maxlength="5"
-                placeholder="MM/AA"
-                class="input-field"
-                @input="formatExpiry"
-              />
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-on-surface-variant/70 mb-1.5">CVV <span class="text-red-400">*</span></label>
-              <input
-                v-model="form.cvv"
-                type="password"
-                required
-                maxlength="4"
-                placeholder="***"
-                class="input-field"
-              />
-            </div>
+          <!-- Fecha de expiración -->
+          <div>
+            <label class="block text-xs font-medium text-on-surface-variant/70 mb-1.5">Fecha Expiración <span class="text-red-400">*</span></label>
+            <input
+              v-model="form.expiry"
+              type="text"
+              required
+              maxlength="5"
+              placeholder="MM/AA"
+              class="input-field"
+              @input="formatExpiry"
+            />
           </div>
 
           <!-- Tipo de tarjeta -->
@@ -181,7 +169,6 @@ const form = ref({
   cardholder_name: '',
   card_number: '',
   expiry: '',
-  cvv: '',
   brand: '',
   is_default: false
 });
@@ -209,7 +196,7 @@ async function fetchCards() {
       cards.value = data.cards;
     }
   } catch (e) {
-    // Si no hay endpoint específico, usar datos locales del cliente
+    // Fuente de verdad: backend. Sin fallback a localStorage.
     cards.value = [];
   }
 }
@@ -220,38 +207,25 @@ async function saveCard() {
   errorMsg.value = '';
   try {
     const [exp_month, exp_year] = form.value.expiry.split('/');
+    // Seguridad: el CVV nunca se captura ni se envía; el PAN solo se usa en memoria
+    // para derivar last_four/brand. El backend solo recibe datos no sensibles.
     const cardData = {
       cardholder_name: form.value.cardholder_name,
-      card_number: form.value.card_number.replace(/\s/g, ''),
       exp_month: parseInt(exp_month),
       exp_year: parseInt(exp_year),
-      cvv: form.value.cvv,
       brand: form.value.brand,
       is_default: form.value.is_default,
       last_four: form.value.card_number.replace(/\s/g, '').slice(-4)
     };
 
-    // Llamar API o guardar localmente
-    try {
-      await clientsAPI.createCreditAccount({
-        user_id: authStore.user.id,
-        cards: [...cards.value, cardData]
-      });
-    } catch (apiErr) {
-      console.warn('API no disponible, guardando localmente:', apiErr);
-      // Fallback: guardar en localStorage
-      const savedCards = JSON.parse(localStorage.getItem('user_cards') || '[]');
-      savedCards.push({
-        id: Date.now(),
-        ...cardData,
-        card_number: `••••${cardData.last_four}`
-      });
-      localStorage.setItem('user_cards', JSON.stringify(savedCards));
-    }
+    await clientsAPI.createCreditAccount({
+      user_id: authStore.user.id,
+      cards: [...cards.value, cardData]
+    });
 
     successMsg.value = 'Tarjeta registrada correctamente';
-    // Reset form
-    form.value = { cardholder_name: '', card_number: '', expiry: '', cvv: '', brand: '', is_default: false };
+    // Reset form (sin cvv: ya no se captura)
+    form.value = { cardholder_name: '', card_number: '', expiry: '', brand: '', is_default: false };
     await fetchCards();
   } catch (e) {
     errorMsg.value = 'Error al registrar la tarjeta';

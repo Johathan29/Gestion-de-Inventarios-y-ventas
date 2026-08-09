@@ -4,18 +4,26 @@
 
 import { PaymentTransaction, CashRegister, TRANSACTION_STATUSES, CASH_REGISTER_STATUSES } from '../domain/index.js';
 import { PaymentProcessedEvent, PaymentRefundedEvent, CashRegisterOpenedEvent, CashRegisterClosedEvent } from '../events/index.js';
+import { PaymentGatewayClient } from '../infrastructure/payment-gateway.js';
 
 export class ProcessPaymentUseCase {
   constructor({ paymentMethodRepo, transactionRepo, eventBus }) {
     this._paymentMethodRepo = paymentMethodRepo;
     this._transactionRepo = transactionRepo;
     this._eventBus = eventBus;
+    this._gateway = new PaymentGatewayClient();
   }
 
-  async execute({ saleId, invoiceId, paymentMethodCode, amount, reference, notes, userId }) {
+  async execute({ saleId, invoiceId, paymentMethodCode, amount, reference, notes, userId, token, idempotencyKey, cardId }) {
     // Find payment method
     const method = await this._paymentMethodRepo.findByCode(paymentMethodCode);
     if (!method) throw new Error('PAYMENT_METHOD_NOT_FOUND');
+
+    // Idempotencia: si ya existe una transacción completada con esta clave, no cobrar de nuevo
+    if (idempotencyKey) {
+      const existing = await this._transactionRepo.findByIdempotencyKey(idempotencyKey);
+      if (existing) return existing;
+    }
 
     // Create transaction
     const transaction = new PaymentTransaction({
@@ -28,9 +36,45 @@ export class ProcessPaymentUseCase {
       status: TRANSACTION_STATUSES.PENDING,
       processedBy: userId,
       notes: notes || '',
+      idempotencyKey: idempotencyKey || null,
     });
 
-    transaction.complete();
+    // Pago con tarjeta tokenizada → cobrar vía pasarela (PSP)
+    if (token || cardId) {
+      let result;
+      try {
+        result = await this._gateway.charge({
+          token,
+          cardId,
+          amount,
+          idempotencyKey: idempotencyKey || saleId,
+          description: `Venta ${saleId}`,
+        });
+      } catch (gatewayErr) {
+        transaction.fail(`Error de pasarela: ${gatewayErr.message}`);
+        const failed = await this._transactionRepo.save(transaction);
+        throw new Error('PAYMENT_GATEWAY_ERROR');
+      }
+
+      // Referencia de la pasarela (nunca el token)
+      transaction._reference = result.gatewayReference || transaction.reference;
+      transaction._notes = result.message || transaction.notes;
+
+      if (result.status === 'approved') {
+        transaction.complete();
+      } else if (result.status === 'pending') {
+        transaction._status = TRANSACTION_STATUSES.PENDING;
+        transaction._processedAt = null;
+      } else {
+        transaction.fail(result.message || 'Tarjeta rechazada');
+        const failed = await this._transactionRepo.save(transaction);
+        throw new Error('PAYMENT_DECLINED');
+      }
+    } else {
+      // Métodos sin token (cash/transfer) — se completan directamente
+      transaction.complete();
+    }
+
     const saved = await this._transactionRepo.save(transaction);
     await this._eventBus.publish(new PaymentProcessedEvent(saved));
 

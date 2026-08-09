@@ -1,12 +1,14 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const express = require('express');
+const { tenantContext } = require('@inventory/shared');
 const { categoryRouter } = require('./routes/category.routes');
 
 const app = express();
 const PORT = process.env.CATEGORY_SERVICE_PORT || 3004;
 
 app.use(express.json());
+app.use(tenantContext);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'category-service' });

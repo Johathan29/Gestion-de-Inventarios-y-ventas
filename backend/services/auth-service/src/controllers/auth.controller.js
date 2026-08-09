@@ -1,12 +1,10 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
-const { getSupabaseClient } = require('@inventory/shared');
+const { createTenantClient } = require('@inventory/shared');
 
 // Cargar variables de entorno desde el backend/.env
 require('dotenv').config({ path: path.resolve(__dirname, '../../../../.env') });
-
-const supabase = getSupabaseClient();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
@@ -50,6 +48,7 @@ const recordLoginAttempt = (email, success) => {
  */
 const login = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -93,7 +92,7 @@ const login = async (req, res, next) => {
     // Verificar contraseña
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
-      await registerLoginAttempt(user.id, false);
+      await registerLoginAttempt(supabase, user.id, false);
       recordLoginAttempt(email.toLowerCase(), false);
       return res.status(401).json({
         success: false,
@@ -105,7 +104,7 @@ const login = async (req, res, next) => {
     recordLoginAttempt(email.toLowerCase(), true);
 
     // Registrar intento exitoso
-    await registerLoginAttempt(user.id, true);
+    await registerLoginAttempt(supabase, user.id, true);
 
     // Generar tokens
     const accessToken = generateAccessToken(user);
@@ -127,7 +126,9 @@ const login = async (req, res, next) => {
           email: user.email,
           name: user.name,
           role: user.roles?.name || 'cliente',
-          permissions: user.roles?.permissions || {}
+          permissions: user.roles?.permissions || {},
+          company_id: user.company_id || '00000000-0000-0000-0000-000000000001',
+          company_name: user.company_name || ''
         }
       }
     });
@@ -141,6 +142,7 @@ const login = async (req, res, next) => {
  */
 const register = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { name, email, password, phone } = req.body;
 
     if (!name || !email || !password) {
@@ -221,7 +223,9 @@ const register = async (req, res, next) => {
         sub: user.id,
         email: user.email,
         role: 'cliente',
-        permissions: roleRecord?.permissions || {}
+        permissions: roleRecord?.permissions || {},
+        company_id: user.company_id || '00000000-0000-0000-0000-000000000001',
+        company_name: ''
       },
       JWT_SECRET,
       { expiresIn: '15m', issuer: 'inventory-system' }
@@ -260,7 +264,9 @@ const register = async (req, res, next) => {
           email: user.email,
           name: user.name,
           role: 'cliente',
-          permissions: roleRecord?.permissions || {}
+          permissions: roleRecord?.permissions || {},
+          company_id: user.company_id || '00000000-0000-0000-0000-000000000001',
+          company_name: ''
         }
       }
     });
@@ -274,6 +280,7 @@ const register = async (req, res, next) => {
  */
 const refreshToken = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { refreshToken: token } = req.body;
 
     if (!token) {
@@ -329,6 +336,7 @@ const refreshToken = async (req, res, next) => {
  */
 const logout = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     await supabase
       .from('users')
       .update({ refresh_token: null })
@@ -345,6 +353,7 @@ const logout = async (req, res, next) => {
  */
 const requestPasswordReset = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { email } = req.body;
 
     if (!email) {
@@ -457,8 +466,7 @@ const resetPassword = async (req, res, next) => {
  * Verificar contraseña del usuario actual (para operaciones sensibles)
  */
 const verifyPassword = async (req, res, next) => {
-  try {
-    const { password } = req.body;
+  try {    const supabase = createTenantClient(req);    const { password } = req.body;
     const userId = req.user.id;
 
     if (!password) {
@@ -496,7 +504,9 @@ const generateAccessToken = (user) => {
       sub: user.id,
       email: user.email,
       role: user.roles?.name || 'cliente',
-      permissions: user.roles?.permissions || {}
+      permissions: user.roles?.permissions || {},
+      company_id: user.company_id || '00000000-0000-0000-0000-000000000001',
+      company_name: user.company_name || ''
     },
     JWT_SECRET,
     { expiresIn: '15m', issuer: 'inventory-system' }
@@ -511,9 +521,9 @@ const generateRefreshToken = (user) => {
   );
 };
 
-const registerLoginAttempt = async (userId, success) => {
+const registerLoginAttempt = async (supabaseClient, userId, success) => {
   try {
-    await supabase.from('audit_logs').insert({
+    await supabaseClient.from('audit_logs').insert({
       user_id: userId,
       entity: 'auth',
       entity_id: userId,
@@ -531,6 +541,7 @@ const registerLoginAttempt = async (userId, success) => {
  */
 const getCurrentUser = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     // req.user lo establece el middleware authenticate()
     const userId = req.user.id;
 
@@ -559,6 +570,8 @@ const getCurrentUser = async (req, res, next) => {
         email_verified: user.email_verified,
         role: user.roles?.name,
         permissions: user.roles?.permissions || {},
+        company_id: user.company_id || '00000000-0000-0000-0000-000000000001',
+        company_name: user.company_name || '',
         created_at: user.created_at,
         last_login: user.last_login
       }

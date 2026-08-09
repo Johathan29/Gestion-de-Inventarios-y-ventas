@@ -29,6 +29,14 @@ const routes = [
     meta: { layout: 'blank', title: 'Detalle del Producto' }
   },
 
+  // CMS Pages (public — render pages created in the Page Manager)
+  {
+    path: '/p/:slug',
+    name: 'CmsPublicPage',
+    component: () => import('../views/cms/CmsPublicPageView.vue'),
+    meta: { layout: 'blank', title: 'Página' }
+  },
+
   // Auth
   {
     path: '/login',
@@ -131,6 +139,12 @@ const routes = [
         name: 'Dashboard',
         component: () => import('../views/DashboardView.vue'),
         meta: { title: 'Dashboard', icon: 'dashboard' }
+      },
+      {
+        path: 'dashboard-dynamic',
+        name: 'DynamicDashboard',
+        component: () => import('../views/dashboard/DynamicDashboardView.vue'),
+        meta: { title: 'Dashboard Dinámico', icon: 'dashboard' }
       },
 
       {
@@ -470,7 +484,100 @@ const routes = [
         name: 'AdminConfig',
         component: () => import('../views/admin/ConfigView.vue'),
         meta: { title: 'Configuración del Sistema' }
-      }
+      },
+
+      // ============================================================
+      // CRM — Pipeline & Leads
+      // ============================================================
+      {
+        path: 'crm',
+        name: 'CRMPipeline',
+        component: () => import('../views/crm/PipelineView.vue'),
+        meta: { title: 'Pipeline CRM' }
+      },
+
+      // ============================================================
+      // PLATFORM ADMIN — Global SaaS management (requires admin role)
+      // ============================================================
+      {
+        path: 'platform',
+        component: () => import('../views/platform-admin/PlatformAdminView.vue'),
+        meta: { title: 'Platform Admin', requiresAdmin: true },
+        children: [
+          {
+            path: '',
+            name: 'PlatformDashboard',
+            component: () => import('../views/platform-admin/PlatformDashboard.vue'),
+            meta: { title: 'Panel Global' }
+          },
+          {
+            path: 'companies',
+            name: 'PlatformCompanies',
+            component: () => import('../views/platform-admin/CompaniesView.vue'),
+            meta: { title: 'Empresas' }
+          },
+          {
+            path: 'companies/create',
+            name: 'PlatformCompanyCreate',
+            component: () => import('../views/platform-admin/CompanyOnboardingView.vue'),
+            meta: { title: 'Crear Empresa' }
+          },
+          {
+            path: 'companies/:id',
+            name: 'PlatformCompanyDetail',
+            component: () => import('../views/platform-admin/CompanyDetailView.vue'),
+            meta: { title: 'Detalle de Empresa' }
+          },
+          {
+            path: 'users',
+            name: 'PlatformUsers',
+            component: () => import('../views/platform-admin/GlobalUsersView.vue'),
+            meta: { title: 'Usuarios Globales' }
+          },
+          {
+            path: 'impersonation',
+            name: 'PlatformImpersonation',
+            component: () => import('../views/platform-admin/ImpersonationLogView.vue'),
+            meta: { title: 'Sesiones de Soporte' }
+          },
+        ]
+      },
+
+      // ── CMS & Page Builder ──
+      {
+        path: 'cms',
+        name: 'CmsPages',
+        component: () => import('../views/cms/PagesManagerView.vue'),
+        meta: { title: 'CMS — Gestión de Páginas', requiresAuth: true }
+      },
+      // ── Form Builder ──
+      {
+        path: 'forms',
+        name: 'FormBuilder',
+        component: () => import('../views/forms/FormBuilderView.vue'),
+        meta: { title: 'Form Builder', requiresAuth: true }
+      },
+      // ── Site Builder & Media ──
+      {
+        path: 'site',
+        name: 'SiteBuilder',
+        component: () => import('../views/site/SiteBuilderView.vue'),
+        meta: { title: 'Site Builder & Media', requiresAuth: true }
+      },
+      // ── Integrations (Webhooks & Automations) ──
+      {
+        path: 'integrations',
+        name: 'Integrations',
+        component: () => import('../views/integrations/IntegrationsView.vue'),
+        meta: { title: 'Integraciones & Automatizaciones', requiresAuth: true }
+      },
+      // ── RBAC & Feature Flags ──
+      {
+        path: 'rbac',
+        name: 'RbacRolesFeatures',
+        component: () => import('../views/rbac/RolesPermissionsView.vue'),
+        meta: { title: 'RBAC & Feature Flags', requiresAuth: true }
+      },
     ]
   },
 
@@ -524,6 +631,12 @@ router.beforeEach(async (to, from, next) => {
     // Bloquear usuarios con rol "cliente" del dashboard /app/*
     if (authStore.user?.role === 'cliente' && to.path.startsWith('/app')) {
       next('/');
+      return;
+    }
+
+    // Bloquear usuarios NO admin de rutas /app/platform/*
+    if (to.path.startsWith('/app/platform') && authStore.user?.role_id !== 1) {
+      next('/app/dashboard');
       return;
     }
 

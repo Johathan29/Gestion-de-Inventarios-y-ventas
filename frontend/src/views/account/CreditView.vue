@@ -111,10 +111,14 @@
               <option value="corriente">Corriente</option>
             </select>
           </div>
-          <div>
+          <!-- Límite de crédito: solo lo fija admin/supervisor. El cliente nunca puede auto-aumentárselo. -->
+          <div v-if="isStaff">
             <label class="block text-sm font-medium text-gray-700 mb-1">Límite de Crédito</label>
             <input v-model.number="form.credit_limit" type="number" min="0" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
           </div>
+          <p v-else class="text-sm text-gray-500">
+            Límite de crédito actual: <span class="font-medium text-gray-800">${{ formatPrice(creditLimit) }}</span>
+          </p>
           <div class="flex items-end gap-3">
             <button type="submit" :disabled="saving" class="px-6 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors shadow-md disabled:opacity-50">
               {{ saving ? 'Guardando...' : 'Guardar' }}
@@ -137,8 +141,13 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { clientsAPI } from '../../api';
 import { useAuthStore } from '../../stores/auth';
+import { useToast } from '../../composables/useToast';
 
 const authStore = useAuthStore();
+const toast = useToast();
+
+// Solo admin/supervisor pueden editar el límite de crédito
+const isStaff = computed(() => ['admin', 'supervisor'].includes(authStore.user?.role));
 
 const loading = ref(true);
 const error = ref(null);
@@ -155,6 +164,10 @@ const form = reactive({
 
 const creditLimit = computed(() => creditAccount.value?.credit_limit || 0);
 const currentBalance = computed(() => creditAccount.value?.current_balance || 0);
+
+function formatPrice(value) {
+  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value || 0);
+}
 
 const maskedAccountNumber = computed(() => {
   const num = creditAccount.value?.account_number || '';
@@ -189,15 +202,18 @@ async function saveCreditAccount() {
     const payload = {
       account_number: form.account_number,
       account_type: form.account_type,
-      credit_limit: form.credit_limit,
+      // El cliente no envía credit_limit: el backend fuerza 0 para no-staff
+      ...(isStaff.value ? { credit_limit: form.credit_limit } : {}),
     };
 
     if (creditAccount.value?.id) {
       const { data } = await clientsAPI.updateCreditAccount(creditAccount.value.id, payload);
       creditAccount.value = data;
+      toast.success('Cuenta de crédito actualizada');
     } else {
       const { data } = await clientsAPI.createCreditAccount(payload);
       creditAccount.value = data;
+      toast.success('Cuenta de crédito creada');
     }
 
     successMsg.value = 'Cuenta de crédito guardada correctamente';
@@ -205,13 +221,10 @@ async function saveCreditAccount() {
     setTimeout(() => { successMsg.value = ''; }, 3000);
   } catch (e) {
     error.value = 'Error al guardar la cuenta de crédito';
+    toast.error('Error al guardar la cuenta de crédito');
   } finally {
     saving.value = false;
   }
-}
-
-function formatPrice(value) {
-  return (parseFloat(value) || 0).toFixed(2);
 }
 
 onMounted(fetchCreditAccount);

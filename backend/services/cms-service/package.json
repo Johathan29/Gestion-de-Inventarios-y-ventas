@@ -1,0 +1,21 @@
+{
+  "name": "@erp/cms-service",
+  "version": "1.0.0",
+  "description": "CMS & Page Builder service — pages, sections, components, templates, versions",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@inventory/shared": "file:../../shared",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "@supabase/supabase-js": "^2.47.12",
+    "express-rate-limit": "^7.5.0",
+    "uuid": "^11.1.0"
+  }
+}

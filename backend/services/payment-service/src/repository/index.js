@@ -2,11 +2,16 @@
 // Supabase Payments Repository Adapters
 // ============================================================
 
+import { tenantStorage } from '@erp/shared-kernel';
 import { PaymentMethodMapper, CashRegisterMapper, PaymentTransactionMapper } from '../mappers/index.js';
 
 export class SupabasePaymentMethodRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findAll(isActive = true) {
@@ -40,7 +45,11 @@ export class SupabasePaymentMethodRepository {
 
 export class SupabaseCashRegisterRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findAll({ companyId, warehouseId, status } = {}) {
@@ -87,7 +96,11 @@ export class SupabaseCashRegisterRepository {
 
 export class SupabasePaymentTransactionRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findById(id) {
@@ -108,6 +121,17 @@ export class SupabasePaymentTransactionRepository {
       .order('created_at', { ascending: false });
     if (error) throw error;
     return (data || []).map(r => PaymentTransactionMapper.toDomain(r));
+  }
+
+  async findByIdempotencyKey(idempotencyKey) {
+    if (!idempotencyKey) return null;
+    const { data, error } = await this._supabase
+      .from('payment_transactions')
+      .select('*, payment_methods(name, type)')
+      .eq('idempotency_key', idempotencyKey)
+      .maybeSingle();
+    if (error) return null;
+    return PaymentTransactionMapper.toDomain(data);
   }
 
   async save(transaction) {

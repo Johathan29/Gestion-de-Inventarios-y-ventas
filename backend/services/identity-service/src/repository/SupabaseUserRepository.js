@@ -2,22 +2,23 @@
 // Supabase User Repository (Adapter)
 // ============================================================
 
+import { tenantStorage } from '@erp/shared-kernel';
 import { IUserRepository } from './IUserRepository.js';
 import { UserMapper } from '../mappers/index.js';
 
 export class SupabaseUserRepository extends IUserRepository {
-  #supabase;
-
   constructor(supabaseClient) {
     super();
-    this.#supabase = supabaseClient;
+    this._supabase = supabaseClient;
   }
+
+  get _db() { return tenantStorage.getStore()?.supabase || this._supabase; }
 
   // Explicit column list avoids schema-cache staleness issues (e.g. missing company_id)
   static #COLUMNS = 'id,email,name,password_hash,is_active,phone,last_login,created_at,updated_at,role_id,roles:role_id(name,permissions)';
 
   async findById(id) {
-    const { data, error } = await this.#supabase
+    const { data, error } = await this._db
       .from('users')
       .select(SupabaseUserRepository.#COLUMNS)
       .eq('id', id)
@@ -28,7 +29,7 @@ export class SupabaseUserRepository extends IUserRepository {
   }
 
   async findByEmail(email) {
-    const { data, error } = await this.#supabase
+    const { data, error } = await this._db
       .from('users')
       .select(SupabaseUserRepository.#COLUMNS)
       .eq('email', email.toLowerCase())
@@ -39,7 +40,7 @@ export class SupabaseUserRepository extends IUserRepository {
   }
 
   async findAll({ page = 1, limit = 20, search, role, isActive, sortBy = 'created_at', sortOrder = 'desc' } = {}) {
-    let query = this.#supabase
+    let query = this._db
       .from('users')
       .select(SupabaseUserRepository.#COLUMNS, { count: 'exact' });
 
@@ -74,7 +75,7 @@ export class SupabaseUserRepository extends IUserRepository {
 
   async save(user) {
     const payload = UserMapper.toPersistence(user);
-    const { data, error } = await this.#supabase
+    const { data, error } = await this._db
       .from('users')
       .insert([{
         ...payload,
@@ -93,7 +94,7 @@ export class SupabaseUserRepository extends IUserRepository {
     const payload = UserMapper.toPersistence(user);
     delete payload.created_at; // Don't overwrite creation date
 
-    const { data, error } = await this.#supabase
+    const { data, error } = await this._db
       .from('users')
       .update({
         ...payload,
@@ -108,7 +109,7 @@ export class SupabaseUserRepository extends IUserRepository {
   }
 
   async delete(id) {
-    const { error } = await this.#supabase
+    const { error } = await this._db
       .from('users')
       .update({ is_active: false, updated_at: new Date().toISOString() })
       .eq('id', id);
@@ -117,7 +118,7 @@ export class SupabaseUserRepository extends IUserRepository {
   }
 
   async count(filters = {}) {
-    let query = this.#supabase.from('users').select('id', { count: 'exact', head: true });
+    let query = this._db.from('users').select('id', { count: 'exact', head: true });
 
     if (filters.role) {
       query = query.eq('roles.name', filters.role);
@@ -133,7 +134,7 @@ export class SupabaseUserRepository extends IUserRepository {
 
   async toggleActive(id) {
     // First get current status
-    const { data: current, error: fetchError } = await this.#supabase
+    const { data: current, error: fetchError } = await this._db
       .from('users')
       .select('is_active')
       .eq('id', id)
@@ -143,7 +144,7 @@ export class SupabaseUserRepository extends IUserRepository {
 
     const newStatus = !current?.is_active;
 
-    const { data, error } = await this.#supabase
+    const { data, error } = await this._db
       .from('users')
       .update({ is_active: newStatus, updated_at: new Date().toISOString() })
       .eq('id', id)
@@ -156,7 +157,7 @@ export class SupabaseUserRepository extends IUserRepository {
 
   async updateRole(id, roleName) {
     // Resolve role id from name
-    const { data: role, error: roleError } = await this.#supabase
+    const { data: role, error: roleError } = await this._db
       .from('roles')
       .select('id')
       .eq('name', roleName)
@@ -164,7 +165,7 @@ export class SupabaseUserRepository extends IUserRepository {
 
     if (roleError) throw new Error(`Role '${roleName}' not found`);
 
-    const { data, error } = await this.#supabase
+    const { data, error } = await this._db
       .from('users')
       .update({ role_id: role.id, updated_at: new Date().toISOString() })
       .eq('id', id)
@@ -176,7 +177,7 @@ export class SupabaseUserRepository extends IUserRepository {
   }
 
   async getAccessHistory(id) {
-    const { data, error } = await this.#supabase
+    const { data, error } = await this._db
       .from('audit_logs')
       .select('*')
       .eq('user_id', id)

@@ -11,7 +11,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 import express from 'express';
 import { createLogger, errorHandler } from '@erp/common';
-import { createSupabaseClient } from '@erp/shared-kernel';
+import { createSupabaseClient, tenantContext } from '@erp/shared-kernel';
 import { InMemoryEventBus, RabbitMQEventBus } from '@erp/event-bus';
 import { SupabaseNotificationRepository, EmailChannelService, WhatsAppChannelService } from './repository/index.js';
 import { NotificationApplicationService } from './application/index.js';
@@ -25,9 +25,7 @@ const PORT = process.env.NOTIFICATION_SERVICE_PORT || 3016;
 async function main() {
   app.use(express.json({ limit: '10mb' }));
 
-  app.get('/health', (req, res) => {
-    res.json({ status: 'ok', service: 'notification-service' });
-  });
+  app.use(tenantContext);
 
   const supabase = createSupabaseClient();
   const notifRepo = new SupabaseNotificationRepository(supabase);
@@ -35,11 +33,11 @@ async function main() {
   const whatsAppService = new WhatsAppChannelService();
 
   const eventBus = process.env.RABBITMQ_URL
-    ? new RabbitMQEventBus(process.env.RABBITMQ_URL, 'notification-service')
+    ? new RabbitMQEventBus({ url: process.env.RABBITMQ_URL, exchange: 'erp.events' })
     : new InMemoryEventBus();
 
   await eventBus.connect();
-  registerNotificationSubscribers(eventBus);
+  registerNotificationSubscribers(eventBus, { supabase });
 
   const appService = new NotificationApplicationService({ notifRepo, emailService, whatsAppService, eventBus });
 

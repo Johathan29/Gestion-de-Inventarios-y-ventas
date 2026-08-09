@@ -2,11 +2,16 @@
 // Supabase Procurement Repository Adapters
 // ============================================================
 
+import { tenantStorage } from '@erp/shared-kernel';
 import { PurchaseMapper, SupplierMapper } from '../mappers/index.js';
 
 export class SupabasePurchaseRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findById(id) {
@@ -133,7 +138,11 @@ export class SupabasePurchaseRepository {
 
 export class SupabaseSupplierRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findById(id) {

@@ -283,11 +283,13 @@ import { useAuthStore } from '../../stores/auth';
 import { cartAPI, checkoutAPI } from '../../api';
 import { useCurrency } from '../../composables/useCurrency';
 import { useEcommerceConfig } from '../../composables/useEcommerceConfig';
+import { useToast } from '../../composables/useToast';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const { formatTable } = useCurrency();
 const { taxRate, taxIncluded, loadConfig } = useEcommerceConfig();
+const toast = useToast();
 
 const loading = ref(true);
 const error = ref(null);
@@ -377,7 +379,7 @@ async function incrementQuantity(item) {
     await cartAPI.updateItem(item.id, { quantity: newQty });
     item.quantity = newQty;
   } catch (e) {
-    alert(e.response?.data?.error?.message || 'Error al actualizar cantidad');
+    toast.error(e.response?.data?.error?.message || 'Error al actualizar cantidad');
   }
 }
 
@@ -388,7 +390,7 @@ async function decrementQuantity(item) {
     await cartAPI.updateItem(item.id, { quantity: newQty });
     item.quantity = newQty;
   } catch (e) {
-    alert(e.response?.data?.error?.message || 'Error al actualizar cantidad');
+    toast.error(e.response?.data?.error?.message || 'Error al actualizar cantidad');
   }
 }
 
@@ -396,15 +398,16 @@ async function removeItem(item) {
   try {
     await cartAPI.removeItem(item.id);
     items.value = items.value.filter(i => i.id !== item.id);
+    toast.success('Producto eliminado del carrito');
   } catch (e) {
-    alert('Error al eliminar producto del carrito');
+    toast.error('Error al eliminar producto del carrito');
   }
 }
 
 function applyCoupon() {
   if (!couponCode.value.trim()) return;
   // Placeholder - integrar con backend de cupones
-  alert('Funcionalidad de cupones próximamente');
+  toast.info('Funcionalidad de cupones próximamente');
 }
 
 async function proceedCheckout() {
@@ -426,6 +429,7 @@ async function proceedCheckout() {
     await checkoutAPI.checkout(payload);
     checkoutSuccess.value = true;
     items.value = [];
+    toast.success('Compra realizada con éxito');
   } catch (e) {
     checkoutError.value = true;
     checkoutErrorMessage.value = e.response?.data?.error?.message || 'Error al procesar el pago. Intenta de nuevo.';

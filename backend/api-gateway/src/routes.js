@@ -163,6 +163,32 @@ const checkoutProxy = createProxyMiddleware('/api/v1/checkout', {
 });
 router.use(checkoutProxy);
 
+// Promotions — se sirve desde ecommerce-service en puerto 3012
+// rewrite: /api/v1/promotions/* -> /api/ecommerce/promotions/*
+const promotionsProxy = createProxyMiddleware('/api/v1/promotions', {
+  target: 'http://localhost:3012',
+  changeOrigin: true,
+  proxyTimeout: SERVICE_TIMEOUTS.ecommerce,
+  timeout: SERVICE_TIMEOUTS.ecommerce,
+  pathRewrite: { '^/api/v1/promotions': '/api/ecommerce/promotions' },
+  onProxyReq: (proxyReq, req, res) => {
+    if (req.correlationId) proxyReq.setHeader('x-correlation-id', req.correlationId);
+    if (req.user) { proxyReq.setHeader('x-user-id', req.user.id); proxyReq.setHeader('x-user-role', req.user.role); }
+    console.log(`[Gateway][promotions] ${req.method} ${req.originalUrl} [${req.correlationId || 'no-id'}]`);
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    if (!res.getHeader('x-correlation-id') && req.correlationId) res.setHeader('x-correlation-id', req.correlationId);
+  },
+  onError: (err, req, res) => {
+    console.error(`[Gateway][promotions] Error: ${err.message}`);
+    res.status(503).json({
+      success: false,
+      error: { code: 'SERVICE_UNAVAILABLE', message: 'Promotions service unavailable', service: 'promotions', correlationId: req.correlationId || null, timestamp: new Date().toISOString() }
+    });
+  }
+});
+router.use(promotionsProxy);
+
 // Cash Register — se sirve desde payment-service en puerto 3019
 // rewrite: /api/v1/cash-register/* -> /api/payments/registers/*
 const cashRegisterProxy = createProxyMiddleware('/api/v1/cash-register', {
@@ -220,6 +246,106 @@ const clientsProxy = createProxyMiddleware('/api/v1/clients', {
   }
 });
 router.use(clientsProxy);
+
+// Platform Admin — service on port 3020
+// rewrite: /api/v1/platform-admin/* -> /api/platform/*
+const platformAdminProxy = createProxyMiddleware('/api/v1/platform-admin', {
+  target: 'http://localhost:3020',
+  changeOrigin: true,
+  proxyTimeout: 30000,
+  timeout: 30000,
+  pathRewrite: { '^/api/v1/platform-admin': '/api/platform' },
+  onProxyReq: (proxyReq, req, res) => {
+    if (req.correlationId) proxyReq.setHeader('x-correlation-id', req.correlationId);
+    if (req.user) {
+      proxyReq.setHeader('x-user-id', req.user.id);
+      proxyReq.setHeader('x-user-role', req.user.role);
+    }
+    console.log(`[Gateway][platform-admin] ${req.method} ${req.originalUrl} [${req.correlationId || 'no-id'}]`);
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    if (!res.getHeader('x-correlation-id') && req.correlationId) res.setHeader('x-correlation-id', req.correlationId);
+  },
+  onError: (err, req, res) => {
+    console.error(`[Gateway][platform-admin] Error: ${err.message} [${req.correlationId || 'no-id'}]`);
+    res.status(503).json({
+      success: false,
+      error: { code: 'SERVICE_UNAVAILABLE', message: 'Servicio platform-admin no disponible', service: 'platform-admin', correlationId: req.correlationId || null, timestamp: new Date().toISOString() }
+    });
+  }
+});
+router.use(platformAdminProxy);
+
+// ── NEW SaaS SERVICES ───────────────────────────────────────────────
+
+// CMS Service — port 3021
+// rewrite: /api/v1/cms/* -> /api/cms/*
+const cmsProxy = createProxyMiddleware('/api/v1/cms', {
+  target: 'http://localhost:3021',
+  changeOrigin: true,
+  proxyTimeout: 30000,
+  timeout: 30000,
+  pathRewrite: { '^/api/v1/cms': '/api/cms' },
+  onProxyReq: (proxyReq, req, res) => {
+    if (req.correlationId) proxyReq.setHeader('x-correlation-id', req.correlationId);
+    if (req.user) { proxyReq.setHeader('x-user-id', req.user.id); proxyReq.setHeader('x-user-role', req.user.role); }
+    console.log(`[Gateway][cms] ${req.method} ${req.originalUrl} [${req.correlationId || 'no-id'}]`);
+  },
+  onProxyRes: (proxyRes, req, res) => { if (!res.getHeader('x-correlation-id') && req.correlationId) res.setHeader('x-correlation-id', req.correlationId); },
+  onError: (err, req, res) => { console.error(`[Gateway][cms] Error: ${err.message}`); res.status(503).json({ success: false, error: { code: 'SERVICE_UNAVAILABLE', message: 'CMS service unavailable', service: 'cms' }}); }
+});
+router.use(cmsProxy);
+
+// Form Builder Service — port 3022
+const formBuilderProxy = createProxyMiddleware('/api/v1/forms', {
+  target: 'http://localhost:3022',
+  changeOrigin: true,
+  proxyTimeout: 30000,
+  timeout: 30000,
+  pathRewrite: { '^/api/v1/forms': '/api/forms' },
+  onProxyReq: (proxyReq, req, res) => {
+    if (req.correlationId) proxyReq.setHeader('x-correlation-id', req.correlationId);
+    if (req.user) { proxyReq.setHeader('x-user-id', req.user.id); proxyReq.setHeader('x-user-role', req.user.role); }
+    console.log(`[Gateway][forms] ${req.method} ${req.originalUrl} [${req.correlationId || 'no-id'}]`);
+  },
+  onProxyRes: (proxyRes, req, res) => { if (!res.getHeader('x-correlation-id') && req.correlationId) res.setHeader('x-correlation-id', req.correlationId); },
+  onError: (err, req, res) => { console.error(`[Gateway][forms] Error: ${err.message}`); res.status(503).json({ success: false, error: { code: 'SERVICE_UNAVAILABLE', message: 'Form Builder service unavailable', service: 'forms' }}); }
+});
+router.use(formBuilderProxy);
+
+// Site Builder Service — port 3023
+const siteBuilderProxy = createProxyMiddleware('/api/v1/site', {
+  target: 'http://localhost:3023',
+  changeOrigin: true,
+  proxyTimeout: 30000,
+  timeout: 30000,
+  pathRewrite: { '^/api/v1/site': '/api/site' },
+  onProxyReq: (proxyReq, req, res) => {
+    if (req.correlationId) proxyReq.setHeader('x-correlation-id', req.correlationId);
+    if (req.user) { proxyReq.setHeader('x-user-id', req.user.id); proxyReq.setHeader('x-user-role', req.user.role); }
+    console.log(`[Gateway][site] ${req.method} ${req.originalUrl} [${req.correlationId || 'no-id'}]`);
+  },
+  onProxyRes: (proxyRes, req, res) => { if (!res.getHeader('x-correlation-id') && req.correlationId) res.setHeader('x-correlation-id', req.correlationId); },
+  onError: (err, req, res) => { console.error(`[Gateway][site] Error: ${err.message}`); res.status(503).json({ success: false, error: { code: 'SERVICE_UNAVAILABLE', message: 'Site Builder service unavailable', service: 'site' }}); }
+});
+router.use(siteBuilderProxy);
+
+// Integration Service (Webhooks & Automations) — port 3024
+const integrationProxy = createProxyMiddleware('/api/v1/integrations', {
+  target: 'http://localhost:3024',
+  changeOrigin: true,
+  proxyTimeout: 30000,
+  timeout: 30000,
+  pathRewrite: { '^/api/v1/integrations': '/api/integrations' },
+  onProxyReq: (proxyReq, req, res) => {
+    if (req.correlationId) proxyReq.setHeader('x-correlation-id', req.correlationId);
+    if (req.user) { proxyReq.setHeader('x-user-id', req.user.id); proxyReq.setHeader('x-user-role', req.user.role); }
+    console.log(`[Gateway][integrations] ${req.method} ${req.originalUrl} [${req.correlationId || 'no-id'}]`);
+  },
+  onProxyRes: (proxyRes, req, res) => { if (!res.getHeader('x-correlation-id') && req.correlationId) res.setHeader('x-correlation-id', req.correlationId); },
+  onError: (err, req, res) => { console.error(`[Gateway][integrations] Error: ${err.message}`); res.status(503).json({ success: false, error: { code: 'SERVICE_UNAVAILABLE', message: 'Integration service unavailable', service: 'integrations' }}); }
+});
+router.use(integrationProxy);
 
 // Crear proxies resilientes para cada servicio
 Object.entries(services).forEach(([name, service]) => {

@@ -7,6 +7,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { createClient } from '@supabase/supabase-js';
 import { loadConfig, createLogger, errorHandler } from '@erp/common';
+import { tenantContext } from '@erp/shared-kernel';
 import { InMemoryEventBus } from '@erp/event-bus';
 import { SupabasePurchaseRepository, SupabaseSupplierRepository } from './repository/index.js';
 import { ProcurementApplicationService } from './application/ProcurementApplicationService.js';
@@ -30,6 +31,7 @@ const appService = new ProcurementApplicationService({ purchaseRepository, suppl
 app.use(helmet());
 app.use(cors({ origin: config.CORS_ORIGIN, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
+app.use(tenantContext);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'procurement-service', timestamp: new Date().toISOString() });

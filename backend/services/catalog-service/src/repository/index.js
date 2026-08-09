@@ -2,6 +2,7 @@
 // Catalog Repository Interface & Supabase Implementation
 // ============================================================
 
+import { tenantStorage } from '@erp/shared-kernel';
 import { ProductMapper, CategoryMapper, BrandMapper } from '../mappers/index.js';
 
 // ---- Interface ----
@@ -16,22 +17,22 @@ export class IProductRepository {
 
 // ---- Supabase Implementation ----
 export class SupabaseProductRepository extends IProductRepository {
-  #supabase;
+  constructor(supabase) { super(); this._supabase = supabase; }
 
-  constructor(supabase) { super(); this.#supabase = supabase; }
+  get _db() { return tenantStorage.getStore()?.supabase || this._supabase; }
 
   async findById(id) {
-    const { data } = await this.#supabase.from('products').select('*, categories(name), brands(name)').eq('id', id).single();
+    const { data } = await this._db.from('products').select('*, categories(name), brands(name)').eq('id', id).single();
     return ProductMapper.toDomain(data);
   }
 
   async findBySku(sku) {
-    const { data } = await this.#supabase.from('products').select('*').eq('sku', sku).single();
+    const { data } = await this._db.from('products').select('*').eq('sku', sku).single();
     return ProductMapper.toDomain(data);
   }
 
   async findAll({ page = 1, limit = 20, search, categoryId, brandId, status, minPrice, maxPrice, availableForSale, sortBy = 'created_at', sortOrder = 'desc' } = {}) {
-    let query = this.#supabase.from('products').select('*, categories(name), brands(name)', { count: 'exact' });
+    let query = this._db.from('products').select('*, categories(name), brands(name)', { count: 'exact' });
 
     if (search) query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%,barcode.ilike.%${search}%`);
     if (categoryId) query = query.eq('category_id', categoryId);
@@ -48,26 +49,27 @@ export class SupabaseProductRepository extends IProductRepository {
   }
 
   async save(product) {
-    const { data } = await this.#supabase.from('products').insert(ProductMapper.toPersistence(product)).select('*, categories(name), brands(name)').single();
+    const { data } = await this._db.from('products').insert(ProductMapper.toPersistence(product)).select('*, categories(name), brands(name)').single();
     return ProductMapper.toDomain(data);
   }
 
   async update(product) {
-    const { data } = await this.#supabase.from('products').update(ProductMapper.toPersistence(product)).eq('id', product.id).select('*, categories(name), brands(name)').single();
+    const { data } = await this._db.from('products').update(ProductMapper.toPersistence(product)).eq('id', product.id).select('*, categories(name), brands(name)').single();
     return ProductMapper.toDomain(data);
   }
 
   async delete(id) {
-    await this.#supabase.from('products').update({ status: 'discontinued', available_for_sale: false }).eq('id', id);
+    await this._db.from('products').update({ status: 'discontinued', available_for_sale: false }).eq('id', id);
   }
 }
 
 export class SupabaseCategoryRepository {
-  #supabase;
-  constructor(supabase) { this.#supabase = supabase; }
+  constructor(supabase) { this._supabase = supabase; }
+
+  get _db() { return tenantStorage.getStore()?.supabase || this._supabase; }
 
   async findAll({ page, limit, search } = {}) {
-    let query = this.#supabase.from('categories').select('*, parent:categories!parent_id(name)', { count: 'exact' });
+    let query = this._db.from('categories').select('*, parent:categories!parent_id(name)', { count: 'exact' });
 
     if (search) query = query.or(`name.ilike.%${search}%,slug.ilike.%${search}%`);
 
@@ -82,12 +84,12 @@ export class SupabaseCategoryRepository {
   }
 
   async findById(id) {
-    const { data } = await this.#supabase.from('categories').select('*').eq('id', id).single();
+    const { data } = await this._db.from('categories').select('*').eq('id', id).single();
     return CategoryMapper.toDomain(data);
   }
 
   async save(category) {
-    const { data } = await this.#supabase.from('categories').insert({
+    const { data } = await this._db.from('categories').insert({
       name: category.name, description: category.description,
       parent_id: category.parentId, image_url: category.imageUrl,
       sort_order: category.sortOrder, is_active: category.isActive,
@@ -96,7 +98,7 @@ export class SupabaseCategoryRepository {
   }
 
   async update(category) {
-    const { data } = await this.#supabase.from('categories').update({
+    const { data } = await this._db.from('categories').update({
       name: category.name, description: category.description,
       parent_id: category.parentId, image_url: category.imageUrl,
       sort_order: category.sortOrder, is_active: category.isActive,
@@ -104,25 +106,26 @@ export class SupabaseCategoryRepository {
     return CategoryMapper.toDomain(data);
   }
 
-  async delete(id) { await this.#supabase.from('categories').delete().eq('id', id); }
+  async delete(id) { await this._db.from('categories').delete().eq('id', id); }
 }
 
 export class SupabaseBrandRepository {
-  #supabase;
-  constructor(supabase) { this.#supabase = supabase; }
+  constructor(supabase) { this._supabase = supabase; }
+
+  get _db() { return tenantStorage.getStore()?.supabase || this._supabase; }
 
   async findAll() {
-    const { data } = await this.#supabase.from('brands').select('*').order('name');
+    const { data } = await this._db.from('brands').select('*').order('name');
     return BrandMapper.toDomainList(data);
   }
 
   async findById(id) {
-    const { data } = await this.#supabase.from('brands').select('*').eq('id', id).single();
+    const { data } = await this._db.from('brands').select('*').eq('id', id).single();
     return BrandMapper.toDomain(data);
   }
 
   async save(brand) {
-    const { data } = await this.#supabase.from('brands').insert({
+    const { data } = await this._db.from('brands').insert({
       name: brand.name, description: brand.description,
       logo_url: brand.logoUrl, is_active: brand.isActive,
     }).select().single();
@@ -130,14 +133,14 @@ export class SupabaseBrandRepository {
   }
 
   async update(brand) {
-    const { data } = await this.#supabase.from('brands').update({
+    const { data } = await this._db.from('brands').update({
       name: brand.name, description: brand.description,
       logo_url: brand.logoUrl, is_active: brand.isActive,
     }).eq('id', brand.id).select().single();
     return BrandMapper.toDomain(data);
   }
 
-  async delete(id) { await this.#supabase.from('brands').delete().eq('id', id); }
+  async delete(id) { await this._db.from('brands').delete().eq('id', id); }
 }
 
 export default { SupabaseProductRepository, SupabaseCategoryRepository, SupabaseBrandRepository };

@@ -73,8 +73,13 @@ const authenticate = (required = true) => {
         id: decoded.sub,
         email: decoded.email,
         role: decoded.role,
-        permissions: flattenPermissions(decoded.permissions)
+        permissions: flattenPermissions(decoded.permissions),
+        companyId: decoded.company_id || decoded.companyId || '00000000-0000-0000-0000-000000000001',
+        companyName: decoded.company_name || ''
       };
+
+      // Propagar company_id a nivel de request
+      req.companyId = req.user.companyId;
 
       next();
     } catch (error) {

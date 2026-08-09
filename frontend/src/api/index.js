@@ -9,12 +9,19 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' }
 });
 
-// Interceptor para añadir token
+// Interceptor para añadir token y company_id
 api.interceptors.request.use((config) => {
   const token = sessionStorage.getItem('accessToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Multi-tenant: attach company_id from auth store
+  try {
+    const authStore = useAuthStore();
+    if (authStore.companyId) {
+      config.headers['x-company-id'] = authStore.companyId;
+    }
+  } catch (_) { /* auth store not yet initialized */ }
   return config;
 });
 
@@ -377,6 +384,295 @@ export const systemConfigAPI = {
   getSection: (section) => api.get(`/config/system/${section}`),
   update: (section, data) => api.put(`/config/system/${section}`, data),
   resetToDefaults: (section) => api.post(`/config/system/${section}/reset`)
+};
+
+// ================================================================
+// Platform Admin API — Global SaaS management
+// ================================================================
+export const platformAdminAPI = {
+  // Global stats
+  getStats: () => api.get('/platform-admin/stats'),
+
+  // Companies
+  getCompanies: (params) => api.get('/platform-admin/companies', { params }),
+  getCompanyDetail: (id) => api.get(`/platform-admin/companies/${id}`),
+  createCompany: (data) => api.post('/platform-admin/companies', data),
+  updateCompany: (id, data) => api.put(`/platform-admin/companies/${id}`, data),
+  toggleCompanyActive: (id, is_active) => api.put(`/platform-admin/companies/${id}/toggle-active`, { is_active }),
+
+  // Impersonation
+  startImpersonation: (data) => api.post('/platform-admin/impersonate', data),
+  endImpersonation: (sessionId) => api.post(`/platform-admin/impersonate/${sessionId}/end`),
+
+  // Impersonation logs
+  getImpersonationLogs: (params) => api.get('/platform-admin/impersonation-logs', { params }),
+
+  // Support sessions
+  getActiveSessions: () => api.get('/platform-admin/sessions'),
+
+  // Global users
+  getUsers: (params) => api.get('/platform-admin/users', { params }),
+  toggleUserActive: (id) => api.put(`/platform-admin/users/${id}/toggle-active`),
+
+  // Dashboard config per company
+  getCompanyWidgets: (companyId) => api.get(`/platform-admin/companies/${companyId}/widgets`),
+  addCompanyWidget: (companyId, data) => api.post(`/platform-admin/companies/${companyId}/widgets`, data),
+  updateCompanyWidget: (companyId, widgetId, data) => api.put(`/platform-admin/companies/${companyId}/widgets/${widgetId}`, data),
+  removeCompanyWidget: (companyId, widgetId) => api.delete(`/platform-admin/companies/${companyId}/widgets/${widgetId}`),
+  updateDashboardConfig: (companyId, config) => api.put(`/platform-admin/companies/${companyId}/dashboard-config`, { config }),
+
+  // Widget catalog
+  getWidgets: () => api.get('/platform-admin/widgets'),
+
+  // Business types & Plans
+  getBusinessTypes: () => api.get('/platform-admin/business-types'),
+  getPlans: () => api.get('/platform-admin/plans'),
+
+  // Subscription per company
+  getCompanySubscription: (companyId) => api.get(`/platform-admin/companies/${companyId}/subscription`),
+
+  // Activity log
+  getActivityLog: (companyId, params) => api.get(`/platform-admin/companies/${companyId}/activity`, { params }),
+};
+
+// ================================================================
+// CRM Pipeline API — Leads & Pipeline management
+// ================================================================
+export const crmAPI = {
+  // Pipelines
+  getPipelines: () => api.get('/clients/pipelines'),
+  getPipeline: (id) => api.get(`/clients/pipelines/${id}`),
+  createPipeline: (data) => api.post('/clients/pipelines', data),
+  updatePipeline: (id, data) => api.put(`/clients/pipelines/${id}`, data),
+  deletePipeline: (id) => api.delete(`/clients/pipelines/${id}`),
+
+  // Pipeline Stages
+  getPipelineStages: (pipelineId) => api.get(`/clients/pipelines/${pipelineId}/stages`),
+  createStage: (pipelineId, data) => api.post(`/clients/pipelines/${pipelineId}/stages`, data),
+  updateStage: (pipelineId, stageId, data) => api.put(`/clients/pipelines/${pipelineId}/stages/${stageId}`, data),
+  deleteStage: (pipelineId, stageId) => api.delete(`/clients/pipelines/${pipelineId}/stages/${stageId}`),
+
+  // Leads
+  getLeads: (params) => api.get('/clients/leads', { params }),
+  getLead: (id) => api.get(`/clients/leads/${id}`),
+  createLead: (data) => api.post('/clients/leads', data),
+  updateLead: (id, data) => api.put(`/clients/leads/${id}`, data),
+  deleteLead: (id) => api.delete(`/clients/leads/${id}`),
+  moveLead: (id, data) => api.put(`/clients/leads/${id}/move`, data),
+  convertLead: (id) => api.post(`/clients/leads/${id}/convert`),
+
+  // Lead Activities
+  getLeadActivities: (leadId) => api.get(`/clients/leads/${leadId}/activities`),
+  addLeadActivity: (leadId, data) => api.post(`/clients/leads/${leadId}/activities`, data),
+
+  // Lead Notes
+  getLeadNotes: (leadId) => api.get(`/clients/leads/${leadId}/notes`),
+  addLeadNote: (leadId, data) => api.post(`/clients/leads/${leadId}/notes`, data),
+
+  // Lead Sources
+  getLeadSources: () => api.get('/clients/lead-sources'),
+
+  // Tasks
+  getTasks: (params) => api.get('/clients/tasks', { params }),
+  createTask: (data) => api.post('/clients/tasks', data),
+  updateTask: (id, data) => api.put(`/clients/tasks/${id}`, data),
+  completeTask: (id) => api.put(`/clients/tasks/${id}/complete`),
+};
+
+// ================================================================
+// CMS & Page Builder API
+// ================================================================
+export const cmsAPI = {
+  // Pages
+  getPages: (params) => api.get('/cms/pages', { params }),
+  getPage: (id) => api.get(`/cms/pages/${id}`),
+  createPage: (data) => api.post('/cms/pages', data),
+  updatePage: (id, data) => api.put(`/cms/pages/${id}`, data),
+  deletePage: (id) => api.delete(`/cms/pages/${id}`),
+  duplicatePage: (id) => api.post(`/cms/pages/${id}/duplicate`),
+  publishPage: (id) => api.post(`/cms/pages/${id}/publish`),
+  unpublishPage: (id) => api.post(`/cms/pages/${id}/unpublish`),
+  getPageVersions: (id) => api.get(`/cms/pages/${id}/versions`),
+  restorePageVersion: (id, versionId) => api.post(`/cms/pages/${id}/versions/${versionId}/restore`),
+
+  // Page sections
+  getSections: (pageId) => api.get(`/cms/pages/${pageId}/sections`),
+  createSection: (pageId, data) => api.post(`/cms/pages/${pageId}/sections`, data),
+  updateSection: (pageId, sectionId, data) => api.put(`/cms/pages/${pageId}/sections/${sectionId}`, data),
+  deleteSection: (pageId, sectionId) => api.delete(`/cms/pages/${pageId}/sections/${sectionId}`),
+  reorderSections: (pageId, data) => api.put(`/cms/pages/${pageId}/sections/reorder`, data),
+
+  // Components
+  getComponents: () => api.get('/cms/components'),
+  createComponent: (data) => api.post('/cms/components', data),
+  updateComponent: (id, data) => api.put(`/cms/components/${id}`, data),
+
+  // Templates
+  getTemplates: () => api.get('/cms/templates'),
+  createTemplate: (data) => api.post('/cms/templates', data),
+  updateTemplate: (id, data) => api.put(`/cms/templates/${id}`, data),
+
+  // Public preview
+  getPreview: (slug) => api.get(`/cms/preview/${slug}`),
+  getPublicPages: () => api.get('/cms/public/pages'),
+};
+
+// ================================================================
+// Form Builder API
+// ================================================================
+export const formBuilderAPI = {
+  // Forms
+  getForms: (params) => api.get('/forms', { params }),
+  getForm: (id) => api.get(`/forms/${id}`),
+  createForm: (data) => api.post('/forms', data),
+  updateForm: (id, data) => api.put(`/forms/${id}`, data),
+  deleteForm: (id) => api.delete(`/forms/${id}`),
+  duplicateForm: (id) => api.post(`/forms/${id}/duplicate`),
+  publishForm: (id) => api.post(`/forms/${id}/publish`),
+  unpublishForm: (id) => api.post(`/forms/${id}/unpublish`),
+  getFormStats: (id) => api.get(`/forms/${id}/stats`),
+
+  // Fields
+  getFormFields: (formId) => api.get(`/forms/${formId}/fields`),
+  createField: (formId, data) => api.post(`/forms/${formId}/fields`, data),
+  updateField: (formId, fieldId, data) => api.put(`/forms/${formId}/fields/${fieldId}`, data),
+  deleteField: (formId, fieldId) => api.delete(`/forms/${formId}/fields/${fieldId}`),
+
+  // Submissions
+  getSubmissions: (formId, params) => api.get(`/forms/${formId}/submissions`, { params }),
+  getSubmission: (formId, subId) => api.get(`/forms/${formId}/submissions/${subId}`),
+  deleteSubmission: (formId, subId) => api.delete(`/forms/${formId}/submissions/${subId}`),
+  exportSubmissions: (formId, params) => api.get(`/forms/${formId}/submissions/export`, { params, responseType: 'blob' }),
+
+  // Public submission (no auth required)
+  submitForm: (formId, data) => api.post(`/forms/public/${formId}/submit`, data),
+
+  // Workflows
+  getWorkflows: () => api.get('/forms/workflows'),
+  createWorkflow: (data) => api.post('/forms/workflows', data),
+  updateWorkflow: (id, data) => api.put(`/forms/workflows/${id}`, data),
+  deleteWorkflow: (id) => api.delete(`/forms/workflows/${id}`),
+  executeWorkflow: (id, data) => api.post(`/forms/workflows/${id}/execute`, data),
+};
+
+// ================================================================
+// Site Builder API — Media, Themes, Branding, Navigation, Custom Code
+// ================================================================
+export const siteBuilderAPI = {
+  // Media
+  getMedia: (params) => api.get('/site/media', { params }),
+  getMediaItem: (id) => api.get(`/site/media/${id}`),
+  uploadMedia: (data) => api.post('/site/media', data),
+  updateMedia: (id, data) => api.put(`/site/media/${id}`, data),
+  deleteMedia: (id) => api.delete(`/site/media/${id}`),
+  getMediaFolders: () => api.get('/site/media/folders'),
+
+  // Themes
+  getThemes: () => api.get('/site/themes'),
+  getTheme: (id) => api.get(`/site/themes/${id}`),
+  createTheme: (data) => api.post('/site/themes', data),
+  updateTheme: (id, data) => api.put(`/site/themes/${id}`, data),
+  getCompanyTheme: () => api.get('/site/company-theme'),
+  updateCompanyTheme: (data) => api.put('/site/company-theme', data),
+
+  // Brand
+  getBrand: () => api.get('/site/brand'),
+  updateBrand: (data) => api.put('/site/brand', data),
+
+  // Navigation menus
+  getMenus: () => api.get('/site/menus'),
+  getMenu: (id) => api.get(`/site/menus/${id}`),
+  createMenu: (data) => api.post('/site/menus', data),
+  updateMenu: (id, data) => api.put(`/site/menus/${id}`, data),
+  deleteMenu: (id) => api.delete(`/site/menus/${id}`),
+  getMenuItems: (menuId) => api.get(`/site/menus/${menuId}/items`),
+  createMenuItem: (menuId, data) => api.post(`/site/menus/${menuId}/items`, data),
+  updateMenuItem: (itemId, data) => api.put(`/site/menus/items/${itemId}`, data),
+  deleteMenuItem: (itemId) => api.delete(`/site/menus/items/${itemId}`),
+  reorderMenuItems: (menuId, data) => api.put(`/site/menus/${menuId}/reorder`, data),
+  // Público (storefront / landing): menús activos por company
+  getPublicMenus: (companyId) => api.get('/site/public/menus', { params: { company_id: companyId } }),
+
+  // Header & Footer
+  getHeader: () => api.get('/site/header'),
+  updateHeader: (data) => api.put('/site/header', data),
+  getFooter: () => api.get('/site/footer'),
+  updateFooter: (data) => api.put('/site/footer', data),
+
+  // Custom code
+  getCustomCode: () => api.get('/site/custom-code'),
+  createCustomCode: (data) => api.post('/site/custom-code', data),
+  updateCustomCode: (id, data) => api.put(`/site/custom-code/${id}`, data),
+  deleteCustomCode: (id) => api.delete(`/site/custom-code/${id}`),
+
+  // Redirects
+  getRedirects: () => api.get('/site/redirects'),
+  createRedirect: (data) => api.post('/site/redirects', data),
+  updateRedirect: (id, data) => api.put(`/site/redirects/${id}`, data),
+  deleteRedirect: (id) => api.delete(`/site/redirects/${id}`),
+
+  // Storefront config (public)
+  getStorefrontConfig: (slug) => api.get(`/site/storefront/${slug}`),
+};
+
+// ================================================================
+// Integrations API — Webhooks & Automations
+// ================================================================
+export const integrationsAPI = {
+  // Event types
+  getEventTypes: () => api.get('/integrations/event-types'),
+
+  // Webhooks
+  getWebhooks: () => api.get('/integrations/webhooks'),
+  getWebhook: (id) => api.get(`/integrations/webhooks/${id}`),
+  createWebhook: (data) => api.post('/integrations/webhooks', data),
+  updateWebhook: (id, data) => api.put(`/integrations/webhooks/${id}`, data),
+  deleteWebhook: (id) => api.delete(`/integrations/webhooks/${id}`),
+  testWebhook: (id) => api.post(`/integrations/webhooks/${id}/test`),
+  getWebhookLogs: (id, params) => api.get(`/integrations/webhooks/${id}/logs`, { params }),
+
+  // Automations
+  getAutomations: () => api.get('/integrations/automations'),
+  getAutomation: (id) => api.get(`/integrations/automations/${id}`),
+  createAutomation: (data) => api.post('/integrations/automations', data),
+  updateAutomation: (id, data) => api.put(`/integrations/automations/${id}`, data),
+  deleteAutomation: (id) => api.delete(`/integrations/automations/${id}`),
+  toggleAutomation: (id) => api.post(`/integrations/automations/${id}/toggle`),
+  testAutomation: (id, data) => api.post(`/integrations/automations/${id}/test`, data),
+  getAutomationLogs: (id, params) => api.get(`/integrations/automations/${id}/logs`, { params }),
+};
+
+// ================================================================
+// RBAC & Feature Flags API (extends platformAdminAPI)
+// ================================================================
+export const rbacAPI = {
+  // Roles
+  getCompanyRoles: (companyId) => api.get(`/platform-admin/companies/${companyId}/roles`),
+  createRole: (companyId, data) => api.post(`/platform-admin/companies/${companyId}/roles`, data),
+  updateRole: (companyId, roleId, data) => api.put(`/platform-admin/companies/${companyId}/roles/${roleId}`, data),
+  deleteRole: (companyId, roleId) => api.delete(`/platform-admin/companies/${companyId}/roles/${roleId}`),
+
+  // Permissions
+  getPermissions: (params) => api.get('/platform-admin/permissions', { params }),
+
+  // Feature flags
+  getFeatureFlags: () => api.get('/platform-admin/feature-flags'),
+  createFeatureFlag: (data) => api.post('/platform-admin/feature-flags', data),
+  updateFeatureFlag: (id, data) => api.put(`/platform-admin/feature-flags/${id}`, data),
+  toggleFeatureFlag: (id) => api.put(`/platform-admin/feature-flags/${id}/toggle`),
+
+  // Company features
+  getCompanyFeatures: (companyId) => api.get(`/platform-admin/companies/${companyId}/features`),
+  setCompanyFeature: (companyId, data) => api.post(`/platform-admin/companies/${companyId}/features`, data),
+
+  // Subscriptions
+  createPlan: (data) => api.post('/platform-admin/plans', data),
+  updatePlan: (id, data) => api.put(`/platform-admin/plans/${id}`, data),
+  assignSubscription: (companyId, data) => api.post(`/platform-admin/companies/${companyId}/subscription`, data),
+
+  // Usage & Audit
+  getCompanyUsage: (companyId) => api.get(`/platform-admin/companies/${companyId}/usage`),
+  getCompanyAuditLogs: (companyId, params) => api.get(`/platform-admin/companies/${companyId}/audit-logs`, { params }),
 };
 
 export default api;

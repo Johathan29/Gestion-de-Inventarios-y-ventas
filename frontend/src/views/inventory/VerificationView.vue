@@ -192,6 +192,9 @@ import PageHeader from '../../components/shared/PageHeader.vue';
 import StatCard from '../../components/shared/StatCard.vue';
 import InventoryTabs from '../../components/inventory/InventoryTabs.vue';
 import PurchaseVerificationSkeleton from '../../components/skeletons/PurchaseVerificationSkeleton.vue';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 const loading = ref(true);
 const verifying = ref(false);
 const purchases = ref([]);
@@ -319,9 +322,10 @@ const confirmVerification = async () => {
 
     await fetchPendingPurchases();
     await fetchSummary();
+    toast.success('Compra verificada y enviada a inventario');
   } catch (err) {
     console.error('Error verifying purchase:', err);
-    alert('Error al verificar la compra');
+    toast.error('Error al verificar la compra');
   } finally {
     verifying.value = false;
   }

@@ -115,6 +115,54 @@ const apiLimiter = rateLimit({
 });
 
 // ============================================================
+// 5b. RATE LIMITING POR TENANT (multi-tenant)
+// ============================================================
+// Agrupa las solicitudes por company_id (extraído del JWT o del
+// header x-company-id). Impide que un tenant acapare los límites
+// de otro o que un solo tenant sature el gateway.
+//
+// Nota: el JWT aquí SOLO se decodifica para derivar la clave de
+// agrupación del rate limit; la autenticación real la hacen los
+// microservicios verificando la firma.
+function extractCompanyId(req) {
+  // 1) Header explícito (lo envía el frontend tras login)
+  if (req.headers['x-company-id']) return `t:${req.headers['x-company-id']}`;
+
+  // 2) JWT Bearer — decodificar payload sin verificar firma (solo agrupación)
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (token) {
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+        if (payload.company_id || payload.companyId) {
+          return `t:${payload.company_id || payload.companyId}`;
+        }
+      }
+    } catch (_) { /* token inválido — fallar a IP */ }
+  }
+
+  // 3) Fallback: IP
+  return `ip:${req.ip || req.socket?.remoteAddress || 'unknown'}`;
+}
+
+const tenantLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: parseInt(process.env.TENANT_RATE_LIMIT) || 600, // 600 req/min por tenant
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => extractCompanyId(req),
+  message: {
+    success: false,
+    error: {
+      code: 'TENANT_RATE_LIMIT',
+      message: 'Límite de solicitudes para su organización excedido. Intente nuevamente en un minuto.'
+    }
+  }
+});
+
+// ============================================================
 // 6. ENDPOINTS DE HEALTH CHECK
 // ============================================================
 
@@ -198,6 +246,7 @@ app.get('/health/circuit-breakers', (req, res) => {
 app.use('/api/v1/auth/login', authLimiter);
 app.use('/api/v1/auth/register', authLimiter);
 app.use('/api/v1/api', apiLimiter);
+app.use('/api/v1/api', tenantLimiter);
 
 // ============================================================
 // 8. RUTAS DE MICROSERVICIOS (antes de express.json para proxys)

@@ -5,6 +5,7 @@
 export const ROLES = {
   SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
+  SUPERVISOR: 'supervisor',
   CASHIER: 'cajero',
   SELLER: 'vendedor',
   CLIENT: 'cliente',
@@ -15,6 +16,7 @@ export const ROLES = {
 export const ROLE_HIERARCHY = {
   super_admin: 100,
   admin: 80,
+  supervisor: 70,
   accountant: 60,
   warehouse: 50,
   seller: 40,

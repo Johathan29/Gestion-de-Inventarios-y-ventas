@@ -1,0 +1,807 @@
+---
+title: Wireframes por Sección — Composición de Secciones, Componentes y Estructuras
+description: Wireframes ASCII de cada sección del frontend con su composición de componentes y estructura interna
+author: Sistema de Gestión de Inventarios y Ventas
+date: 2026-08-05
+version: 1.0.0
+status: Documento de Diseño Estructural (Wireframes)
+---
+
+# Wireframes por Sección — Composición de Componentes y Estructuras
+
+> **Objetivo:** mostrar **cómo se compone cada sección** — qué componentes la forman, en qué orden se apilan y cómo es su estructura interna — mediante **wireframes ASCII**, para servir de guía en el rediseño.
+
+---
+
+## 0. Leyenda de Wireframes
+
+| Símbolo | Significado |
+|---|---|
+| `[──]` | Tarjeta / panel (card) |
+| `┌─┐` | Contenedor con borde |
+| `▸` | Menú desplegable / acordeón |
+| `▶` | Tab / pestaña |
+| `◈` | KPI / stat card |
+| `●` | Badge / indicador de estado |
+| `◎` | Botón principal (CTA) |
+| `◐` | Botón secundario |
+| `✎` | Acción editar |
+| `🗑` | Acción eliminar |
+| `🔍` | Búsqueda / filtro |
+| `...` | Continuación (paginación / scroll) |
+
+---
+
+## 1. Shell de la Aplicación — `/app`
+
+### 1.1 AppLayout (Contenedor raíz)
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ╔══════════╗  ┌────────────────────────────────────────────────────────────┐ │
+│ ║ SIDEBAR  ║  │  NAVBAR (h-16, sticky)                                      │ │
+│ ║ 280/88px ║  │  ☰  🔍 Buscar en el sistema...  [⌘K]      🌙  🔔(9+)  👤 │ │
+│ ║          ║  ├────────────────────────────────────────────────────────────┤ │
+│ ║ LOGO     ║  │  MAIN (scroll, max-w-[1400px])                              │ │
+│ ║          ║  │  ┌──────────────────────────────────────────────────────┐  │ │
+│ ║ ▸ Inicio ║  │  │ PAGE HEADER (si appStore.pageTitle)                   │  │ │
+│ ║ ▸ Ventas ║  │  │  [Título 28px gradient]                               │  │ │
+│ ║ ▸ Stock  ║  │  │  Inicio / Crumb / Crumb                               │  │ │
+│ ║   ...    ║  │  ├──────────────────────────────────────────────────────┤  │ │
+│ ║          ║  │  │  <router-view>  (con keep-alive ['Dashboard'])        │  │ │
+│ ║          ║  │  │  │                                                   │  │ │
+│ ║ ──────── ║  │  │  │   CONTENIDO DE LA VISTA (siguientes wireframes)    │  │ │
+│ ║ 👤 Perfil║  │  │  │                                                   │  │ │
+│ ║ 🚪 Salir ║  │  │  └───────────────────────────────────────────────────┘  │ │
+│ ╚══════════╝  └────────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Componentes:** `AppLayout.vue` (flex h-screen) → `Sidebar.vue` + `Navbar.vue` + `<main>` (PageHeader condicional + `<router-view>` con transición `page` mode-out-in y keep-alive).
+
+### 1.2 Sidebar — estructura de navegación
+
+```
+┌──────────────────────────┐
+│ ┌──────────────────────┐ │   LOGO  [logo]  Aurora ERP
+│ │ [◆] Aurora ERP       │ │         Enterprise Suite
+│ └──────────────────────┘ │
+│                          │
+│ ◆ Inicio          [●]   │ ← item simple (badge opcional)
+│ ▸ Ventas        ▾       │ ← item con submenú (expande)
+│   ├── Ventas            │
+│   ├── Punto de Venta    │
+│   └── Turnos de Caja    │
+│ ▸ Inventario    ▾       │
+│   ├── Inventario        │
+│   ├── Movimientos       │
+│   ├── Kardex            │
+│   ├── Ajustes           │
+│   ├── Transferencias    │
+│   └── Verificación      │
+│ ▸ Productos    ▸        │ ← colapsado
+│ ▸ Reportes     ▸        │
+│ ... (20+ items)         │
+│                          │
+│ ──────────────────────── │
+│ 👤 Mi Perfil             │ ← sección inferior fija
+│ 🚪 Cerrar Sesión (rojo) │
+│ ──────────────────────── │
+│ [☰ colapsar 280→88px]   │
+└──────────────────────────┘
+```
+
+**Componentes:** `Sidebar.vue` — logo dinámico (storeLogo/storeName desde ecommerce settings), items con `item.children` (submenú con `_open`), `isActive()` resaltado, colapso 280px ↔ 88px, overlay móvil.
+
+---
+
+## 2. Dashboard — `/app/dashboard`
+
+### 2.1 Estructura de bloques (6 secciones apiladas)
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ PAGE HEADER:  Dashboard / Inicio > Dashboard                               │
+├────────────────────────────────────────────────────────────────────────────┤
+│  SECTION 1: KPI CARDS (grid 1/2/4 cols)                                     │
+│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐                   │
+│  │◈ Ventas   │ │◈ Ventas   │ │◈ Productos│ │◈ Stock    │                   │
+│  │  Hoy      │ │  Mes      │ │  Activos  │ │  Bajo     │                   │
+│  │ $12,340 ▲ │ │$345,678 ▲ │ │   148 ●   │ │   12 🔴   │                   │
+│  │ +8% vs.  │ │ +15% vs.  │ │  +5 hoy   │ │  reorder  │                   │
+│  └───────────┘ └───────────┘ └───────────┘ └───────────┘                   │
+│                                                                            │
+│  SECTION 2: CHARTS ROW 1 (grid 3 cols, 2:1)                                │
+│  ┌────────────────────────┐ ┌──────────────────────┐                       │
+│  │ Ventas del Mes (line)  │ │ Productos x Categoría│                       │
+│  │        ╱╲     ╱╲       │ │    (doughnut)        │                       │
+│  │   ╱╲  ╱  ╲   ╱  ╲     │ │    ◉ 40% Alimentos   │                       │
+│  │  ╱  ╲╱    ╲ ╱    ╲    │ │    ◉ 25% Accesorios  │                       │
+│  └────────────────────────┘ └──────────────────────┘                       │
+│                                                                            │
+│  SECTION 3: CHARTS ROW 2 (grid 2 cols)                                     │
+│  ┌────────────────────────┐ ┌──────────────────────┐                       │
+│  │ Ventas Hoy (hora, bar) │ │ Tendencia 7 días (bar)│                      │
+│  └────────────────────────┘ └──────────────────────┘                       │
+│                                                                            │
+│  SECTION 4: RECENT (grid 3 cols)                                           │
+│  ┌────────────────────────┐ ┌──────────────────────┐ ┌───────────────┐     │
+│  │ Ventas Recientes       │ │ Actividad            │ │               │     │
+│  │ ┌────────────────────┐ │ │ ┌──────────────────┐ │ │  (grid 1/3)   │     │
+│  │ │ #INV-0001 $12,340  │ │ │ │ icono act 1      │ │ │               │     │
+│  │ │ #INV-0002 $8,900   │ │ │ │ icono act 2      │ │ │               │     │
+│  │ └────────────────────┘ │ │ └──────────────────┘ │ │               │     │
+│  └────────────────────────┘ └──────────────────────┘ └───────────────┘     │
+│                                                                            │
+│  SECTION 5: TOP + ALERTS (grid 3 cols)                                     │
+│  SECTION 6: OFERTAS ACTIVAS (grid 4 cols de cards)                         │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Componentes:** 9 llamadas API en `Promise.all` (`salesAPI`, `productsAPI`, `clientsAPI`, `purchasesAPI`, `inventoryAPI`, `auditAPI`, `offersAPI`), 4 charts Chart.js (line/doughnut/bar/bar), `aurora-stat-card` con contador GSAP/anime.js.
+
+---
+
+## 3. Patrón de Listado con DataTable
+
+Usado por: Productos, Ventas, Compras, Proveedores, Clientes, Facturas, Movimientos, Auditoría, Reportes...
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ PAGE HEADER:  [Título]  Inicio / Sección                                  │
+├────────────────────────────────────────────────────────────────────────────┤
+│ ┌─────────┬─────────┬─────────┐   (KPIs opcionales en grid)               │
+│ │◈ KPI 1  │◈ KPI 2  │◈ KPI 3  │                                           │
+│ └─────────┴─────────┴─────────┘                                           │
+│ ┌────────────────────────────────────────────────────────────────────────┐ │
+│ │ DataTable: nexus-card                                                   │ │
+│ │ TOOLBAR: [Título]                    [🔍 filtros] [◎ Nuevo]            │ │
+│ │ ┌────────────────────────────────────────────────────────────────────┐ │ │
+│ │ │ # │ N° Factura ▾ │ Cliente  │ Total ▾ │ Fecha ▾ │ Estado  │ ⚙      │ │ │
+│ │ ├────────────────────────────────────────────────────────────────────┤ │ │
+│ │ │ 1 │ INV-0001     │ Juan P.  │ $12,340 │ 05/08   │ ● Pagada│ ✎ 🗑  │ │ │
+│ │ │ 2 │ INV-0002     │ María L. │ $8,900  │ 05/08   │ ● Pend. │ ✎ 🗑  │ │ │
+│ │ │ 3 │ INV-0003     │ ...      │ ...     │ ...     │ ●       │ ...   │ │ │
+│ │ │ ...                                                              │ │ │
+│ │ ├────────────────────────────────────────────────────────────────────┤ │ │
+│ │ │ Mostrando 1-10 de 45        ‹ 1 2 3 4 5 ›                          │ │ │
+│ │ └────────────────────────────────────────────────────────────────────┘ │ │
+│ │ (móvil: cards md:hidden — label:valor por fila)                        │ │
+│ └────────────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Estructura del componente `DataTable.vue`:**
+```
+DataTable
+├── Toolbar (title + slot toolbar)
+├── Desktop: <table> (md:block)
+│   ├── thead: <th sortable @click="toggleSort">  → emite sort-change si serverPagination
+│   ├── tbody: <tr> con slots `cell-{key}` / type currency|number|date|datetime|custom
+│   └── slot `actions` (opacity-0 → hover)
+├── Mobile: cards (md:hidden) — mismos slots
+├── Empty State (icono + emptyMessage)
+└── Pagination (visiblePageNumbers + showingFrom/To + prev/next)
+```
+
+**Props:** `columns[]`, `data[]`, `loading`, `totalRows`, `serverPagination`, `title`, `emptyMessage` — **Emits:** `sort-change {key,dir}`, `row-click`, `page-change`.
+
+---
+
+## 4. Patrón de Formulario (Create/Edit)
+
+Usado por: Producto, Compra, Venta manual, Cliente (modal)...
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ PAGE HEADER:  Nuevo Producto  Inicio / Productos / Nuevo                  │
+├────────────────────────────────────────────────────────────────────────────┤
+│ ┌───────────────────────────────┐ ┌──────────────────────────────────────┐ │
+│ │ CARD: Información General     │ │ CARD: Precio y Existencia            │ │
+│ │  Nombre*  [________]          │ │  Precio venta* [$_______]            │ │
+│ │  SKU      [________]          │ │  Precio costo  [$_______]            │ │
+│ │  Categoría [v Seleccionar]    │ │  Impuesto      [v 19%]               │ │
+│ │  Marca     [________]         │ │  Stock inicial [___]  Min stock [___]│ │
+│ │  Estado    [● Activo]         │ │                                      │ │
+│ └───────────────────────────────┘ └──────────────────────────────────────┘ │
+│ ┌───────────────────────────────┐ ┌──────────────────────────────────────┐ │
+│ │ CARD: Variantes               │ │ CARD: Imágenes (upload Supabase)     │ │
+│ │  [◎ + Agregar variante]       │ │  ┌────┐ ┌────┐ ┌────┐ [+ subir]     │ │
+│ │  ┌──────────────────────────┐ │ │  │img1│ │img2│ │img3│               │ │
+│ │  │ Color: Rojo / M          │ │ │  └────┘ └────┘ └────┘               │ │
+│ │  │ ✎ 🗑                     │ │ └──────────────────────────────────────┘ │
+│ │  └──────────────────────────┘ │                                        │
+│ └───────────────────────────────┘ └──────────────────────────────────────┘ │
+│ ┌───────────────────────────────┐                                         │
+│ │ CARD: SEO / Descripción       │                                         │
+│ │  [textarea _________________] │                                         │
+│ └───────────────────────────────┘                                         │
+│ ┌────────────────────────────────────────────────────────────────────────┐ │
+│ │ FOOTER FIJO: [◐ Cancelar]                              [◎ Guardar]     │ │
+│ └────────────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Modal de variantes (Teleport):**
+```
+┌────────────────────────────────┐
+│ ✎ Editar Variante        [✕]  │
+│ ┌────────────────────────────┐ │
+│ │ Atributo    [v Color]      │ │
+│ │ Valor       [________]     │ │
+│ │ Precio      [$________]    │ │
+│ │ Stock       [________]     │ │
+│ │ SKU         [________]     │ │
+│ └────────────────────────────┘ │
+│ [◐ Cancelar]     [◎ Guardar]  │
+└────────────────────────────────┘
+```
+
+---
+
+## 5. Patrón de Detalle (Details)
+
+Usado por: Producto, Inventario, Venta, Compra, Cliente, Factura, Usuario, Auditoría, Notificación, Empresa...
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ PAGE HEADER:  Detalle de Venta  Inicio / Ventas / #V-0001                 │
+├────────────────────────────────────────────────────────────────────────────┤
+│ ┌────────────────────────────────────────────────────────────────────────┐ │
+│ │ HEADER:  Venta #V-0001                    ● Completada                 │ │
+│ │          [◐ Imprimir] [◐ Editar] [🗑 Anular]                            │ │
+│ └────────────────────────────────────────────────────────────────────────┘ │
+│ ┌──────────────┬──────────────┬──────────────┬──────────────┐             │
+│ │ Cliente      │ Fecha        │ Cajero       │ Método Pago  │             │
+│ │ Juan Pérez   │ 05/08/2026   │ Admin        │ Efectivo     │             │
+│ └──────────────┴──────────────┴──────────────┴──────────────┘             │
+│ ┌────────────────────────────────────────────────────────────────────────┐ │
+│ │ DETALLE (grid 12: 8 cols items + 4 cols resumen)                       │ │
+│ │ ┌───────────────────────────────┐ ┌──────────────────────────────────┐ │ │
+│ │ │ ITEMS                         │ │ RESUMEN                          │ │ │
+│ │ │ ┌───────────────────────────┐ │ │  Subtotal      $10,000           │ │ │
+│ │ │ │ Producto    Cant  Precio  │ │ │  IVA (19%)      $1,900           │ │ │
+│ │ │ │ Alimento X   2    $5,000  │ │ │  Descuento     -$500            │ │ │
+│ │ │ │ Accesorio Y  1    $1,500  │ │ │  ─────────────────              │ │ │
+│ │ │ └───────────────────────────┘ │ │  TOTAL        $11,400           │ │ │
+│ │ │ [◐ Agregar item]              │ │                                   │ │ │
+│ │ └───────────────────────────────┘ │ [◎ Enviar a inventario]          │ │ │
+│ │                                   └──────────────────────────────────┘ │ │
+│ └────────────────────────────────────────────────────────────────────────┘ │
+│ (opcional) SECCIÓN ADICIONAL: Asiento fiscal / Historial de acceso / etc.  │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Estructura del detalle con tabs** (CompanyDetailView, CardsView, AccountLayout):
+```
+┌──────────────────────────────────────────────┐
+│ HEADER: [nombre]                ● Activo     │
+│ ▶▶ Overview │ Widgets │ Activity │ Plan      │  ← tabs `pa-tabs`
+├──────────────────────────────────────────────┤
+│ CONTENIDO de la tab activa (v-if="tab==='x'")│
+└──────────────────────────────────────────────┘
+```
+
+---
+
+## 6. POS — `/app/pos`
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ PAGE HEADER:  Punto de Venta   Inicio / Ventas / POS                       │
+├────────────────────────────────────────────────────────────────────────────┤
+│ ┌──────────────────────────────────────┐ ┌───────────────────────────────┐ │
+│ │ CATÁLOGO (8 cols)                    │ │ CARRITO (4 cols, sticky)      │ │
+│ │ 🔍 Buscar producto...               │ │ ┌───────────────────────────┐ │ │
+│ │ [v Categoría]                       │ │ │ CLIENTE:                  │ │ │
+│ │ ┌────┬────┬────┬────┐               │ │ │  [v Cliente contado]      │ │ │
+│ │ │ 🥫 │ 🦴 │ 🧸 │ 🏷 │               │ │ ├───────────────────────────┤ │ │
+│ │ │Ali.│Ace.│Jug.│Cor.│               │ │ │ ITEMS:                    │ │ │
+│ │ │$50 │$30 │$25 │$15 │               │ │ │  🥫 Alimento X ×2 $100  ✕│ │ │
+│ │ ├────┼────┼────┼────┤               │ │ │  🦴 Accesorio Y ×1 $30  ✕│ │ │
+│ │ │    │    │    │    │               │ │ ├───────────────────────────┤ │ │
+│ │ │    │    │    │    │               │ │ │ Subtotal    $130          │ │ │
+│ │ └────┴────┴────┴────┘               │ │ │ IVA 19%     $24.70        │ │ │
+│ │ (click → abre modal variante si      │ │ │ TOTAL       $154.70       │ │ │
+│ │  tiene variantes)                    │ │ │                           │ │ │
+│ │                                      │ │ │ [◎ Cobrar]               │ │ │
+│ │                                      │ │ │                           │ │ │
+│ │                                      │ │ │ ⏱ Turno: Abierto $2,340  │ │ │
+│ └──────────────────────────────────────┘ └───────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Modal de variantes (Teleport, POS):**
+```
+┌────────────────────────────────┐
+│ Alimento X               [✕]  │
+│ Selecciona una variante:      │
+│ ┌──────────────────────────┐  │
+│ │ 🔘 Rojo / M   $50        │  │
+│ │ 🔘 Azul / L   $55        │  │
+│ └──────────────────────────┘  │
+│ Cantidad: [─ 1 ─]             │
+│ [◎ Agregar al carrito]        │
+└────────────────────────────────┘
+```
+
+---
+
+## 7. Caja — `/app/cash-register`
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ PAGE HEADER:  Turnos de Caja  Inicio / Ventas / Turnos                    │
+├────────────────────────────────────────────────────────────────────────────┤
+│ ┌─────────┬─────────┬─────────┐                                           │
+│ │◈ Turno  │◈ Ingresos│◈ Egresos│        [◎ Abrir Turno] / [◐ Cerrar]     │
+│ └─────────┴─────────┴─────────┘                                           │
+│ ┌────────────────────────────────────────────────────────────────────────┐ │
+│ │ ▶▶ Movimientos │ Reporte del Turno (tabs)                             │ │
+│ │ ┌──────────────┬──────────┬──────────┬─────────┐                      │ │
+│ │ │ Tipo         │ Concepto │ Monto    │ Fecha   │                      │ │
+│ │ ├──────────────┼──────────┼──────────┼─────────┤                      │ │
+│ │ │ ● Ingreso    │ Venta    │ +$50,000 │ 05/08   │                      │ │
+│ │ │ ● Retiro     │ Compra   │ -$10,000 │ 05/08   │                      │ │
+│ │ └──────────────┴──────────┴──────────┴─────────┘                      │ │
+│ │ [◐ + Movimiento]  (Modal sm: tipo/concepto/monto)                     │ │
+│ └────────────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 8. Zona Pública — Landing `/`
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ AppNavBar (menú del Site Builder, dinámico)                                │
+│ [LOGO]  Inicio ▸ Productos ▸ Ofertas ▸ Contacto    [🔍] [🛒] [👤]          │
+├────────────────────────────────────────────────────────────────────────────┤
+│ HeroSection (hero dinámico desde Supabase + shader WebGL)                  │
+│ ┌────────────────────────────────────────────────────────────────────────┐ │
+│ │          [Título grande del hero]                                      │ │
+│ │          [Subtítulo]                                                   │ │
+│ │                    [◎ Explorar Productos]                             │ │
+│ └────────────────────────────────────────────────────────────────────────┘ │
+│ SECTION #products:  ProductShowcase (grid 4)                              │
+│ ┌─────┬─────┬─────┬─────┐                                                │
+│ │ 🥫  │ 🦴  │ 🧸  │ 🏷  │   <ProductShowcase/>                          │
+│ │$50  │$30  │$25  │$15  │   (card: img, nombre, precio, botón)           │
+│ └─────┴─────┴─────┴─────┘                                                │
+│ SECTION: FeaturedReviews (grid 3)                                         │
+│ ┌───────────┬───────────┬───────────┐                                    │
+│ │ ⭐⭐⭐⭐⭐  │ ⭐⭐⭐⭐   │ ⭐⭐⭐⭐⭐  │                                    │
+│ │ "Excelente"│ "Bueno"   │ "Genial"  │                                    │
+│ └───────────┴───────────┴───────────┘                                    │
+│ SECTION (si hasActiveOffers): grid de ofertas                            │
+│ SECTION #contact:  ContactForm                                           │
+│ ┌───────────────────────────────────────────────────────────┐            │
+│ │ Nombre [__]  Email [__]  Mensaje [______]  [◎ Enviar]    │            │
+│ └───────────────────────────────────────────────────────────┘            │
+│ AppFooter (multi-columna)                                                │
+│ ┌─────────┬─────────┬─────────┬─────────┐                               │
+│ │ Col 1   │ Col 2   │ Col 3   │ Redes   │                               │
+│ └─────────┴─────────┴─────────┴─────────┘                               │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Composición:** `LandingView.vue` → `AppNavBar` + `HeroSection` + 4 `<section>` con GSAP + `AppFooter`.
+
+---
+
+## 9. Catálogo Público — `/products` y `/offers`
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ AppNavBar (igual)                                                          │
+├────────────────────────────────────────────────────────────────────────────┤
+│ HEADER con shader:  Catálogo de Productos                                 │
+│ ┌────────────────────────────────────────────────────────────────────────┐ │
+│ │ FILTROS: [v Categoría] [v Precio min] [v Precio max] [v Orden]        │ │
+│ │          [v Solo ofertas]                                             │ │
+│ ├────────────────────────────────────────────────────────────────────────┤ │
+│ │ GRID de productos (2/3/4 cols) — skeletons mientras carga              │ │
+│ │ ┌─────┬─────┬─────┬─────┐                                             │ │
+│ │ │ 🥫  │ 🦴  │ 🧸  │ 🏷  │                                             │ │
+│ │ │$50  │$30  │$25  │$15  │                                             │ │
+│ │ └─────┴─────┴─────┴─────┘                                             │ │
+│ │ (tilt 3D al hover)                                                     │ │
+│ ├────────────────────────────────────────────────────────────────────────┤ │
+│ │ PAGINACIÓN: ‹ 1 2 3 ›                                                  │ │
+│ └────────────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Nota:** filtros sincronizados con URL (`?category=...&order=...`) — bien. Shader/tilt duplicados.
+
+---
+
+## 10. Detalle de Producto Público — `/products/:id`
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ AppNavBar                                                                  │
+├────────────────────────────────────────────────────────────────────────────┤
+│ ┌────────────────────────────────────┐ ┌────────────────────────────────┐ │
+│ │ GALERÍA (imagen grande + thumbs)   │ │ INFO                          │ │
+│ │ ┌──────────────────────────────┐   │ │  [Nombre producto]            │ │
+│ │ │                              │   │ │  ⭐⭐⭐⭐ (12 reseñas)         │ │
+│ │ │          [IMG]               │   │ │  $50.00  ~~$60.00~~ ● -17%    │ │
+│ │ │                              │   │ │  [Descripción corta]          │ │
+│ │ └──────────────────────────────┘   │ │  ──────────────────────       │ │
+│ │ [th1][th2][th3]                    │ │  VARIANTES:                   │ │
+│ └────────────────────────────────────┘ │  [Rojo] [Azul] [Verde]        │ │
+│                                        │  CANTIDAD: [─ 1 ─]            │ │
+│                                        │  [◎ Agregar al carrito]       │ │
+│                                        │  [🤍 Wishlist]                │ │
+│                                        │  ──────────────────────       │ │
+│                                        │  ENVÍO: gratis / $5,000       │ │
+│                                        │  COMPARTIR: [f][t][w]         │ │
+│ └────────────────────────────────────┘ └────────────────────────────────┘ │
+│ ┌────────────────────────────────────────────────────────────────────────┐ │
+│ │ RESEÑAS DE CLIENTES                                                    │ │
+│ │ ⭐ 4.5 (12)     [✎ Escribir reseña]                                   │ │
+│ │ ┌────────────────────────────────────────────────────────────────────┐ │ │
+│ │ │ ⭐⭐⭐⭐⭐ Juan: "Excelente"                   05/08/2026            │ │ │
+│ │ │ ⭐⭐⭐⭐  María: "Muy bueno"                   04/08/2026            │ │ │
+│ │ └────────────────────────────────────────────────────────────────────┘ │ │
+│ └────────────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 11. Autenticación — `/login` `/register` `/forgot-password` `/reset-password`
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│  (Fondo dark glass + shader WebGL ~100 ln — duplicado ×4)                  │
+│                                                                            │
+│                  ┌─────────────────────────────┐                          │
+│                  │  [LOGO]                     │                          │
+│                  │  Iniciar Sesión             │                          │
+│                  │  ─────────────────────────  │                          │
+│                  │  Email*                     │                          │
+│                  │  [________________________] │                          │
+│                  │  Contraseña*                │                          │
+│                  │  [________________________] │                          │
+│                  │  ☐ Recordarme               │  ¿Olvidaste? ↗          │
+│                  │  [◎ Iniciar Sesión]         │                          │
+│                  │  ─────────────────────────  │                          │
+│                  │  ¿No tienes cuenta? Registrarse ↗                      │
+│                  └─────────────────────────────┘                          │
+│                                                                            │
+│  (Register: Nombre + Email + Contraseña + [◎ Crear cuenta])               │
+│  (Forgot: Email + [◎ Enviar enlace])                                      │
+│  (Reset: Nueva contraseña + Confirmar + [◎ Restablecer])                  │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 12. Carrito — `/cart`
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ AppNavBar                                                                  │
+├────────────────────────────────────────────────────────────────────────────┤
+│ PAGE TITLE:  Carrito de Compras (N)                                       │
+│ ┌────────────────────────────────────────────┐ ┌─────────────────────────┐ │
+│ │ ITEMS (lista)                              │ │ RESUMEN (sticky)        │ │
+│ │ ┌────────────────────────────────────────┐ │ │  Subtotal    $130.00    │ │
+│ │ │ [img] Producto  $50 ×[2]  ✕  $100     │ │ │  Envío       $0.00      │ │
+│ │ └────────────────────────────────────────┘ │ │  Cupón [____][Aplicar]  │ │
+│ │ ┌────────────────────────────────────────┐ │ │  (placeholder alert)   │ │
+│ │ │ [img] Producto  $30 ×[1]  ✕  $30      │ │ │  ─────────────────      │ │
+│ │ └────────────────────────────────────────┘ │ │  TOTAL       $154.70    │ │
+│ │                                            │ │  [◎ Finalizar Compra]  │ │
+│ └────────────────────────────────────────────┘ └─────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 13. Área Cliente — `/account/*` (AccountLayout)
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ (Fondo dark + shader per-pixel — costoso)                                  │
+│ AppNavBar                                                                  │
+├────────────────────────────────────────────────────────────────────────────┤
+│ ┌───────────────┬────────────────────────────────────────────────────────┐ │
+│ │ SIDEBAR       │ CONTENIDO                                              │ │
+│ │ 👤 Mi Perfil  │ ┌────────────────────────────────────────────────────┐ │ │
+│ │ 🛒 Mis Compras│ │ (Vista del hijo: Profile/Purchases/Credit/...)     │ │ │
+│ │ 💳 Crédito    │ │                                                    │ │ │
+│ │ 🔔 Notific.   │ │                                                    │ │ │
+│ │ ──────────    │ │                                                    │ │ │
+│ │ (Wishlist y   │ │                                                    │ │ │
+│ │  Tarjetas NO  │ │                                                    │ │ │
+│ │  enlazadas!)  │ └────────────────────────────────────────────────────┘ │ │
+│ └───────────────┴────────────────────────────────────────────────────────┘ │
+│                                                                           │
+│ CHECKOUT (/account/checkout):  wizard de 3 pasos                          │
+│  ▶1 Dirección ▶2 Envío ▶3 Pago [◎ Confirmar]                            │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 14. Ecommerce Builder — `/app/ecommerce/*` (tabs)
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ PAGE HEADER:  Ecommerce  Inicio / Ecommerce                               │
+├────────────────────────────────────────────────────────────────────────────┤
+│ TABS: ▶▶ General │ Banners │ Ofertas │ Hero* │ Hero Carrusel │ Flotantes  │
+│       │ Reseñas │ Cupones │ Promociones │ Configuración                  │
+│        (*Hero legacy duplicada)                                           │
+├────────────────────────────────────────────────────────────────────────────┤
+│ ┌────────────────────────────────────────────────────────────────────────┐ │
+│ │ CONTENIDO del tab activo (router-view anidado)                         │ │
+│ │                                                                        │ │
+│ │ Ej. Banners:                                                           │ │
+│ │ ┌──────┬────────────┬─────────┬────────┬────────┐                      │ │
+│ │ │ Prev │ Título     │ URL     │ Pos    │ Estado │                      │ │
+│ │ ├──────┼────────────┼─────────┼────────┼────────┤                      │ │
+│ │ │ [img]│ Promo Verano│ /offers │ Top    │ ● Act  │                      │ │
+│ │ └──────┴────────────┴─────────┴────────┴────────┘                      │ │
+│ │ [◎ Nuevo Banner]  (Modal propio custom)                                │ │
+│ │                                                                        │ │
+│ │ Ej. Settings (monolito 1693 ln):                                       │ │
+│ │ ┌───────────┬───────────┬───────────┬───────────┐                      │ │
+│ │ │ Identidad │ Moneda    │ Impuestos │ WhatsApp  │                      │ │
+│ │ │ SEO       │ Pagos     │ ...       │ (todo en  │                      │ │
+│ │ │           │           │           │  una vista)│                     │ │
+│ │ └───────────┴───────────┴───────────┴───────────┘                      │ │
+│ └────────────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 15. CRM — `/app/crm` (Kanban)
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ PAGE HEADER:  Pipeline CRM   Inicio / CRM                                 │
+├────────────────────────────────────────────────────────────────────────────┤
+│ ┌─────────┬─────────┬─────────┐                                           │
+│ │◈ Leads  │◈ Valor  │◈ Conv.  │           [◎ Nuevo Lead]                 │
+│ └─────────┴─────────┴─────────┘                                           │
+│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐      │
+│ │ NUEVO (3)    │ │ EN CONTACTO  │ │ COTIZADO     │ │ GANADO (2)   │      │
+│ │ ┌──────────┐ │ │ ┌──────────┐ │ │ ┌──────────┐ │ │ ┌──────────┐ │      │
+│ │ │Lead A    │ │ │ │Lead C    │ │ │ │Lead F    │ │ │ │Lead G    │ │      │
+│ │ │$5,000    │ │ │ │$8,000    │ │ │ │$12,000   │ │ │ │$20,000   │ │      │
+│ │ │drag      │ │ │ │drag      │ │ │ │drag      │ │ │ │drag      │ │      │
+│ │ └──────────┘ │ │ └──────────┘ │ │ └──────────┘ │ │ └──────────┘ │      │
+│ │ ┌──────────┐ │ │              │ │              │ │              │      │
+│ │ │Lead B    │ │ │              │ │              │ │              │      │
+│ │ └──────────┘ │ │              │ │              │ │              │      │
+│ └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘      │
+│ (drag & drop nativo HTML5 — cambia etapa del lead)                        │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Modal detalle lead (Teleport):** actividades, notas, convertir a cliente.
+
+---
+
+## 16. Platform Admin — `/app/platform/*`
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ PAGE HEADER:  Platform Admin   (solo role_id=1)                           │
+├────────────────────────────────────────────────────────────────────────────┤
+│ ┌───────────────┬────────────────────────────────────────────────────────┐ │
+│ │ SIDEBAR pa-*  │ CONTENIDO                                              │ │
+│ │ (240px fijo)  │ ┌────────────────────────────────────────────────────┐ │ │
+│ │ 📊 Panel      │ │ PLATFORM DASHBOARD:                                │ │
+│ │ 🏢 Empresas   │ │ ┌─────────┬─────────┬─────────┐                    │ │
+│ │ 👥 Usuarios   │ │ │◈ Empresas│◈ Usuarios│◈ Ingresos│                 │ │
+│ │ 🕵️ Imperso.  │ │ └─────────┴─────────┴─────────┘                    │ │
+│ │ (emojis)      │ │                                                  │ │
+│ │               │ │ COMPANIES:                                        │ │
+│ │               │ │ ┌─────────┬────────┬────────┬─────────┐          │ │
+│ │               │ │ │ Nombre  │ Plan   │ Estado │ Usuarios│          │ │
+│ │               │ │ │ PetCare │ Pro    │ ● Act  │ 5       │          │ │
+│ │               │ │ └─────────┴────────┴────────┴─────────┘          │ │
+│ │               │ │ [◎ Crear Empresa]  → wizard onboarding onb-*     │ │
+│ │               │ └────────────────────────────────────────────────────┘ │ │
+│ └───────────────┴────────────────────────────────────────────────────────┘ │
+│                                                                           │
+│ ONBOARDING (4 pasos wizard):                                              │
+│  ▶1 Empresa ▶2 Admin ▶3 Widgets ▶4 Plan  [◐ Atrás] [◎ Siguiente]        │
+│  (password temporal 'Admin123!' hardcodeada 🔴)                          │
+│                                                                           │
+│ IMPERSONACIÓN (Modal Teleport): "Acceder como Soporte a [empresa]"        │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 17. Builder Suite — `/app/cms` `/app/site` `/app/forms` `/app/integrations` `/app/rbac`
+
+### 17.1 CMS / PagesManager (patrón maestro-detalle)
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ PAGE HEADER:  CMS — Gestión de Páginas                                    │
+├────────────────────────────────────────────────────────────────────────────┤
+│ ┌────────────────────────────────────────────────────────────────────────┐ │
+│ │ LISTA: [Título] [Slug] [Estado] [✎] [🗑]        [◎ Nueva Página]      │ │
+│ ├────────────────────────────────────────────────────────────────────────┤ │
+│ │ EDITOR (modal legacy .modal):                                         │ │
+│ │ ┌──────────────────────────────────────────────────────────────────┐  │ │
+│ │ │ [Título] [Slug] [Estado]                    [💾 Guardar]         │  │ │
+│ │ │ ───────────────────────────────────────────────────────────────  │  │ │
+│ │ │ SECCIONES de la página (lista):                                  │  │ │
+│ │ │  ┌────────────────────────────────────────────────────────┐     │  │ │
+│ │ │  │ [hero] Hero Principal              [↑][↓][✎][🗑]        │     │  │ │
+│ │ │  └────────────────────────────────────────────────────────┘     │  │ │
+│ │ │  ┌────────────────────────────────────────────────────────┐     │  │ │
+│ │ │  │ [productos] Grid Productos          [↑][↓][✎][🗑]       │     │  │ │
+│ │ │  └────────────────────────────────────────────────────────┘     │  │ │
+│ │ │  [◎ + Agregar Sección]  (ComponentPicker)                     │  │ │
+│ │ │                                                               │  │ │
+│ │ │  PREVIEW EN VIVO (RenderSection renderiza la sección)         │  │ │
+│ │ └──────────────────────────────────────────────────────────────────┘  │ │
+│ └────────────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+**ComponentPicker (modal):** grid de tipos de sección (hero, productos, texto, imágenes, formulario, html).
+**SectionEditor (modal):** propiedades de la sección (título, contenido, imagen, layout) + preview.
+**RenderSection (componente):** renderiza la sección por tipo en la página pública `/p/:slug`.
+
+### 17.2 Form Builder
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ LISTA de formularios: [Nombre] [Campos] [Submissions] [✎] [🗑]            │
+├────────────────────────────────────────────────────────────────────────────┤
+│ EDITOR (modal legacy):                                                    │
+│ ┌───────────────────────────┬───────────────────────────────────────────┐  │
+│ │ PALETA (10 tipos campo):  │ CANVAS del formulario                     │  │
+│ │  [Texto] [Email] [Número] │  ┌─────────────────────────────────────┐  │  │
+│ │  [Select] [Checkbox] ...  │  │ ✎ Campo 1: Nombre [____]  [🗑]      │  │  │
+│ │                           │  │ ✎ Campo 2: Email  [____]  [🗑]      │  │  │
+│ │                           │  └─────────────────────────────────────┘  │  │
+│ │                           │  [◎ + Agregar campo]                     │  │
+│ └───────────────────────────┴───────────────────────────────────────────┘  │
+│ SUBMISSIONS: tabla JSON crudo + export                                    │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 17.3 Site Builder
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ TABS: ▶▶ Media │ Temas │ Navegación │ SEO │ Código                        │
+├────────────────────────────────────────────────────────────────────────────┤
+│ MEDIA:  grid de assets (URL 🔴)  [◎ Subir Medio] (modal legacy)           │
+│ TEMAS:  color pickers (primario, secundario, fondo)                       │
+│ NAVEGACIÓN: lista de menús → MenuEditorModal (items con ↑↓, url, icono)   │
+│ SEO:     título, descripción, keywords                                    │
+│ CÓDIGO:  textarea + [◎ Guardar] → alert('stub') 🔴                        │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 17.4 Integraciones
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ TABS: ▶▶ Webhooks │ Automations                                           │
+├────────────────────────────────────────────────────────────────────────────┤
+│ ┌───────────────────┐ ┌───────────────────┐ ┌───────────────────┐         │
+│ │ [webhook] Ventas  │ │ [webhook] Stock   │ │ [webhook] ...     │         │
+│ │ ● Activo          │ │ ● Activo          │ │                    │         │
+│ │ [◐ Test] [✎] [🗑] │ │ [◐ Test] [✎] [🗑] │ │                    │         │
+│ └───────────────────┘ └───────────────────┘ └───────────────────┘         │
+│ [◎ + Nuevo Webhook]  (modal: URL, eventos checkbox grid, activo)          │
+│ LOGS: modal con tabla de intentos + respuesta                             │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 17.5 RBAC
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ TABS: ▶▶ Roles │ Feature Flags │ Planes                                   │
+├────────────────────────────────────────────────────────────────────────────┤
+│ ROLES:                                                                     │
+│ ┌─────────────┬─────────────────────────────────────────┬────────────┐    │
+│ │ Rol         │ Permisos (chips)                        │ Acciones   │    │
+│ │ Admin       │ products.crud, sales.crud, ...          │ ✎ 🗑       │    │
+│ │ Cajero      │ pos, cash-register                      │ ✎ 🗑       │    │
+│ └─────────────┴─────────────────────────────────────────┴────────────┘    │
+│ [◎ + Nuevo Rol]  (modal legacy: nombre + matriz checkbox)                 │
+│ FEATURE FLAGS: switches por feature                                        │
+│ PLANES: [✎ Editar plan] → alert('stub') 🔴                                 │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 18. Patrones Reutilizables (recetas de composición)
+
+### 18.1 Patrón "KPIs + Tabla" (más común)
+
+```
+PAGE HEADER
+ └─ KPI GRID (2-4 stat-cards)         ← StatCard.vue
+     └─ TABLA / GRID DE DATOS          ← DataTable.vue o cards
+         └─ PAGINACIÓN                 ← DataTable (serverPagination)
+```
+
+### 18.2 Patrón "Detalle con Tarjetas"
+
+```
+PAGE HEADER + ACCIONES
+ └─ GRID INFO (2-4 col, datos clave)   ← grid cards simples
+     └─ CONTENIDO PRINCIPAL (8 cols)   ← tabla de items
+         └─ RESUMEN LATERAL (4 cols)   ← totales / acciones
+             └─ SECCIONES ADICIONALES  ← asiento, historial, etc.
+```
+
+### 18.3 Patrón "Tabs + Contenido"
+
+```
+PAGE HEADER
+ └─ TABS (▶▶)                           ← EcommerceView, Platform, SiteBuilder
+     └─ <router-view> anidado           ← la ruta del hijo pinta el contenido
+```
+
+### 18.4 Patrón "Listado + Modal CRUD"
+
+```
+LISTA (tabla o grid)
+ └─ [◎ Nuevo] → abre Modal/Teleport (formulario)
+     └─ [🗑] → ConfirmDialog o Swal
+         └─ refresh lista
+```
+
+---
+
+## 19. Tabla Resumen — Composición por Sección
+
+| Sección | Estructura raíz | Componentes clave | Patrón |
+|---|---|---|---|
+| `/app/*` (shell) | `AppLayout` | Sidebar + Navbar + PageHeader + router-view | Shell |
+| Dashboard | Grid 4 KPI → charts → recientes | StatCard, Chart.js ×4 | KPIs + tablas |
+| Productos (ERP) | KPI + DataTable | DataTable, confirm Swal | KPIs + Tabla |
+| Producto Form | Grid 2×2 cards + footer fijo | Modales variante (Teleport) | Formulario |
+| Producto Detalle | Galería + 4 stats + variantes | stat-cards, expandibles | Detalle |
+| Inventario | KPI + InventoryTable | InventoryTable, InventoryTabs | KPIs + Tabla |
+| POS | 2 paneles (catálogo + carrito) | Teleport variantes/verifyAdmin | POS dual |
+| Caja | KPI + tabs (movimientos/reporte) | Modal sm, Swal | Tabs + Tabla |
+| Ventas/Compras/Clientes/Facturas | KPI + DataTable | DataTable server-side | KPIs + Tabla |
+| Detalles (venta/compra/cliente/factura) | Header + grid info + items + resumen | modales Teleport | Detalle |
+| Reportes | Chart + tabla + export | AuroraDownloadModal | Reporte |
+| Ecommerce | Tabs + router-view | 5 modales custom + Swal | Tabs + CRUD |
+| CMS | Lista + editor modal + preview | ComponentPicker, SectionEditor, RenderSection | Maestro-detalle |
+| Site Builder | Tabs (media/temas/menús/SEO/código) | MenuEditorModal | Tabs |
+| Form Builder | Lista + editor modal | modales legacy | Maestro-detalle |
+| Integraciones | Tabs + cards | modales legacy | Tabs + CRUD |
+| RBAC | Tabs (roles/flags/planes) | modal legacy | Tabs |
+| CRM | KPIs + kanban | Teleport lead detail | Kanban |
+| Platform Admin | Sidebar pa-* + contenido | widgets, impersonation modal | Shell SaaS |
+| Landing | NavBar + hero + secciones + footer | HeroSection, ProductShowcase, ContactForm | Storefront |
+| Catálogo público | Header + filtros + grid | ProductShowcase, skeletons | Grid |
+| Auth | Card centrada + shader | — | Auth card |
+| Carrito | Items + resumen sticky | CouponDiscount (sin usar) | 2 columnas |
+| Account | Sidebar + contenido | — | Shell cliente |
+
+---
+
+## 20. Conclusión
+
+Este documento de **wireframes por sección** revela:
+
+1. **Hay 5 patrones de layout que se repiten** (Shell, KPIs+Tabla, Detalle, Tabs, CRUD modal) — el rediseño debe formalizarlos como componentes (AppShell, DataTable 2.0, DetailLayout, Tabs, CRUDManager).
+2. **Los modales son el punto más fragmentado**: 4 mecanismos distintos para la misma función → unificar en `Modal.vue` + `ConfirmDialog` + `ToastProvider`.
+3. **Cada sección tiene ya su wireframe aquí** — sirve como blueprint para implementar Aurora 2.0 sin inventar estructuras nuevas, solo unificando las existentes.
+
+> **Referencias:** `docs/FRONTEND-POR-RUTAS.mdx` (mapa de rutas/modales/detalles), `docs/ANALISIS-REDISENO-COMPLETO.mdx` (plan por fases), `docs/ANALISIS-ERP-COMPLETO.mdx`.

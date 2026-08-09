@@ -3,24 +3,25 @@
 // ============================================================
 
 import { IEventHandler } from '@erp/shared-kernel';
+import { tenantStorage } from '@erp/shared-kernel';
 
 /**
  * When a user registers, create client record (if role is cliente)
  */
 export class CreateClientOnUserRegistered extends IEventHandler {
-  #supabase;
-
   constructor(supabaseClient) {
     super();
-    this.#supabase = supabaseClient;
+    this._supabase = supabaseClient;
   }
+
+  get _db() { return tenantStorage.getStore()?.supabase || this._supabase; }
 
   async handle(event) {
     if (event.payload.role !== 'cliente') return;
 
     const { userId, email, name } = event.payload;
 
-    const { error } = await this.#supabase
+    const { error } = await this._db
       .from('clients')
       .upsert({
         id: userId,
@@ -40,17 +41,17 @@ export class CreateClientOnUserRegistered extends IEventHandler {
  * When a user logs in, record audit log entry
  */
 export class AuditLoginOnUserLoggedIn extends IEventHandler {
-  #supabase;
-
   constructor(supabaseClient) {
     super();
-    this.#supabase = supabaseClient;
+    this._supabase = supabaseClient;
   }
+
+  get _db() { return tenantStorage.getStore()?.supabase || this._supabase; }
 
   async handle(event) {
     const { userId, ipAddress } = event.payload;
 
-    const { error } = await this.#supabase
+    const { error } = await this._db
       .from('audit_logs')
       .insert({
         entity: 'auth',

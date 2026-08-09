@@ -480,9 +480,11 @@ import OfferShowcase from '../../components/shared/OfferShowcase.vue';
 import AppNavBar from '../../components/layout/AppNavBar.vue';
 import FloatingBanner from '../../components/shared/FloatingBanner.vue';
 import AppFooter from '../../components/layout/AppFooter.vue';
+import { useToast } from '../../composables/useToast';
 
 const route = useRoute();
 const router = useRouter();
+const toast = useToast();
 
 const product = ref(null);
 const loading = ref(true);
@@ -726,8 +728,10 @@ async function addToCart() {
     }
     await cartAPI.addItem(payload);
     quantity.value = 1;
+    toast.success(`${product.value.name} agregado al carrito`);
   } catch (err) {
     console.error('[ProductDetail] Error adding to cart:', err);
+    toast.error(err.response?.data?.error?.message || 'Error al agregar al carrito');
   } finally {
     addingToCart.value = false;
   }
@@ -751,6 +755,7 @@ async function buyNow() {
     router.push({ name: 'Cart' });
   } catch (err) {
     console.error('[ProductDetail] Error buying now:', err);
+    toast.error(err.response?.data?.error?.message || 'Error al agregar al carrito');
     buyingNow.value = false;
   }
 }

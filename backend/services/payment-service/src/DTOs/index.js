@@ -12,6 +12,13 @@ export const ProcessPaymentDTO = z.object({
   amount: z.number().positive('Amount must be positive'),
   reference: z.string().max(255).optional(),
   notes: z.string().max(500).optional(),
+  // Tokenización: el token es un payment_method tokenizado generado por la
+  // pasarela (NO el PAN/CVV). Nunca se almacena — solo se usa para cobrar.
+  token: z.string().max(255).optional(),
+  // Idempotencia: misma clave + mismo importe = misma transacción (reintentos seguros)
+  idempotencyKey: z.string().max(64).optional(),
+  // Tarjeta guardada (card token) del cliente
+  cardId: uuidSchema.optional(),
 });
 
 export const RefundPaymentDTO = z.object({

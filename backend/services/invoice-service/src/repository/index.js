@@ -2,11 +2,16 @@
 // Supabase Invoice & Ncf Repository Adapters
 // ============================================================
 
+import { tenantStorage } from '@erp/shared-kernel';
 import { InvoiceMapper, NcfSequenceMapper, FiscalDocumentTypeMapper } from '../mappers/index.js';
 
 export class SupabaseInvoiceRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findById(id) {
@@ -59,9 +64,24 @@ export class SupabaseInvoiceRepository {
     return InvoiceMapper.toDomain(data);
   }
 
-  async findMany({ page = 1, limit = 10, status, saleId, clientId, invoiceType, fromDate, toDate, search } = {}) {
+  async findMany({ page = 1, limit = 10, status, saleId, clientId, invoiceType, fromDate, toDate, search, sortBy, sortOrder } = {}) {
     const from = (page - 1) * limit;
     const toVal = from + limit - 1;
+
+    // Whitelist de columnas ordenables (evita SQL injection / columnas inexistentes)
+    const SORTABLE_COLUMNS = {
+      invoiceNumber: 'invoice_number',
+      invoice_number: 'invoice_number',
+      total: 'total',
+      createdAt: 'created_at',
+      created_at: 'created_at',
+      paidAt: 'paid_at',
+      paid_at: 'paid_at',
+      clientName: 'client_name',
+      client_name: 'client_name',
+    };
+    const sortColumn = SORTABLE_COLUMNS[sortBy] || 'created_at';
+    const ascending = sortOrder === 'asc';
 
     let query = this._supabase
       .from('invoices')
@@ -79,7 +99,7 @@ export class SupabaseInvoiceRepository {
 
     const { data, count, error } = await query
       .range(from, toVal)
-      .order('created_at', { ascending: false });
+      .order(sortColumn, { ascending });
 
     if (error) throw error;
 
@@ -171,7 +191,11 @@ export class SupabaseInvoiceRepository {
 
 export class SupabaseNcfRepository {
   constructor(supabase) {
-    this._supabase = supabase;
+    const baseClient = supabase;
+    Object.defineProperty(this, '_supabase', {
+      get() { return tenantStorage.getStore()?.supabase || baseClient; },
+      configurable: true, enumerable: true,
+    });
   }
 
   async findActiveSequence(fiscalDocumentTypeId, branch = '', companyId = null) {

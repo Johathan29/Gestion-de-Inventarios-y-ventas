@@ -1,12 +1,14 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const express = require('express');
+const { tenantContext } = require('@inventory/shared');
 const { ecommerceRouter } = require('./routes/ecommerce.routes');
 
 const app = express();
 const PORT = process.env.ECOMMERCE_SERVICE_PORT || 3012;
 
 app.use(express.json());
+app.use(tenantContext);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'ecommerce-service' });

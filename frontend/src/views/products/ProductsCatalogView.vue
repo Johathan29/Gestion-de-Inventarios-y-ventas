@@ -307,9 +307,11 @@ import { productsAPI, categoriesAPI, cartAPI } from '../../api/index.js';
 import OfferShowcase from '../../components/shared/OfferShowcase.vue';
 import AppNavBar from '../../components/layout/AppNavBar.vue';
 import AppFooter from '../../components/layout/AppFooter.vue';
+import { useToast } from '../../composables/useToast';
 
 const router = useRouter();
 const route = useRoute();
+const toast = useToast();
 
 // Track broken images per product
 const brokenImages = reactive({});
@@ -512,8 +514,10 @@ async function addToCart(product) {
   addingToCart.value = product.id;
   try {
     await cartAPI.addItem({ productId: product.id, quantity: 1 });
+    toast.success(`${product.name} agregado al carrito`);
   } catch (err) {
     console.error('[Catalog] Error adding to cart:', err);
+    toast.error(err.response?.data?.error?.message || 'Error al agregar al carrito');
   } finally {
     addingToCart.value = null;
   }
@@ -532,6 +536,7 @@ async function buyNow(product) {
     router.push({ name: 'Cart' });
   } catch (err) {
     console.error('[Catalog] Error buying now:', err);
+    toast.error(err.response?.data?.error?.message || 'Error al agregar al carrito');
     addingToCart.value = null;
   }
 }

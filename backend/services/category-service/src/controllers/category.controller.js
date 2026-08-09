@@ -1,12 +1,11 @@
-const { getSupabaseClient } = require('@inventory/shared');
-
-const supabase = getSupabaseClient();
+const { createTenantClient } = require('@inventory/shared');
 
 /**
  * Listar categorías (con estructura jerárquica)
  */
 const getCategories = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: categories, error } = await supabase
       .from('categories')
       .select('*')
@@ -37,6 +36,7 @@ const getCategories = async (req, res, next) => {
  */
 const getCategoryById = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     const { data: category, error } = await supabase
@@ -72,6 +72,7 @@ const getCategoryById = async (req, res, next) => {
  */
 const createCategory = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { name, description, parent_id, image_url } = req.body;
 
     if (!name) {
@@ -108,6 +109,7 @@ const createCategory = async (req, res, next) => {
  */
 const updateCategory = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
     const { name, description, parent_id, image_url, status } = req.body;
 
@@ -131,6 +133,7 @@ const updateCategory = async (req, res, next) => {
  */
 const deleteCategory = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     // Verificar si tiene subcategorías

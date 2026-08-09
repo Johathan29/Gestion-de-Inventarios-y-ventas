@@ -29,6 +29,7 @@ export class ClientMapper {
 
   static toPersistence(domain) {
     return {
+      id: domain.id,
       user_id: domain.userId,
       name: domain.name,
       email: domain.email || null,

@@ -53,6 +53,7 @@ export class CreateEntryUseCase {
     });
 
     const movement = new InventoryMovement({
+      id: crypto.randomUUID(),
       productId, warehouse, type: MOVEMENT_TYPES.ENTRY,
       quantity, previousStock: prevStock, newStock: updated.stock,
       unitCost, totalCost: quantity * unitCost,
@@ -90,6 +91,7 @@ export class CreateExitUseCase {
     });
 
     const movement = new InventoryMovement({
+      id: crypto.randomUUID(),
       productId, warehouse, type: MOVEMENT_TYPES.EXIT,
       quantity, previousStock: prevStock, newStock: existing.stock,
       reason: notes || 'Manual exit',
@@ -133,6 +135,7 @@ export class CreateAdjustmentUseCase {
     await this._inventoryRepository.upsert(productId, warehouse, { stock: newQuantity });
 
     const movement = new InventoryMovement({
+      id: crypto.randomUUID(),
       productId, warehouse, type: adjustmentType,
       quantity: Math.abs(difference),
       previousStock: oldQuantity,

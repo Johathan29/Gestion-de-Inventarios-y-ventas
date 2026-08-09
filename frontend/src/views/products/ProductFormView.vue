@@ -460,8 +460,10 @@ import { productsAPI, categoriesAPI } from '../../api';
 import { supabase } from '../../api/supabase';
 import { useCurrency } from '../../composables/useCurrency';
 import Alert from '../../components/shared/Alert.vue';
+import { useToast } from '../../composables/useToast';
 
 const { formatTable } = useCurrency();
+const toast = useToast();
 
 const selectBgSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234f4539' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E";
 
@@ -576,7 +578,7 @@ async function handleVariantUpload(e) {
       if (error) {
         console.error('Variant image upload error:', error);
         if (error.message?.includes('bucket') || error.statusCode === 404) {
-          alert('El bucket de almacenamiento no existe. Crea el bucket "product-images" (público) en Supabase Dashboard > Storage.');
+          toast.error('El bucket de almacenamiento no existe. Crea el bucket "product-images" (público) en Supabase Dashboard > Storage.');
         } else {
           throw error;
         }
@@ -589,7 +591,7 @@ async function handleVariantUpload(e) {
     }
   } catch (err) {
     console.error('Error uploading variant image:', err);
-    alert('Error al subir imagen de variante');
+    toast.error('Error al subir imagen de variante');
   } finally {
     uploadingVariantImage.value = false;
     if (variantFileInput.value) variantFileInput.value.value = '';
@@ -598,7 +600,8 @@ async function handleVariantUpload(e) {
 
 async function saveVariant() {
   if (!variantForm.name.trim()) {
-    return alert('El nombre de la variante es requerido');
+    toast.warning('El nombre de la variante es requerido');
+    return;
   }
   savingVariant.value = true;
   try {
@@ -640,9 +643,10 @@ async function saveVariant() {
       variants.value[editingVariantIndex.value] = { ...existing, ...payload };
     }
     closeVariantModal();
+    toast.success(editingVariantIndex.value === -1 ? 'Variante agregada' : 'Variante actualizada');
   } catch (err) {
     console.error('Error saving variant:', err);
-    alert('Error al guardar variante: ' + (err.response?.data?.error?.message || err.message));
+    toast.error('Error al guardar variante: ' + (err.response?.data?.error?.message || err.message));
   } finally {
     savingVariant.value = false;
   }
@@ -656,9 +660,10 @@ async function deleteVariant(idx) {
       await productsAPI.deleteVariant(route.params.id, v.id);
     }
     variants.value.splice(idx, 1);
+    toast.success('Variante eliminada');
   } catch (err) {
     console.error('Error deleting variant:', err);
-    alert('Error al eliminar variante');
+    toast.error('Error al eliminar variante');
   }
 }
 
@@ -885,13 +890,16 @@ const handleSubmit = async () => {
     }
     if (isEdit.value) {
       await productsAPI.update(route.params.id, productData);
+      toast.success('Producto actualizado correctamente');
     } else {
       await productsAPI.create(productData);
+      toast.success('Producto creado correctamente');
     }
     router.push('/app/products');
   } catch (err) {
     const msg = err.response?.data?.error?.message || err.response?.data?.error || err.message || 'Error al guardar producto';
     errorMsg.value = msg;
+    toast.error(msg);
   } finally {
     saving.value = false;
   }

@@ -9,6 +9,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => !!user.value);
   const userPermissions = computed(() => user.value?.permissions || {});
+  const companyId = computed(() => user.value?.company_id || '00000000-0000-0000-0000-000000000001');
 
   const login = async (credentials) => {
     loading.value = true;
@@ -98,7 +99,7 @@ export const useAuthStore = defineStore('auth', () => {
   };
 
   return {
-    user, loading, error, isAuthenticated, userPermissions,
+    user, loading, error, isAuthenticated, userPermissions, companyId,
     login, register, logout, clearAuth, fetchProfile, updateProfile,
     forgotPassword, resetPassword
   };

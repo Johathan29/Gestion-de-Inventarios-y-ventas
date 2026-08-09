@@ -2,6 +2,7 @@
 // CRM Use Cases
 // ============================================================
 
+import { randomUUID } from 'crypto';
 import { Client, CreditAccount, NotificationPreference } from '../domain/index.js';
 import { ClientCreatedEvent, ClientUpdatedEvent, ClientDeactivatedEvent, CreditAccountCreatedEvent, NotificationPrefsUpdatedEvent } from '../events/index.js';
 
@@ -46,7 +47,8 @@ export class CreateClientUseCase {
   }
 
   async execute(input) {
-    const client = new Client(input);
+    // El repositorio exige identidad; generarla aquí si el caller no la provee
+    const client = new Client({ ...input, id: input.id || randomUUID() });
     const saved = await this._clientRepo.save(client);
     await this._eventBus.publish(new ClientCreatedEvent(saved));
     return saved;

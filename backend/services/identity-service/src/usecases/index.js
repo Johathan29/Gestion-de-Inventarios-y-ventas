@@ -116,13 +116,13 @@ export class LoginUseCase {
     const accessToken = jwt.sign(
       payload,
       this.#jwtConfig.secret,
-      { expiresIn: this.#jwtConfig.expiresIn }
+      { expiresIn: this.#jwtConfig.expiresIn, issuer: this.#jwtConfig.issuer }
     );
 
     const refreshToken = jwt.sign(
       { id: user.id, type: 'refresh' },
       this.#jwtConfig.refreshSecret,
-      { expiresIn: this.#jwtConfig.refreshExpiresIn }
+      { expiresIn: this.#jwtConfig.refreshExpiresIn, issuer: this.#jwtConfig.issuer }
     );
 
     return { accessToken, refreshToken };
@@ -147,12 +147,13 @@ export class RefreshTokenUseCase {
         id: decoded.id,
         email: decoded.email,
         role: decoded.role,
+        companyId: decoded.companyId || '00000000-0000-0000-0000-000000000001',
       };
 
       const newAccessToken = jwt.sign(
         payload,
         this.#jwtConfig.secret,
-        { expiresIn: this.#jwtConfig.expiresIn }
+        { expiresIn: this.#jwtConfig.expiresIn, issuer: this.#jwtConfig.issuer }
       );
 
       return { accessToken: newAccessToken };

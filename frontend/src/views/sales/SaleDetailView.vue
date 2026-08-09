@@ -167,8 +167,10 @@ import DetailSkeleton from '../../components/skeletons/DetailSkeleton.vue';
 import Loading from '../../components/shared/Loading.vue';
 import { useCurrency } from '../../composables/useCurrency';
 import { formatDateTime } from '../../utils';
+import { useToast } from '../../composables/useToast';
 
 const { format, formatTable } = useCurrency();
+const toast = useToast();
 import Swal from 'sweetalert2';
 
 const route = useRoute();
@@ -196,7 +198,7 @@ const getProductImage = (item) => {
 const printAsDraft = () => {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
-    alert('Por favor permite ventanas emergentes para imprimir');
+    toast.warning('Por favor permite ventanas emergentes para imprimir');
     return;
   }
   const s = sale.value;

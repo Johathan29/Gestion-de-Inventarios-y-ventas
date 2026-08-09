@@ -1,12 +1,11 @@
-const { getSupabaseClient } = require('@inventory/shared');
-
-const supabase = getSupabaseClient();
+const { createTenantClient } = require('@inventory/shared');
 
 /**
  * Obtener configuración general
  */
 const getConfig = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { key, section } = req.query;
 
     let query = supabase
@@ -47,6 +46,7 @@ const getConfig = async (req, res, next) => {
  */
 const updateConfig = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { key, value, section, description } = req.body;
 
     if (!key || value === undefined) {
@@ -97,6 +97,7 @@ const updateConfig = async (req, res, next) => {
  */
 const bulkUpdateConfig = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { configs } = req.body;
 
     if (!Array.isArray(configs) || configs.length === 0) {

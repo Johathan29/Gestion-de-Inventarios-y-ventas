@@ -472,8 +472,17 @@ const formatRelativeTime = (dateStr) => {
 // ============================================================
 const fetchProducts = async () => {
   try {
-    const res = await productsAPI.getAll({ search: search.value, active: true });
-    products.value = res.data || [];
+    const res = await productsAPI.getAll({
+      search: search.value,
+      status: 'active',
+      available_for_sale: true,
+      is_catalog_only: false,
+      limit: 100
+    });
+    // Safety net: descartar productos que no estén disponibles para la venta
+    products.value = (res.data || []).filter(p =>
+      p.available_for_sale !== false && p.is_catalog_only !== true
+    );
     const map = {};
     await Promise.all((res.data || []).map(async (p) => {
       try {

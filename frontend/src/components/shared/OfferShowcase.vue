@@ -116,6 +116,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ecommerceAPI } from '../../api';
+import { useToast } from '../../composables/useToast';
 
 const props = defineProps({
   title: { type: String, default: 'Ofertas Especiales' },
@@ -126,6 +127,7 @@ const props = defineProps({
 const emit = defineEmits(['view-all', 'error']);
 
 const router = useRouter();
+const toast = useToast();
 const offers = ref([]);
 const fallbackProducts = ref([]);
 const loading = ref(true);
@@ -188,12 +190,14 @@ async function addToCart(product) {
   addingId.value = product.id;
   try {
     const { cartAPI } = await import('../../api');
-    await cartAPI.addItem({ product_id: product.id, quantity: 1 });
+    await cartAPI.addItem({ productId: product.id, quantity: 1 });
     addedId.value = product.id;
+    toast.success(`${product.name} agregado al carrito`);
     emit('view-all', product);
     setTimeout(() => { addedId.value = null; }, 2000);
   } catch (err) {
     emit('error', err.message || 'Error al agregar al carrito');
+    toast.error(err.message || 'Error al agregar al carrito');
   } finally {
     addingId.value = null;
   }

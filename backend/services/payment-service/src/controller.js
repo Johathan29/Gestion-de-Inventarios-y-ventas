@@ -4,13 +4,14 @@
 
 import { Router } from 'express';
 import { authenticate, authorize, validate, asyncHandler, ROLES } from '@erp/common';
+import { tenantContext } from '@erp/shared-kernel';
 import { ProcessPaymentDTO, RefundPaymentDTO, OpenCashRegisterDTO, CloseCashRegisterDTO } from './DTOs/index.js';
 import bcrypt from 'bcryptjs';
 
 export function createPaymentsRouter(appService, supabase) {
   const router = Router();
 
-  router.use(authenticate);
+  router.use(authenticate, tenantContext);
 
   // ==================== PAYMENT METHODS ====================
 
@@ -24,7 +25,7 @@ export function createPaymentsRouter(appService, supabase) {
   // ==================== TRANSACTIONS ====================
 
   router.post('/process',
-    authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.SALESMAN),
+    authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.SELLER),
     validate(ProcessPaymentDTO),
     asyncHandler(async (req, res) => {
       const transaction = await appService.processPayment({

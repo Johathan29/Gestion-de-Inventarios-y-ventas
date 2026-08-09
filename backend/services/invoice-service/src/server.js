@@ -11,7 +11,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 import express from 'express';
 import { createLogger, errorHandler } from '@erp/common';
-import { createSupabaseClient } from '@erp/shared-kernel';
+import { createSupabaseClient, tenantContext } from '@erp/shared-kernel';
 import { InMemoryEventBus } from '@erp/event-bus';
 import { RabbitMQEventBus } from '@erp/event-bus';
 import { SupabaseInvoiceRepository, SupabaseNcfRepository } from './repository/index.js';
@@ -27,6 +27,7 @@ const PORT = process.env.INVOICE_SERVICE_PORT || 3009;
 async function main() {
   // Middleware
   app.use(express.json({ limit: '10mb' }));
+  app.use(tenantContext);
 
   // Health check
   app.get('/health', (req, res) => {
@@ -43,9 +44,9 @@ async function main() {
   // Services
   const pdfService = new InvoicePdfService();
 
-  // Event Bus
+  // Event Bus — exchange común `erp.events` (topic) con routing keys = eventType
   const eventBus = process.env.RABBITMQ_URL
-    ? new RabbitMQEventBus(process.env.RABBITMQ_URL, 'invoice-service')
+    ? new RabbitMQEventBus({ url: process.env.RABBITMQ_URL, exchange: 'erp.events' })
     : new InMemoryEventBus();
 
   await eventBus.connect();

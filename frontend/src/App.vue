@@ -1,5 +1,6 @@
 <template>
   <router-view />
+  <ToastContainer />
 </template>
 
 <script setup>
@@ -7,6 +8,7 @@ import { watch } from 'vue';
 import { onMounted } from 'vue';
 import { useAppStore } from './stores/app';
 import { useEcommerceSettings } from './composables/useEcommerceSettings';
+import ToastContainer from './components/ui/ToastContainer.vue';
 
 const appStore = useAppStore();
 const { settings, fetchSettings } = useEcommerceSettings();

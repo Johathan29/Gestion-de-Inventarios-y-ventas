@@ -1,12 +1,11 @@
-const { getSupabaseClient } = require('@inventory/shared');
-
-const supabase = getSupabaseClient();
+const { createTenantClient } = require('@inventory/shared');
 
 /**
  * Obtener datos completos para la página principal
  */
 const getHomeData = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const [bannersResult, offersResult, featuredResult, categoriesResult] = await Promise.all([
       supabase.from('ecommerce_banners').select('*').eq('active', true).order('sort_order'),
       supabase.from('offers').select('*, products(*)').eq('active', true).order('created_at', { ascending: false }),
@@ -33,6 +32,7 @@ const getHomeData = async (req, res, next) => {
  */
 const getBanners = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: banners, error } = await supabase
       .from('ecommerce_banners')
       .select('*')
@@ -51,6 +51,7 @@ const getBanners = async (req, res, next) => {
  */
 const createBanner = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { title, subtitle, image_url, link_url, sort_order, active } = req.body;
 
     if (!title || !image_url) {
@@ -78,6 +79,7 @@ const createBanner = async (req, res, next) => {
  */
 const updateBanner = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     const { data: banner, error } = await supabase
@@ -99,6 +101,7 @@ const updateBanner = async (req, res, next) => {
  */
 const deleteBanner = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     const { error } = await supabase
@@ -118,16 +121,23 @@ const deleteBanner = async (req, res, next) => {
  */
 const getActivePromotions = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const now = new Date().toISOString();
     const { data: promotions, error } = await supabase
-      .from('promotions')
+      .from('coupons')
       .select('*')
       .eq('is_active', true)
       .or(`expires_at.gte.${now},expires_at.is.null`)
       .order('created_at', { ascending: false })
       .limit(20);
 
-    if (error) throw error;
+    if (error) {
+      // Tabla coupons puede no existir aún
+      if (error.code === 'PGRST205' || error.message?.includes('schema cache')) {
+        return res.json({ success: true, data: [] });
+      }
+      throw error;
+    }
     res.json({ success: true, data: promotions || [] });
   } catch (error) {
     next(error);
@@ -139,6 +149,7 @@ const getActivePromotions = async (req, res, next) => {
  */
 const getOffers = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const from = (page - 1) * limit;
@@ -181,6 +192,7 @@ const getOffers = async (req, res, next) => {
  */
 const createOffer = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { product_id, discount_percent, start_date, end_date, active } = req.body;
 
     if (!product_id || discount_percent === undefined) {
@@ -270,6 +282,7 @@ const createOffer = async (req, res, next) => {
 
 const updateOffer = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     const { data: offer, error } = await supabase
@@ -288,6 +301,7 @@ const updateOffer = async (req, res, next) => {
 
 const deleteOffer = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     const { error } = await supabase
@@ -304,12 +318,14 @@ const deleteOffer = async (req, res, next) => {
 
 const getHomeSettings = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: settings, error } = await supabase
       .from('ecommerce_settings')
       .select('*')
       .eq('id', '00000000-0000-0000-0000-000000000001')
       .single();
 
+    if (error && error.code === 'PGRST205') return res.json({ success: true, data: {} });
     if (error && error.code !== 'PGRST116') throw error;
 
     res.json({
@@ -332,6 +348,7 @@ const getHomeSettings = async (req, res, next) => {
 
 const updateHomeSettings = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     // Whitelist de columnas conocidas en ecommerce_settings
     const allowedColumns = [
       'store_name', 'description', 'logo_url', 'favicon_url',
@@ -376,6 +393,7 @@ const updateHomeSettings = async (req, res, next) => {
  */
 const getHeroSettings = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: hero, error } = await supabase
       .from('hero_settings')
       .select('*')
@@ -384,6 +402,12 @@ const getHeroSettings = async (req, res, next) => {
       .limit(1)
       .single();
 
+    if (error && error.code === 'PGRST205') {
+      return res.json({
+        success: true,
+        data: { badge: 'Elite Animal Companionship', title_line1: 'The Luxury', title_line2: 'Pet Atelier.', description: 'We treat the bond between humans and pets as a high-art form.', button1_text: 'Explore Collection', button1_url: '#products', button2_text: 'Our Story', button2_url: '#story' }
+      });
+    }
     if (error && error.code !== 'PGRST116') throw error;
 
     res.json({
@@ -409,6 +433,7 @@ const getHeroSettings = async (req, res, next) => {
  */
 const updateHeroSettings = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: existing } = await supabase
       .from('hero_settings')
       .select('id')
@@ -452,6 +477,7 @@ const updateHeroSettings = async (req, res, next) => {
  */
 const getProductReviews = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { productId } = req.params;
     const { page = 1, limit = 10 } = req.query;
     const from = (page - 1) * limit;
@@ -489,6 +515,7 @@ const getProductReviews = async (req, res, next) => {
  */
 const getFeaturedReviews = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { limit = 3 } = req.query;
 
     const { data: reviews, error } = await supabase
@@ -512,6 +539,7 @@ const getFeaturedReviews = async (req, res, next) => {
  */
 const createProductReview = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { product_id, client_name, client_title, client_avatar_url, rating, title, comment } = req.body;
 
     if (!product_id || !client_name || !rating || !comment) {
@@ -561,6 +589,7 @@ const createProductReview = async (req, res, next) => {
  */
 const getAllReviews = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { page = 1, limit = 20, is_approved, rating, product_id, search } = req.query;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
@@ -604,6 +633,7 @@ const getAllReviews = async (req, res, next) => {
  */
 const moderateReview = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
     const { is_approved, is_featured } = req.body;
 
@@ -638,6 +668,7 @@ const moderateReview = async (req, res, next) => {
  */
 const deleteReview = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
 
     const { error } = await supabase
@@ -661,6 +692,7 @@ const deleteReview = async (req, res, next) => {
 
 const getHeroSlides = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: slides, error } = await supabase
       .from('hero_slides')
       .select('*')
@@ -678,6 +710,7 @@ const getHeroSlides = async (req, res, next) => {
 
 const getAllHeroSlides = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: slides, error } = await supabase
       .from('hero_slides')
       .select('*')
@@ -694,6 +727,7 @@ const getAllHeroSlides = async (req, res, next) => {
 
 const createHeroSlide = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: slide, error } = await supabase
       .from('hero_slides')
       .insert(req.body)
@@ -709,6 +743,7 @@ const createHeroSlide = async (req, res, next) => {
 
 const updateHeroSlide = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
     const { data: slide, error } = await supabase
       .from('hero_slides')
@@ -726,6 +761,7 @@ const updateHeroSlide = async (req, res, next) => {
 
 const deleteHeroSlide = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
     const { error } = await supabase.from('hero_slides').delete().eq('id', id);
     if (error) throw error;
@@ -743,6 +779,7 @@ const deleteHeroSlide = async (req, res, next) => {
 
 const getFloatingBanners = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const now = new Date().toISOString();
     let query = supabase
       .from('floating_banners')
@@ -763,6 +800,7 @@ const getFloatingBanners = async (req, res, next) => {
 
 const getAllFloatingBanners = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: banners, error } = await supabase
       .from('floating_banners')
       .select('*')
@@ -776,6 +814,7 @@ const getAllFloatingBanners = async (req, res, next) => {
 
 const createFloatingBanner = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: banner, error } = await supabase
       .from('floating_banners')
       .insert(req.body)
@@ -790,6 +829,7 @@ const createFloatingBanner = async (req, res, next) => {
 
 const updateFloatingBanner = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
     const { data: banner, error } = await supabase
       .from('floating_banners')
@@ -806,6 +846,7 @@ const updateFloatingBanner = async (req, res, next) => {
 
 const deleteFloatingBanner = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
     const { error } = await supabase.from('floating_banners').delete().eq('id', id);
     if (error) throw error;
@@ -823,12 +864,14 @@ const deleteFloatingBanner = async (req, res, next) => {
 
 const getTaxRates = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { country_code } = req.query;
     let query = supabase.from('tax_rates').select('*').eq('is_active', true);
     if (country_code) query = query.eq('country_code', country_code);
     query = query.order('name');
 
     const { data: rates, error } = await query;
+    if (error && error.code === 'PGRST205') return res.json({ success: true, data: [] });
     if (error) throw error;
     res.json({ success: true, data: rates || [] });
   } catch (error) {
@@ -838,6 +881,7 @@ const getTaxRates = async (req, res, next) => {
 
 const getAllTaxRates = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: rates, error } = await supabase.from('tax_rates').select('*').order('name');
     if (error) throw error;
     res.json({ success: true, data: rates || [] });
@@ -848,6 +892,7 @@ const getAllTaxRates = async (req, res, next) => {
 
 const createTaxRate = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: rate, error } = await supabase.from('tax_rates').insert(req.body).select().single();
     if (error) throw error;
     res.status(201).json({ success: true, data: rate });
@@ -858,6 +903,7 @@ const createTaxRate = async (req, res, next) => {
 
 const updateTaxRate = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
     const { data: rate, error } = await supabase
       .from('tax_rates')
@@ -874,6 +920,7 @@ const updateTaxRate = async (req, res, next) => {
 
 const deleteTaxRate = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { id } = req.params;
     const { error } = await supabase.from('tax_rates').delete().eq('id', id);
     if (error) throw error;
@@ -891,12 +938,19 @@ const deleteTaxRate = async (req, res, next) => {
 
 const getWhatsappConfig = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: config, error } = await supabase
       .from('whatsapp_config')
       .select('*')
       .eq('is_active', true)
       .single();
 
+    if (error && error.code === 'PGRST205') {
+      return res.json({
+        success: true,
+        data: { phone_number: '', api_token: '', api_endpoint: 'https://api.whatsapp.com/send', welcome_message: '¡Hola! ¿En qué podemos ayudarte?', auto_reply_enabled: true, business_hours: {}, is_active: true }
+      });
+    }
     if (error && error.code !== 'PGRST116') throw error;
 
     res.json({
@@ -918,6 +972,7 @@ const getWhatsappConfig = async (req, res, next) => {
 
 const updateWhatsappConfig = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { data: existing } = await supabase
       .from('whatsapp_config')
       .select('id')
@@ -961,6 +1016,7 @@ const updateWhatsappConfig = async (req, res, next) => {
  */
 const createContactMessage = async (req, res, next) => {
   try {
+    const supabase = createTenantClient(req);
     const { name, email, subject, message } = req.body;
 
     if (!name || !email || !message) {
@@ -1028,5 +1084,7 @@ module.exports = {
   // WhatsApp Config
   getWhatsappConfig, updateWhatsappConfig,
   // Contact Form
-  createContactMessage
+  createContactMessage,
+  // Active Promotions
+  getActivePromotions
 };
