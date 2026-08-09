@@ -1,7 +1,13 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
-const { createTenantClient } = require('@inventory/shared');
+const { getSupabaseClient } = require('@inventory/shared');
+
+// NOTA (Fase 3 IDOR): auth opera sobre la IDENTIDAD GLOBAL de usuarios
+// (email único global). NUNCA filtrar por company_id aquí: el company_id
+// es un ATRIBUTO del usuario que se propaga al JWT, no un filtro de login.
+// Usar createTenantClient aquí impediría el login de usuarios de empresas
+// != DEFAULT (inyecta .eq('company_id', DEFAULT)).
 
 // Cargar variables de entorno desde el backend/.env
 require('dotenv').config({ path: path.resolve(__dirname, '../../../../.env') });
@@ -48,7 +54,7 @@ const recordLoginAttempt = (email, success) => {
  */
 const login = async (req, res, next) => {
   try {
-    const supabase = createTenantClient(req);
+    const supabase = getSupabaseClient();
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -142,7 +148,7 @@ const login = async (req, res, next) => {
  */
 const register = async (req, res, next) => {
   try {
-    const supabase = createTenantClient(req);
+    const supabase = getSupabaseClient();
     const { name, email, password, phone } = req.body;
 
     if (!name || !email || !password) {
@@ -280,7 +286,7 @@ const register = async (req, res, next) => {
  */
 const refreshToken = async (req, res, next) => {
   try {
-    const supabase = createTenantClient(req);
+    const supabase = getSupabaseClient();
     const { refreshToken: token } = req.body;
 
     if (!token) {
@@ -336,7 +342,7 @@ const refreshToken = async (req, res, next) => {
  */
 const logout = async (req, res, next) => {
   try {
-    const supabase = createTenantClient(req);
+    const supabase = getSupabaseClient();
     await supabase
       .from('users')
       .update({ refresh_token: null })
@@ -353,7 +359,7 @@ const logout = async (req, res, next) => {
  */
 const requestPasswordReset = async (req, res, next) => {
   try {
-    const supabase = createTenantClient(req);
+    const supabase = getSupabaseClient();
     const { email } = req.body;
 
     if (!email) {
@@ -417,6 +423,7 @@ const requestPasswordReset = async (req, res, next) => {
  */
 const resetPassword = async (req, res, next) => {
   try {
+    const supabase = getSupabaseClient();
     const { token, password } = req.body;
 
     if (!token || !password) {
@@ -466,7 +473,7 @@ const resetPassword = async (req, res, next) => {
  * Verificar contraseña del usuario actual (para operaciones sensibles)
  */
 const verifyPassword = async (req, res, next) => {
-  try {    const supabase = createTenantClient(req);    const { password } = req.body;
+  try {    const supabase = getSupabaseClient();    const { password } = req.body;
     const userId = req.user.id;
 
     if (!password) {
@@ -541,7 +548,7 @@ const registerLoginAttempt = async (supabaseClient, userId, success) => {
  */
 const getCurrentUser = async (req, res, next) => {
   try {
-    const supabase = createTenantClient(req);
+    const supabase = getSupabaseClient();
     // req.user lo establece el middleware authenticate()
     const userId = req.user.id;
 

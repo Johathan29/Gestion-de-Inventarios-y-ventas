@@ -121,6 +121,15 @@ const PERMISSION_MODULE_MAP = {
  * Global error handler middleware
  */
 export function errorHandler(err, req, res, _next) {
+  // Compatibilidad con errores legacy: muchos servicios lanzan `new Error('NOT_FOUND')`
+  // sin AppError. Normalizarlos aquí evita 500s en lecturas/escrituras cross-tenant.
+  if (!err.statusCode && err.message === 'NOT_FOUND') {
+    err.statusCode = 404;
+    err.code = 'NOT_FOUND';
+    err.isOperational = true;
+    err.message = 'Resource not found';
+  }
+
   const statusCode = err.statusCode || 500;
   const message = err.isOperational ? err.message : 'Internal server error';
 

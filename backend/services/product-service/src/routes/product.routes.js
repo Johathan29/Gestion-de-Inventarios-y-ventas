@@ -24,12 +24,14 @@ const upload = multer({
   }
 });
 
-// Rutas públicas (sin autenticación para el catálogo público)
-router.get('/', getProducts);
-router.get('/featured', getFeaturedProducts);
-router.get('/category/:categoryId', getProductsByCategory);
+// Rutas protegidas — el catálogo público se sirve vía catalog-service (3013).
+// Exigir autenticación evita fuga de datos internos (cost_price, stock, min_stock)
+// y que el header x-company-id (spoofeable) controle el tenant visto.
+router.get('/', authenticate(), getProducts);
+router.get('/featured', authenticate(), getFeaturedProducts);
+router.get('/category/:categoryId', authenticate(), getProductsByCategory);
 router.get('/low-stock', authenticate(), hasPermission(PERMISSIONS.INVENTORY_READ), getLowStockProducts);
-router.get('/:id', getProductById);
+router.get('/:id', authenticate(), getProductById);
 
 // Rutas protegidas
 router.post('/', authenticate(), hasPermission(PERMISSIONS.PRODUCT_CREATE), validate(createProductSchema), createProduct);

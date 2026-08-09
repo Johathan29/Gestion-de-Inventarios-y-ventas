@@ -220,7 +220,16 @@ const updateProduct = async (req, res, next) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // Sin fila (id de otro tenant o inexistente) → 404, nunca 500
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Producto no encontrado' }
+        });
+      }
+      throw error;
+    }
 
     res.json({ success: true, data: product });
   } catch (error) {
@@ -236,12 +245,23 @@ const deleteProduct = async (req, res, next) => {
     const supabase = createTenantClient(req);
     const { id } = req.params;
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('products')
       .update({ status: 'inactive' })
-      .eq('id', id);
+      .eq('id', id)
+      .select('id')
+      .single();
 
-    if (error) throw error;
+    if (error) {
+      // Sin fila (id de otro tenant o inexistente) → 404, nunca 200 falso
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Producto no encontrado' }
+        });
+      }
+      throw error;
+    }
 
     res.json({ success: true, message: 'Producto desactivado exitosamente' });
   } catch (error) {
