@@ -49,6 +49,12 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
+      // Visitante sin sesión: no redirigir a /login (páginas públicas como
+      // landing/catálogo no deben expulsar al usuario anónimo).
+      if (!sessionStorage.getItem('refreshToken')) {
+        return Promise.reject(error);
+      }
+
       try {
         const refreshToken = sessionStorage.getItem('refreshToken');
         if (!refreshToken) throw new Error('No refresh token');
@@ -202,6 +208,9 @@ export const checkoutAPI = {
 
 export const ecommerceAPI = {
   getHome: () => api.get('/ecommerce/home'),
+  // Catálogo público (solo productos activos, sin autenticación)
+  getProducts: (params) => api.get('/ecommerce/products', { params }),
+  getCategories: () => api.get('/ecommerce/categories'),
   getBanners: () => api.get('/ecommerce/banners'),
   createBanner: (data) => api.post('/ecommerce/banners', data),
   updateBanner: (id, data) => api.put(`/ecommerce/banners/${id}`, data),

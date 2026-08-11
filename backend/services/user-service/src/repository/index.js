@@ -168,7 +168,8 @@ export class SupabaseNotificationPreferenceRepository {
     persistence.updated_at = new Date().toISOString();
     const { data, error } = await this._supabase
       .from('client_notification_preferences')
-      .upsert({ client_id: prefs.clientId, ...persistence })
+      // onConflict client_id: la fila ya existe (trigger al crear el cliente) → UPDATE
+      .upsert({ client_id: prefs.clientId, ...persistence }, { onConflict: 'client_id' })
       .select()
       .single();
     if (error) throw error;

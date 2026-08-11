@@ -5,7 +5,7 @@ const { PERMISSIONS } = require('@inventory/shared');
 const {
   getBanners, createBanner, updateBanner, deleteBanner,
   getOffers, createOffer, updateOffer, deleteOffer,
-  getHomeData, updateHomeSettings, getHomeSettings,
+  getHomeData, getPublicProducts, getPublicCategories, updateHomeSettings, getHomeSettings,
   getHeroSettings, updateHeroSettings,
   getProductReviews, getFeaturedReviews, createProductReview,
   getAllReviews, moderateReview, deleteReview,
@@ -19,6 +19,8 @@ const {
 
 // Rutas públicas
 router.get('/home', getHomeData);
+router.get('/products', getPublicProducts);
+router.get('/categories', getPublicCategories);
 router.get('/banners', getBanners);
 router.get('/offers', getOffers);
 router.get('/promotions/active', getActivePromotions);

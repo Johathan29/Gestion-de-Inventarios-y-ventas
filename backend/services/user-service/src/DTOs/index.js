@@ -44,9 +44,29 @@ export const UpdateCreditAccountDTO = z.object({
   creditLimit: z.number().nonnegative().optional(),
 });
 
+// Acepta snake_case (frontend/BD) y camelCase (API) y normaliza a camelCase interno
 export const UpdateNotificationPrefsDTO = z.object({
   emailNotifications: z.boolean().optional(),
   smsNotifications: z.boolean().optional(),
   whatsappNotifications: z.boolean().optional(),
   pushNotifications: z.boolean().optional(),
-});
+  email_notifications: z.boolean().optional(),
+  sms_notifications: z.boolean().optional(),
+  whatsapp_notifications: z.boolean().optional(),
+  push_notifications: z.boolean().optional(),
+  purchase_confirmation_email: z.boolean().optional(),
+  purchase_confirmation_whatsapp: z.boolean().optional(),
+  shipping_updates_email: z.boolean().optional(),
+  shipping_updates_whatsapp: z.boolean().optional(),
+  promo_emails: z.boolean().optional(),
+}).transform((v) => ({
+  emailNotifications: v.emailNotifications ?? v.email_notifications,
+  smsNotifications: v.smsNotifications ?? v.sms_notifications,
+  whatsappNotifications: v.whatsappNotifications ?? v.whatsapp_notifications,
+  pushNotifications: v.pushNotifications ?? v.push_notifications,
+  purchaseConfirmationEmail: v.purchase_confirmation_email,
+  purchaseConfirmationWhatsapp: v.purchase_confirmation_whatsapp,
+  shippingUpdatesEmail: v.shipping_updates_email,
+  shippingUpdatesWhatsapp: v.shipping_updates_whatsapp,
+  promoEmails: v.promo_emails,
+}));

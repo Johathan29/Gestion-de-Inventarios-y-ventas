@@ -28,6 +28,86 @@ const getHomeData = async (req, res, next) => {
 };
 
 /**
+ * Catálogo público de productos (sin autenticación).
+ * Solo productos activos; misma forma de respuesta que product-service
+ * para que el frontend público reutilice el mismo consumo.
+ */
+const getPublicProducts = async (req, res, next) => {
+  try {
+    const supabase = createTenantClient(req);
+    const {
+      page = 1, limit = 12, search, category_id, brand,
+      min_price, max_price, featured, sort_by, sort_order,
+    } = req.query;
+
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    let query = supabase
+      .from('products')
+      .select('*, categories(name), inventory(stock, warehouse)', { count: 'exact' })
+      .eq('status', 'active');
+
+    if (category_id) query = query.eq('category_id', category_id);
+    if (brand) query = query.eq('brand', brand);
+    if (featured) query = query.eq('featured', featured === 'true');
+    if (min_price) query = query.gte('price', parseFloat(min_price));
+    if (max_price) query = query.lte('price', parseFloat(max_price));
+    if (search) {
+      query = query.or(
+        `name.ilike.%${search}%,description.ilike.%${search}%,sku.ilike.%${search}%`
+      );
+    }
+
+    const orderColumn = sort_by || 'created_at';
+    const ascending = sort_order === 'asc';
+    query = query.order(orderColumn, { ascending });
+    query = query.range(from, to);
+
+    const { data: products, count, error } = await query;
+    if (error) throw error;
+
+    const productsWithStock = products.map(p => ({
+      ...p,
+      stock: Array.isArray(p.inventory)
+        ? p.inventory.reduce((sum, inv) => sum + (inv.stock || 0), 0)
+        : 0
+    }));
+
+    res.json({
+      success: true,
+      data: productsWithStock,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: count,
+        totalPages: Math.ceil(count / limit)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Categorías públicas (solo activas) — para filtros del catálogo sin sesión
+ */
+const getPublicCategories = async (req, res, next) => {
+  try {
+    const supabase = createTenantClient(req);
+    const { data: categories, error } = await supabase
+      .from('categories')
+      .select('*, products(count)')
+      .eq('status', 'active')
+      .order('name');
+    if (error) throw error;
+    res.json({ success: true, data: categories || [] });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Obtener banners
  */
 const getBanners = async (req, res, next) => {
@@ -1071,7 +1151,7 @@ const createContactMessage = async (req, res, next) => {
 module.exports = {
   getBanners, createBanner, updateBanner, deleteBanner,
   getOffers, createOffer, updateOffer, deleteOffer,
-  getHomeData, updateHomeSettings, getHomeSettings,
+  getHomeData, getPublicProducts, getPublicCategories, updateHomeSettings, getHomeSettings,
   getHeroSettings, updateHeroSettings,
   getProductReviews, getFeaturedReviews, createProductReview,
   getAllReviews, moderateReview, deleteReview,

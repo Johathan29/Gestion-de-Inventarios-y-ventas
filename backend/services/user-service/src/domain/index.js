@@ -122,13 +122,22 @@ export class CreditAccount extends AggregateRoot {
 }
 
 export class NotificationPreference extends AggregateRoot {
-  constructor({ id, clientId, emailNotifications, smsNotifications, whatsappNotifications, pushNotifications, updatedAt }) {
+  constructor({
+    id, clientId, emailNotifications, smsNotifications, whatsappNotifications, pushNotifications,
+    purchaseConfirmationEmail, purchaseConfirmationWhatsapp,
+    shippingUpdatesEmail, shippingUpdatesWhatsapp, promoEmails, updatedAt,
+  }) {
     super(id);
     this._clientId = clientId;
     this._emailNotifications = emailNotifications !== false;
     this._smsNotifications = smsNotifications !== false;
     this._whatsappNotifications = whatsappNotifications !== false;
     this._pushNotifications = pushNotifications !== false;
+    this._purchaseConfirmationEmail = purchaseConfirmationEmail !== false;
+    this._purchaseConfirmationWhatsapp = purchaseConfirmationWhatsapp === true;
+    this._shippingUpdatesEmail = shippingUpdatesEmail !== false;
+    this._shippingUpdatesWhatsapp = shippingUpdatesWhatsapp === true;
+    this._promoEmails = promoEmails === true;
     this._updatedAt = updatedAt || new Date();
   }
 
@@ -137,6 +146,11 @@ export class NotificationPreference extends AggregateRoot {
   get smsNotifications() { return this._smsNotifications; }
   get whatsappNotifications() { return this._whatsappNotifications; }
   get pushNotifications() { return this._pushNotifications; }
+  get purchaseConfirmationEmail() { return this._purchaseConfirmationEmail; }
+  get purchaseConfirmationWhatsapp() { return this._purchaseConfirmationWhatsapp; }
+  get shippingUpdatesEmail() { return this._shippingUpdatesEmail; }
+  get shippingUpdatesWhatsapp() { return this._shippingUpdatesWhatsapp; }
+  get promoEmails() { return this._promoEmails; }
   get updatedAt() { return this._updatedAt; }
 
   update(prefs) {
@@ -144,6 +158,11 @@ export class NotificationPreference extends AggregateRoot {
     if (prefs.smsNotifications !== undefined) this._smsNotifications = prefs.smsNotifications;
     if (prefs.whatsappNotifications !== undefined) this._whatsappNotifications = prefs.whatsappNotifications;
     if (prefs.pushNotifications !== undefined) this._pushNotifications = prefs.pushNotifications;
+    if (prefs.purchaseConfirmationEmail !== undefined) this._purchaseConfirmationEmail = prefs.purchaseConfirmationEmail;
+    if (prefs.purchaseConfirmationWhatsapp !== undefined) this._purchaseConfirmationWhatsapp = prefs.purchaseConfirmationWhatsapp;
+    if (prefs.shippingUpdatesEmail !== undefined) this._shippingUpdatesEmail = prefs.shippingUpdatesEmail;
+    if (prefs.shippingUpdatesWhatsapp !== undefined) this._shippingUpdatesWhatsapp = prefs.shippingUpdatesWhatsapp;
+    if (prefs.promoEmails !== undefined) this._promoEmails = prefs.promoEmails;
     this._updatedAt = new Date();
   }
 
@@ -154,6 +173,11 @@ export class NotificationPreference extends AggregateRoot {
       smsNotifications: this._smsNotifications,
       whatsappNotifications: this._whatsappNotifications,
       pushNotifications: this._pushNotifications,
+      purchaseConfirmationEmail: this._purchaseConfirmationEmail,
+      purchaseConfirmationWhatsapp: this._purchaseConfirmationWhatsapp,
+      shippingUpdatesEmail: this._shippingUpdatesEmail,
+      shippingUpdatesWhatsapp: this._shippingUpdatesWhatsapp,
+      promoEmails: this._promoEmails,
       updatedAt: this._updatedAt,
     };
   }

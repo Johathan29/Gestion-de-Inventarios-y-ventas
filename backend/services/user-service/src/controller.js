@@ -7,6 +7,7 @@ import { authenticate, authorize, validate, asyncHandler } from '@erp/common';
 import { ROLES } from '@erp/common';
 import { tenantContext } from '@erp/shared-kernel';
 import { CreateClientDTO, UpdateClientDTO, CreateCreditAccountDTO, UpdateCreditAccountDTO, UpdateNotificationPrefsDTO } from './DTOs/index.js';
+import { NotificationPreferenceMapper } from './mappers/index.js';
 
 export function createCRMRouter(appService, crmRepos) {
   const router = Router();
@@ -29,40 +30,8 @@ export function createCRMRouter(appService, crmRepos) {
     })
   );
 
-  router.get('/:id',
-    asyncHandler(async (req, res) => {
-      const client = await appService.getClient(req.params.id);
-      res.json({ success: true, data: client });
-    })
-  );
-
-  router.post('/',
-    authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
-    validate(CreateClientDTO),
-    asyncHandler(async (req, res) => {
-      const client = await appService.createClient(req.validatedBody);
-      res.status(201).json({ success: true, data: client });
-    })
-  );
-
-  router.put('/:id',
-    authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
-    validate(UpdateClientDTO),
-    asyncHandler(async (req, res) => {
-      const client = await appService.updateClient(req.params.id, req.validatedBody);
-      res.json({ success: true, data: client });
-    })
-  );
-
-  router.delete('/:id',
-    authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
-    asyncHandler(async (req, res) => {
-      const result = await appService.deleteClient(req.params.id);
-      res.json({ success: true, ...result });
-    })
-  );
-
   // ==================== CREDIT ACCOUNTS ====================
+  // ⚠️ Las rutas estáticas van ANTES de /:id (si no, Express las captura como :id → 404)
 
   router.get('/credit-account',
     asyncHandler(async (req, res) => {
@@ -100,7 +69,7 @@ export function createCRMRouter(appService, crmRepos) {
   router.get('/notification-prefs',
     asyncHandler(async (req, res) => {
       const prefs = await appService.getNotificationPrefsByUserId(req.user.id);
-      res.json({ success: true, data: prefs });
+      res.json({ success: true, data: NotificationPreferenceMapper.toDTO(prefs) });
     })
   );
 
@@ -108,7 +77,57 @@ export function createCRMRouter(appService, crmRepos) {
     validate(UpdateNotificationPrefsDTO),
     asyncHandler(async (req, res) => {
       const prefs = await appService.updateNotificationPrefsByUserId(req.user.id, req.validatedBody);
-      res.json({ success: true, data: prefs });
+      res.json({ success: true, data: NotificationPreferenceMapper.toDTO(prefs) });
+    })
+  );
+
+  // ==================== CLIENTS (rutas con :id — van después de las estáticas) ====================
+
+  router.get('/:id',
+    asyncHandler(async (req, res) => {
+      const client = await appService.getClient(req.params.id);
+      res.json({ success: true, data: client });
+    })
+  );
+
+  router.post('/',
+    authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+    validate(CreateClientDTO),
+    asyncHandler(async (req, res) => {
+      const client = await appService.createClient(req.validatedBody);
+      res.status(201).json({ success: true, data: client });
+    })
+  );
+
+  router.put('/:id',
+    asyncHandler(async (req, res, next) => {
+      // Self-service: un cliente solo puede editar SU propio registro.
+      // Admin/Supervisor conservan acceso completo.
+      const isStaff = [ROLES.ADMIN, ROLES.SUPERVISOR].includes(req.user.role);
+      if (!isStaff) {
+        let client = null;
+        try { client = await appService.getClient(req.params.id); } catch { /* no encontrado */ }
+        if (!client || client.userId !== req.user.id) {
+          return res.status(403).json({
+            success: false,
+            error: { code: 'FORBIDDEN', message: 'No tienes permiso para modificar este cliente' },
+          });
+        }
+      }
+      next();
+    }),
+    validate(UpdateClientDTO),
+    asyncHandler(async (req, res) => {
+      const client = await appService.updateClient(req.params.id, req.validatedBody);
+      res.json({ success: true, data: client });
+    })
+  );
+
+  router.delete('/:id',
+    authorize(ROLES.ADMIN, ROLES.SUPERVISOR),
+    asyncHandler(async (req, res) => {
+      const result = await appService.deleteClient(req.params.id);
+      res.json({ success: true, ...result });
     })
   );
 

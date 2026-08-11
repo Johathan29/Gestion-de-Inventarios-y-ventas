@@ -303,7 +303,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { productsAPI, categoriesAPI, cartAPI } from '../../api/index.js';
+import { productsAPI, categoriesAPI, cartAPI, ecommerceAPI } from '../../api/index.js';
 import OfferShowcase from '../../components/shared/OfferShowcase.vue';
 import AppNavBar from '../../components/layout/AppNavBar.vue';
 import AppFooter from '../../components/layout/AppFooter.vue';
@@ -435,7 +435,11 @@ async function fetchProducts() {
       params.price_max = filterPriceMax.value;
     }
 
-    const res = await productsAPI.getAll(params);
+    // Sin sesión → catálogo público vía ecommerce (fuerza status=active).
+    // Con sesión → API de productos (mismos filtros).
+    const res = await (sessionStorage.getItem('accessToken')
+      ? productsAPI.getAll(params)
+      : ecommerceAPI.getProducts(params));
     const result = res.data;
 
     if (Array.isArray(result)) {
@@ -462,7 +466,9 @@ async function fetchProducts() {
 // Fetch categories
 async function fetchCategories() {
   try {
-    const res = await categoriesAPI.getAll();
+    const res = await (sessionStorage.getItem('accessToken')
+      ? categoriesAPI.getAll()
+      : ecommerceAPI.getCategories());
     categories.value = Array.isArray(res.data) ? res.data : [];
   } catch (err) {
     console.error('[Catalog] Error fetching categories:', err);

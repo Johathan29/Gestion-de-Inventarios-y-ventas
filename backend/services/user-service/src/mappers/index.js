@@ -96,6 +96,11 @@ export class NotificationPreferenceMapper {
       smsNotifications: raw.sms_notifications,
       whatsappNotifications: raw.whatsapp_notifications,
       pushNotifications: raw.push_notifications,
+      purchaseConfirmationEmail: raw.purchase_confirmation_email,
+      purchaseConfirmationWhatsapp: raw.purchase_confirmation_whatsapp,
+      shippingUpdatesEmail: raw.shipping_updates_email,
+      shippingUpdatesWhatsapp: raw.shipping_updates_whatsapp,
+      promoEmails: raw.promo_emails,
       updatedAt: raw.updated_at,
     });
   }
@@ -107,10 +112,29 @@ export class NotificationPreferenceMapper {
       sms_notifications: domain.smsNotifications,
       whatsapp_notifications: domain.whatsappNotifications,
       push_notifications: domain.pushNotifications,
+      purchase_confirmation_email: domain.purchaseConfirmationEmail,
+      purchase_confirmation_whatsapp: domain.purchaseConfirmationWhatsapp,
+      shipping_updates_email: domain.shippingUpdatesEmail,
+      shipping_updates_whatsapp: domain.shippingUpdatesWhatsapp,
+      promo_emails: domain.promoEmails,
     };
   }
 
+  // Contrato público de la API (el frontend usa snake_case, igual que la tabla)
   static toDTO(domain) {
-    return domain.toJSON();
+    return {
+      id: domain.id,
+      clientId: domain.clientId,
+      email_notifications: domain.emailNotifications,
+      sms_notifications: domain.smsNotifications,
+      whatsapp_notifications: domain.whatsappNotifications,
+      push_notifications: domain.pushNotifications,
+      purchase_confirmation_email: domain.purchaseConfirmationEmail,
+      purchase_confirmation_whatsapp: domain.purchaseConfirmationWhatsapp,
+      shipping_updates_email: domain.shippingUpdatesEmail,
+      shipping_updates_whatsapp: domain.shippingUpdatesWhatsapp,
+      promo_emails: domain.promoEmails,
+      updated_at: domain.updatedAt,
+    };
   }
 }

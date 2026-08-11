@@ -116,7 +116,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { productsAPI, cartAPI } from '../../api/index.js';
+import { productsAPI, ecommerceAPI, cartAPI } from '../../api/index.js';
 import { useRouter } from 'vue-router';
 import { useToast } from '../../composables/useToast';
 
@@ -164,6 +164,17 @@ async function fetchProducts() {
   loading.value = true;
   error.value = null;
   try {
+    const token = sessionStorage.getItem('accessToken');
+
+    // Landing pública (sin sesión): los productos destacados se sirven por
+    // ecommerce-service (/home es público, sin autenticación). Evita 401.
+    if (!token && props.featured) {
+      const { data } = await ecommerceAPI.getHome();
+      const featured = data?.featuredProducts || [];
+      products.value = featured.slice(0, props.limit);
+      return;
+    }
+
     const params = {
       status: 'active',
       limit: props.limit
