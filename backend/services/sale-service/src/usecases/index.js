@@ -272,10 +272,60 @@ async function autoCreateInvoice(supabase, sale, userId, source) {
   }
 
   // -------------------------------------------------------
-  // 6. Items: No se insertan en tabla separada.
-  //    Se obtienen dinámicamente desde sale_items vía sale_id
-  //    (ver invoice-service repository findById).
+  // 6. Items: snapshot fiscal inmutable en invoice_items (Fase 7)
+  //    Se copian los sale_items recién creados → la factura
+  //    histórica NO cambia aunque el producto cambie después.
   // -------------------------------------------------------
+  if (invoice && sale.id) {
+    const { data: saleItems } = await supabase
+      .from('sale_items')
+      .select('id, product_id, product_name, sku, quantity, unit_price, discount, tax, total, variant_id, variant_name, variant_attributes')
+      .eq('sale_id', sale.id);
+
+    if (saleItems && saleItems.length > 0) {
+      // Fallback robusto: si algún sale_item no tiene product_name/sku
+      // (ventas POS legadas o flujos que no los enviaron), resolverlos
+      // desde `products` para que el snapshot fiscal quede completo.
+      const needsEnrich = saleItems.some(si => !si.product_name || !si.sku);
+      if (needsEnrich) {
+        const ids = [...new Set(saleItems.map(si => si.product_id).filter(Boolean))];
+        if (ids.length > 0) {
+          const { data: products } = await supabase
+            .from('products')
+            .select('id, name, sku')
+            .in('id', ids);
+          const productMap = Object.fromEntries((products || []).map(p => [p.id, p]));
+          for (const si of saleItems) {
+            const p = productMap[si.product_id] || {};
+            if (!si.product_name) si.product_name = p.name || '';
+            if (!si.sku) si.sku = p.sku || '';
+          }
+        }
+      }
+
+      const rows = saleItems.map(si => ({
+        invoice_id: invoice.id,
+        sale_item_id: si.id,
+        product_id: si.product_id,
+        description: si.product_name,
+        sku: si.sku,
+        quantity: si.quantity,
+        unit_price: si.unit_price,
+        discount: si.discount || 0,
+        tax: si.tax || 0,
+        total: si.total,
+        variant_id: si.variant_id,
+        variant_name: si.variant_name,
+        variant_attributes: si.variant_attributes,
+      }));
+      const { error: itemsErr } = await supabase
+        .from('invoice_items')
+        .insert(rows);
+      if (itemsErr) {
+        console.error('Failed to write invoice_items snapshot:', itemsErr);
+      }
+    }
+  }
 
   return invoice;
 }
@@ -303,15 +353,48 @@ export class CreateSaleUseCase {
       source: source || 'pos',
     });
 
-    const saleItems = items.map(i => new SaleItem({
-      id: crypto.randomUUID(),
-      productId: i.productId,
-      quantity: i.quantity,
-      unitPrice: i.unitPrice || 0,
-      discount: i.discount || 0,
-      total: i.quantity * (i.unitPrice || 0) - (i.discount || 0),
-      variantId: i.variantId || null,
-    }));
+    // Enriquecer items POS con nombre/SKU/precio del producto: el snapshot
+    // fiscal (invoice_items) y las respuestas de venta necesitan product_name;
+    // el precio SIEMPRE proviene del servidor cuando el cliente no lo envía.
+    const productIds = [...new Set(items.map(i => i.productId).filter(Boolean))];
+    let productMeta = {};
+    let variantMeta = {};
+    if (this._supabase && productIds.length > 0) {
+      const { data: products } = await this._supabase
+        .from('products')
+        .select('id, name, sku, price')
+        .in('id', productIds);
+      if (products && products.length > 0) {
+        productMeta = Object.fromEntries(products.map(p => [p.id, p]));
+      }
+      const variantIds = [...new Set(items.map(i => i.variantId).filter(Boolean))];
+      if (variantIds.length > 0) {
+        const { data: variants } = await this._supabase
+          .from('product_variants')
+          .select('id, price')
+          .in('id', variantIds);
+        if (variants && variants.length > 0) {
+          variantMeta = Object.fromEntries(variants.map(v => [v.id, v]));
+        }
+      }
+    }
+
+    const saleItems = items.map(i => {
+      const p = productMeta[i.productId] || {};
+      const v = variantMeta[i.variantId] || {};
+      const unitPrice = Number(i.unitPrice) || Number(v.price) || Number(p.price) || 0;
+      return new SaleItem({
+        id: crypto.randomUUID(),
+        productId: i.productId,
+        productName: i.productName || p.name || '',
+        sku: i.sku || p.sku || '',
+        quantity: i.quantity,
+        unitPrice,
+        discount: i.discount || 0,
+        total: i.quantity * unitPrice - (i.discount || 0),
+        variantId: i.variantId || null,
+      });
+    });
 
     sale.setItems(saleItems);
     sale._discount = discount;

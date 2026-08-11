@@ -28,17 +28,33 @@ export class SupabaseInvoiceRepository {
     }
     if (!data) return null;
 
-    // Fetch items from sale_items via sale_id (no separate invoice_items table)
-    const { data: saleItems, error: itemsError } = await this._supabase
-      .from('sale_items')
+    // Fetch items: snapshot fiscal en invoice_items (Fase 7).
+    // Fallback legacy → sale_items vía sale_id (facturas pre-070).
+    const { data: invItems, error: invItemsErr } = await this._supabase
+      .from('invoice_items')
       .select('*')
-      .eq('sale_id', data.sale_id);
+      .eq('invoice_id', id);
 
-    if (!itemsError && saleItems) {
-      // Map sale_items to look like invoice_items for the mapper
-      data.invoice_items = saleItems.map(si => ({
-        ...si,
-        invoice_id: id,
+    let rawItems = invItems;
+    if (!invItemsErr && (!invItems || invItems.length === 0)) {
+      const { data: saleItems, error: itemsError } = await this._supabase
+        .from('sale_items')
+        .select('*')
+        .eq('sale_id', data.sale_id);
+
+      if (!itemsError && saleItems) {
+        rawItems = saleItems.map(si => ({
+          ...si,
+          invoice_id: id,
+        }));
+      }
+    }
+
+    if (rawItems && rawItems.length > 0) {
+      // Normalizar: invoice_items usa description; el mapper espera product_name
+      data.invoice_items = rawItems.map(it => ({
+        ...it,
+        product_name: it.description || it.product_name || '',
       }));
     }
 

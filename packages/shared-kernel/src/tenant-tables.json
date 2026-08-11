@@ -55,6 +55,7 @@
     "inventory",
     "inventory_movements",
     "inventory_reservations",
+    "invoice_items",
     "invoices",
     "lead_activities",
     "lead_assignments",

@@ -1,0 +1,52 @@
+{
+  "suite": "invoicing-fiscal",
+  "results": [
+    {
+      "id": "F01",
+      "name": "Login admin → token",
+      "pass": true
+    },
+    {
+      "id": "F02",
+      "name": "Setup: categoría + producto con nombre/precio ORIGINAL + stock",
+      "pass": true
+    },
+    {
+      "id": "F03",
+      "name": "Venta POS 2u → 201 con invoice_id vinculado",
+      "pass": true
+    },
+    {
+      "id": "F04",
+      "name": "invoice_items: snapshot escrito con datos ORIGINALES",
+      "pass": true
+    },
+    {
+      "id": "F05",
+      "name": "Mutar el producto: nombre y precio CAMBIAN",
+      "pass": true
+    },
+    {
+      "id": "F06",
+      "name": "Factura histórica CONSERVA el snapshot original (inmutable)",
+      "pass": true
+    },
+    {
+      "id": "F07",
+      "name": "PDF de la factura se genera desde el snapshot (200 + %PDF)",
+      "pass": true
+    },
+    {
+      "id": "F08",
+      "name": "Backfill: toda factura con sale_items tiene invoice_items",
+      "pass": true
+    },
+    {
+      "id": "F09",
+      "name": "CRM convertLead idempotente: 2× conversión → 1 solo cliente",
+      "pass": true
+    }
+  ],
+  "passed": 9,
+  "total": 9
+}

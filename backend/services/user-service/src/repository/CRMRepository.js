@@ -255,6 +255,18 @@ export class SupabaseLeadRepository {
       .single();
     if (leadErr || !lead) throw new Error('LEAD_NOT_FOUND');
 
+    // Idempotente (Fase 7): si el lead ya fue convertido, devolver el
+    // cliente existente en vez de crear otro (evita duplicados).
+    if (lead.converted_at && lead.client_id) {
+      const { data: existing, error: exErr } = await this._sb
+        .from('clients')
+        .select('*')
+        .eq('id', lead.client_id)
+        .maybeSingle();
+      if (!exErr && existing) return existing;
+      // El cliente referenciado ya no existe → se crea uno nuevo
+    }
+
     // Create client from lead data
     const { data: client, error: clientErr } = await this._sb
       .from('clients')
