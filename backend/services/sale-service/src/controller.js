@@ -4,7 +4,7 @@
 // ============================================================
 
 import { Router } from 'express';
-import { authenticate, authorize, validate, asyncHandler } from '@erp/common';
+import { authenticate, authorize, validate, asyncHandler, idempotent } from '@erp/common';
 import { ROLES } from '@erp/common';
 import { tenantContext } from '@erp/shared-kernel';
 import {
@@ -15,16 +15,20 @@ import {
   CheckoutDTO,
 } from './DTOs/index.js';
 
-export function createSalesRouter(appService) {
+export function createSalesRouter(appService, supabase) {
   const router = Router();
 
   // All routes require authentication
   router.use(authenticate, tenantContext);
 
+  // Idempotencia: misma Idempotency-Key + mismo body = una sola venta
+  const idem = idempotent({ getClient: () => supabase });
+
   // ─── Sales ────────────────────────────────────────────────
 
   router.post('/',
     authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.CASHIER),
+    idem,
     validate(CreateSaleDTO, 'body'),
     asyncHandler(async (req, res) => {
       const sale = await appService.createSale({ userId: req.user.id, ...req.validatedBody });
@@ -93,6 +97,7 @@ export function createSalesRouter(appService) {
   // ─── Checkout ────────────────────────────────────────────
   // MUST be before /:id to avoid Express matching "checkout" as an :id param
   router.post('/checkout',
+    idem,
     validate(CheckoutDTO, 'body'),
     asyncHandler(async (req, res) => {
       const sale = await appService.checkout({ userId: req.user.id, ...req.validatedBody });

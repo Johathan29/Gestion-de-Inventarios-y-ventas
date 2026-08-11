@@ -65,7 +65,7 @@ async function main() {
   const appService = new SalesApplicationService({ saleRepository, cartRepository, eventBus, supabase });
 
   // Routes
-  app.use('/api/sales', createSalesRouter(appService));
+  app.use('/api/sales', createSalesRouter(appService, supabase));
 
   // Error handler
   app.use(errorHandler);

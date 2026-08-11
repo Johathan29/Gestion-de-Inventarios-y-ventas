@@ -3,7 +3,7 @@
 // ============================================================
 
 import { Router } from 'express';
-import { authenticate, authorize, validate, asyncHandler, ROLES } from '@erp/common';
+import { authenticate, authorize, validate, asyncHandler, idempotent, ROLES } from '@erp/common';
 import { tenantContext } from '@erp/shared-kernel';
 import { ProcessPaymentDTO, RefundPaymentDTO, OpenCashRegisterDTO, CloseCashRegisterDTO } from './DTOs/index.js';
 import bcrypt from 'bcryptjs';
@@ -12,6 +12,9 @@ export function createPaymentsRouter(appService, supabase) {
   const router = Router();
 
   router.use(authenticate, tenantContext);
+
+  // Idempotencia HTTP: capa adicional sobre el dedup por idempotency_key (049)
+  const idem = idempotent({ getClient: () => supabase });
 
   // ==================== PAYMENT METHODS ====================
 
@@ -26,6 +29,7 @@ export function createPaymentsRouter(appService, supabase) {
 
   router.post('/process',
     authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.SELLER),
+    idem,
     validate(ProcessPaymentDTO),
     asyncHandler(async (req, res) => {
       const transaction = await appService.processPayment({

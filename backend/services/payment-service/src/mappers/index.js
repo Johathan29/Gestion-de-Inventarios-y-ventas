@@ -93,6 +93,7 @@ export class PaymentTransactionMapper {
 
   static toPersistence(domain) {
     return {
+      // Dominio (payment-service)
       sale_id: domain.saleId,
       invoice_id: domain.invoiceId,
       payment_method_id: domain.paymentMethodId,
@@ -104,6 +105,9 @@ export class PaymentTransactionMapper {
       processed_at: domain.processedAt?.toISOString(),
       notes: domain.notes,
       idempotency_key: domain.idempotencyKey || null,
+      // Auditoría genérica (028/055): mantener la referencia a la entidad
+      reference_type: domain.saleId ? 'sale' : (domain.invoiceId ? 'invoice' : null),
+      reference_id: domain.saleId || domain.invoiceId || null,
     };
   }
 

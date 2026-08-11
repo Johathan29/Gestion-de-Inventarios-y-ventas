@@ -50,6 +50,7 @@
     "goods_receipt_items",
     "goods_receipts",
     "hero_slides",
+    "idempotency_keys",
     "integration_logs",
     "inventory",
     "inventory_movements",

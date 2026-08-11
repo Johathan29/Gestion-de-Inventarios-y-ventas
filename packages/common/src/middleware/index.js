@@ -234,4 +234,131 @@ export function validate(schema, source = 'body') {
   };
 }
 
-export default { authenticate, authorize, hasPermission, errorHandler, rateLimiter, validate };
+// ============================================================
+// Idempotency Middleware (Idempotency-Key)
+// ============================================================
+
+import { createHash } from 'crypto';
+
+/**
+ * Idempotency middleware — replay seguro de peticiones POST/PUT.
+ *
+ * Lee el header `Idempotency-Key`. Si la clave ya fue usada con el MISMO
+ * body, replays la respuesta cacheada (misma clave + mismo body = una sola
+ * operación). Si la clave se reusa con OTRO body → 422. Si la primera
+ * petición sigue en curso → 409.
+ *
+ * Semántica de fallos:
+ *  - 2xx/4xx → se cachea la respuesta y se replays.
+ *  - 5xx → se libera la clave (delete) para permitir reintento limpio.
+ *
+ * Fallo de infraestructura DB → fail-open (next()) para no romper requests.
+ *
+ * @param {object} opts
+ * @param {() => import('@supabase/supabase-js').SupabaseClient} opts.getClient - devuelve el client supabase request-scoped (tenant-aware)
+ * @param {(req) => string} [opts.getCompanyId] - resuelve company_id (default: req.user.companyId)
+ * @param {number} [opts.ttlHours=24] - TTL de la clave idempotente
+ */
+export function idempotent({ getClient, getCompanyId, ttlHours = 24 } = {}) {
+  return async (req, res, next) => {
+    try {
+      // Solo efectos (POST/PUT) y solo si el cliente envía Idempotency-Key
+      if (!['POST', 'PUT'].includes(req.method)) return next();
+      const key = req.headers['idempotency-key'];
+      if (!key || typeof key !== 'string' || key.length > 128) return next();
+      if (!getClient) return next();
+
+      const client = getClient();
+      if (!client) return next();
+
+      const companyId = getCompanyId ? getCompanyId(req) : req.user?.companyId;
+      if (!companyId) return next();
+
+      const body = req.body === undefined ? {} : req.body;
+      const requestHash = createHash('sha256')
+        .update(`${req.method}:${req.originalUrl || req.path}:${JSON.stringify(body)}`)
+        .digest('hex');
+
+      const { data, error } = await client.rpc('fn_idempotency_claim', {
+        p_key: key,
+        p_company_id: companyId,
+        p_user_id: req.user?.id || null,
+        p_method: req.method,
+        p_path: req.originalUrl || req.path,
+        p_request_hash: requestHash,
+        p_ttl_hours: ttlHours,
+      });
+
+      if (error) return next(); // fail-open: sin DB no bloqueamos la operación
+      if (!data?.id) return next();
+
+      if (!data.is_new) {
+        // Clave ya usada
+        if (data.request_hash !== requestHash) {
+          return res.status(422).json({
+            success: false,
+            error: {
+              code: 'IDEMPOTENCY_KEY_REUSE',
+              message: 'Idempotency-Key already used with a different request',
+            },
+          });
+        }
+
+        if (!data.response_status) {
+          // Primera petición en curso → conflicto temporal
+          return res.status(409).json({
+            success: false,
+            error: {
+              code: 'IDEMPOTENCY_IN_PROGRESS',
+              message: 'A request with this Idempotency-Key is already being processed',
+            },
+          });
+        }
+
+        if (data.response_status >= 500) {
+          // Fallo 5xx previo: liberar la clave y re-ejecutar limpio
+          await client.rpc('fn_idempotency_release', { p_id: data.id }).catch(() => {});
+          req._idempotency = { id: data.id, client };
+        } else {
+          // Replay de la respuesta cacheada (2xx/4xx determinista)
+          const body = data.response_body;
+          return res.status(data.response_status).json(body ?? { success: true });
+        }
+      } else {
+        req._idempotency = { id: data.id, client };
+      }
+
+      // Capturar el body JSON de la respuesta y completar la clave ANTES de
+      // enviar: cuando el cliente recibe la respuesta, la clave ya está
+      // cacheada → un duplicado inmediato replays (nunca ve 'in progress').
+      // 2xx/4xx → complete; 5xx → release (reintento limpio con la misma clave).
+      const originalJson = res.json.bind(res);
+      res.json = async (payload) => {
+        res.locals._idempotencyBody = payload;
+        const claim = req._idempotency;
+        if (claim) {
+          try {
+            if (res.statusCode >= 500) {
+              await claim.client.rpc('fn_idempotency_release', { p_id: claim.id });
+            } else {
+              await claim.client.rpc('fn_idempotency_complete', {
+                p_id: claim.id,
+                p_status: res.statusCode,
+                p_body: payload ?? null,
+              });
+            }
+          } catch (e) {
+            // best effort: nunca debe romper la respuesta
+          }
+        }
+        return originalJson(payload);
+      };
+
+      next();
+    } catch (err) {
+      next(); // fail-open
+    }
+  };
+}
+
+export default { authenticate, authorize, hasPermission, errorHandler, rateLimiter, validate, idempotent };

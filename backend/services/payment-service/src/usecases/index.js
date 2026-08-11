@@ -2,6 +2,7 @@
 // Payments Use Cases
 // ============================================================
 
+import crypto from 'crypto';
 import { PaymentTransaction, CashRegister, TRANSACTION_STATUSES, CASH_REGISTER_STATUSES } from '../domain/index.js';
 import { PaymentProcessedEvent, PaymentRefundedEvent, CashRegisterOpenedEvent, CashRegisterClosedEvent } from '../events/index.js';
 import { PaymentGatewayClient } from '../infrastructure/payment-gateway.js';
@@ -27,6 +28,7 @@ export class ProcessPaymentUseCase {
 
     // Create transaction
     const transaction = new PaymentTransaction({
+      id: crypto.randomUUID(),
       saleId,
       invoiceId,
       paymentMethodId: method.id,

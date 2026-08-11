@@ -1,0 +1,54 @@
+{
+  "suite": "idempotency",
+  "date": "2026-08-11T02:51:50.854Z",
+  "total": 9,
+  "passed": 9,
+  "failed": 0,
+  "results": [
+    {
+      "id": "ID01",
+      "name": "Login admin → token",
+      "pass": true
+    },
+    {
+      "id": "ID02",
+      "name": "Setup: categoría + producto + stock 100 + carrito 1u",
+      "pass": true
+    },
+    {
+      "id": "ID03",
+      "name": "Checkout con clave K1 → 201 (venta creada)",
+      "pass": true
+    },
+    {
+      "id": "ID04",
+      "name": "Checkout REPETIDO con K1 → replay 201 con la MISMA venta",
+      "pass": true
+    },
+    {
+      "id": "ID05",
+      "name": "Clave K2 independiente + fallo 5xx libera la clave (2× → 500 EMPTY_CART)",
+      "pass": true
+    },
+    {
+      "id": "ID06",
+      "name": "Venta POS con K3 → 201; repetida K3 → replay misma venta",
+      "pass": true
+    },
+    {
+      "id": "ID07",
+      "name": "K3 con OTRO body → 422 IDEMPOTENCY_KEY_REUSE",
+      "pass": true
+    },
+    {
+      "id": "ID08",
+      "name": "Pago con K4 → 201; repetido → replay misma transacción; dedup app-level",
+      "pass": true
+    },
+    {
+      "id": "ID09",
+      "name": "fn_fire_webhooks 2× con mismo payload → 1 sola fila en webhook_logs",
+      "pass": true
+    }
+  ]
+}
