@@ -1,0 +1,71 @@
+{
+  "base": "http://localhost:3000",
+  "secret": "whsec_fase8_f203f5c53d7f",
+  "results": [
+    {
+      "code": "W01",
+      "name": "Login admin → token",
+      "pass": true,
+      "ms": 1855,
+      "detail": "company 00000000…"
+    },
+    {
+      "code": "W02",
+      "name": "Setup: webhook ACTIVO hmac → httpbin.org/post (client.created)",
+      "pass": true,
+      "ms": 154,
+      "detail": "id 23"
+    },
+    {
+      "code": "W03",
+      "name": "Disparo: crear cliente → log pending en webhook_logs",
+      "pass": true,
+      "ms": 1452,
+      "detail": "log 57 (pending)"
+    },
+    {
+      "code": "W04",
+      "name": "Entrega + FIRMA HMAC verificada end-to-end (echo httpbin)",
+      "pass": true,
+      "ms": 1198,
+      "detail": "200 + firma OK (ip 54.81.88.174)"
+    },
+    {
+      "code": "W05",
+      "name": "SSRF: IP privada/metadata 169.254.169.254 → rechazado",
+      "pass": true,
+      "ms": 284,
+      "detail": "400: SSRF blocked"
+    },
+    {
+      "code": "W06",
+      "name": "SSRF: hostnames bloqueados (localhost / metadata.google.internal)",
+      "pass": true,
+      "ms": 563,
+      "detail": "localhost + metadata.google.internal bloqueados"
+    },
+    {
+      "code": "W07",
+      "name": "Retry con backoff: /status/500 → 3 intentos → error definitivo",
+      "pass": true,
+      "ms": 4696,
+      "detail": "error tras 3/3 intentos"
+    },
+    {
+      "code": "W08",
+      "name": "Contadores: success_count / last_status del webhook W02",
+      "pass": true,
+      "ms": 103,
+      "detail": "success_count=2, last_status=success"
+    },
+    {
+      "code": "W09",
+      "name": "process-queue: responde resumen JSON válido",
+      "pass": true,
+      "ms": 92,
+      "detail": "processed=0"
+    }
+  ],
+  "passed": 9,
+  "failed": 0
+}

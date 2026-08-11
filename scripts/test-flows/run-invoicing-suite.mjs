@@ -190,7 +190,7 @@ await define('F09', 'CRM convertLead idempotente: 2× conversión → 1 solo cli
   const pipeR = await api('POST', '/api/v1/clients/pipelines', { token: A.token, body: { name: `Pipe Fiscal ${uniq('P')}` } });
   check(pipeR.ok, `Crear pipeline falló: ${pipeR.status} ${JSON.stringify(pipeR.data)}`);
   const pipelineId = pick(pipeR, ['id']);
-  const stR = await api('POST', `/api/v1/clients/pipelines/${pipelineId}/stages`, { token: A.token, body: { name: 'Nuevo', order: 1 } });
+  const stR = await api('POST', `/api/v1/clients/pipelines/${pipelineId}/stages`, { token: A.token, body: { name: `Nuevo ${uniq('E')}`, order: 1 } });
   check(stR.ok, `Crear etapa falló: ${stR.status} ${JSON.stringify(stR.data)}`);
   const stageId = pick(stR, ['id']);
 

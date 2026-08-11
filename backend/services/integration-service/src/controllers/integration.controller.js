@@ -2,6 +2,9 @@
 // Integration Controller — Webhooks & Automations
 // ============================================================================
 
+import { deliverWebhook } from '../webhooks/dispatcher.js';
+import { runWebhookCycle } from '../webhooks/worker.js';
+
 function ok(res, data, message, status = 200) { return res.status(status).json({ success: true, data, message }); }
 function fail(res, error, status = 400) { return res.status(status).json({ success: false, error }); }
 
@@ -145,44 +148,47 @@ export async function testWebhook(req, res) {
       data: { message: 'Test webhook delivery', webhook_id: webhook.id }
     };
 
-    let delivery_status = 'success';
-    let response_code = null;
-    let response_body = null;
-    const start = Date.now();
+    // Mismo pipeline que el worker: SSRF guard + firma HMAC + timeout
+    const delivery = await deliverWebhook(webhook, testPayload, { eventType: 'webhook.test' });
 
-    try {
-      const fetch = (await import('node-fetch')).default;
-      const response = await fetch(webhook.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Webhook-Event': 'webhook.test', ...(webhook.custom_headers || {}) },
-        body: JSON.stringify(testPayload),
-        signal: AbortSignal.timeout(webhook.timeout_ms || 10000)
-      });
-      response_code = response.status;
-      response_body = await response.text().catch(() => '');
-      if (!response.ok) delivery_status = 'failed';
-    } catch (err) {
-      delivery_status = 'failed';
-      response_body = err.message;
-    }
-
-    const duration_ms = Date.now() - start;
-
-    // Log the test delivery
-    await sb.from('webhook_logs').insert({
+    const delivery_status = delivery.ok ? 'success' : 'error';
+    const logPayload = {
       webhook_id: webhook.id,
       company_id: webhook.company_id || req.user?.companyId,
       event_type: 'webhook.test',
       payload: testPayload,
       attempt: 1,
       max_attempts: webhook.retry_count || 3,
-      status: delivery_status === 'success' ? 'success' : 'error',
-      response_status: response_code,
-      response_body: response_body?.substring(0, 5000),
-      duration_ms
-    });
+      status: delivery_status,
+      response_status: delivery.status ?? null,
+      response_body: delivery.body?.substring(0, 5000) || delivery.error?.substring(0, 5000) || null,
+      error_message: delivery.error || null,
+      request_signature: delivery.signature || null,
+      resolved_ip: delivery.resolvedIp || null,
+      duration_ms: Math.round(delivery.durationMs),
+      completed_at: new Date().toISOString(),
+    };
 
-    return ok(res, { status: delivery_status, response_code, duration_ms, response_body: response_body?.substring(0, 500) });
+    await sb.from('webhook_logs').insert(logPayload);
+
+    return ok(res, {
+      status: delivery_status,
+      response_code: delivery.status,
+      duration_ms: Math.round(delivery.durationMs),
+      error: delivery.error || null,
+      response_body: delivery.body?.substring(0, 500) || null,
+    }, delivery_status === 'success' ? 'Webhook delivered' : 'Webhook delivery failed', delivery_status === 'success' ? 200 : 400);
+  } catch (err) { return fail(res, err.message, 500); }
+}
+
+/**
+ * Ejecuta UN ciclo del worker de webhooks (útil para tests y operaciones).
+ * POST /api/integrations/webhooks/process-queue
+ */
+export async function processQueue(req, res) {
+  try {
+    const result = await runWebhookCycle(req.sb, { batch: Number(req.body?.batch) || 20 });
+    return ok(res, result);
   } catch (err) { return fail(res, err.message, 500); }
 }
 

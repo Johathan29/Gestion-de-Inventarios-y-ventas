@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import {
-  listWebhooks, getWebhook, createWebhook, updateWebhook, deleteWebhook, testWebhook, webhookLogs,
+  listWebhooks, getWebhook, createWebhook, updateWebhook, deleteWebhook, testWebhook, webhookLogs, processQueue,
   listAutomations, getAutomation, createAutomation, updateAutomation, deleteAutomation, automationLogs, testAutomation, toggleAutomation,
   listEventTypes
 } from './controllers/integration.controller.js';
@@ -42,6 +42,8 @@ export function integrationRouter(defaultSupabase) {
 
   // ── WEBHOOKS ───────────────────────────────────────────────────────
   router.get('/webhooks',            requireAuth, listWebhooks);
+  // MUST be before /webhooks/:id (Express param shadowing)
+  router.post('/webhooks/process-queue', requireAuth, processQueue);
   router.get('/webhooks/:id',        requireAuth, getWebhook);
   router.post('/webhooks',           requireAuth, createWebhook);
   router.put('/webhooks/:id',        requireAuth, updateWebhook);

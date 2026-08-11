@@ -11,6 +11,7 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
 import { integrationRouter } from './router.js';
+import { startWebhookWorker } from './webhooks/worker.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -37,4 +38,11 @@ app.use((err, _req, res, _next) => {
 });
 
 app.listen(PORT, () => console.log(`[INTEGRATION] Running on port ${PORT}`));
+
+// ── Worker de webhooks (Fase 8): procesa webhook_logs pendientes con
+//    SSRF guard, firma HMAC y retries con backoff exponencial. ──────────
+const workerInterval = Number(process.env.WEBHOOK_WORKER_INTERVAL_MS) || 4000;
+const workerBatch = Number(process.env.WEBHOOK_WORKER_BATCH) || 20;
+startWebhookWorker(supabase, { intervalMs: workerInterval, batch: workerBatch });
+
 export default app;
