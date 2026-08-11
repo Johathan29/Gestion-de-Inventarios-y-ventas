@@ -410,7 +410,7 @@ const requestPasswordReset = async (req, res, next) => {
         console.log(`[PasswordReset] Correo enviado a ${email}`);
       } catch (emailError) {
         console.log(`[PasswordReset] Email no enviado a ${email}: ${emailError.message}`);
-        console.log(`[PasswordReset] Token para ${email}: ${resetToken}`);
+        console.log(`[PasswordReset] Token generado para ${email} (no se expone en logs) — reintentar envío`);
       }
     }
   } catch (error) {

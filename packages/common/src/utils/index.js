@@ -54,8 +54,49 @@ export function loadConfig() {
 }
 
 // ============================================================
-// Logger (Winston)
+// Logger (Winston) con redacción de secretos (Fase 9)
 // ============================================================
+
+// Valores de secretos que NUNCA deben aparecer en logs
+const SECRET_ENV_KEYS = [
+  'JWT_SECRET', 'JWT_REFRESH_SECRET', 'SUPABASE_SERVICE_KEY', 'SUPABASE_SERVICE_ROLE_KEY',
+  'ENCRYPTION_KEY', 'SMTP_PASS', 'WHATSAPP_API_TOKEN', 'MAILTRAP_TOKEN', 'SUPABASE_DB_PASSWORD',
+];
+const REDACTED = '[REDACTED]';
+const secretValues = SECRET_ENV_KEYS
+  .map((k) => process.env[k])
+  .filter((v) => v && v.length >= 8);
+
+function redact(text) {
+  if (!text) return text;
+  let out = String(text);
+  for (const v of secretValues) {
+    if (out.includes(v)) out = out.split(v).join(REDACTED);
+  }
+  return out;
+}
+
+function sanitizeValue(val, depth = 0) {
+  if (depth > 6) return val;
+  if (typeof val === 'string') return redact(val);
+  if (Array.isArray(val)) return val.map((v) => sanitizeValue(v, depth + 1));
+  if (val && typeof val === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(val)) out[k] = sanitizeValue(v, depth + 1);
+    return out;
+  }
+  return val;
+}
+
+// Formato winston: redacta secretos en message y meta (se aplica a TODOS los transports)
+const sanitizeFormat = winston.format((info) => {
+  info.message = typeof info.message === 'string' ? redact(info.message) : info.message;
+  for (const key of Object.keys(info)) {
+    if (['message', 'level', 'timestamp', 'service'].includes(key)) continue;
+    info[key] = sanitizeValue(info[key]);
+  }
+  return info;
+});
 
 /**
  * Create a configured Winston logger
@@ -76,9 +117,9 @@ export function createLogger(serviceName = 'erp') {
         winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
         winston.format.printf(({ timestamp, level, message, ...meta }) => {
           const metaStr = Object.keys(meta).length > 0 
-            ? JSON.stringify(meta, null, 2) 
+            ? JSON.stringify(sanitizeValue(meta), null, 2) 
             : '';
-          return `${timestamp} [${level}] ${serviceName}: ${message} ${metaStr}`;
+          return `${timestamp} [${level}] ${serviceName}: ${redact(message)} ${metaStr}`;
         })
       ),
     }),
@@ -88,6 +129,7 @@ export function createLogger(serviceName = 'erp') {
       maxsize: 5242880, // 5MB
       maxFiles: 5,
       format: winston.format.combine(
+        sanitizeFormat(),
         winston.format.timestamp(),
         winston.format.json()
       ),
@@ -97,6 +139,7 @@ export function createLogger(serviceName = 'erp') {
       maxsize: 5242880,
       maxFiles: 5,
       format: winston.format.combine(
+        sanitizeFormat(),
         winston.format.timestamp(),
         winston.format.json()
       ),

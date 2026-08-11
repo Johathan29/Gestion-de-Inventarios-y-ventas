@@ -5,6 +5,9 @@ const { logger } = require('../utils/logger');
  * Middleware centralizado de manejo de errores
  */
 const errorHandler = (err, req, res, next) => {
+  const requestId = req?.requestId || req?.headers?.['x-request-id'] || req?.correlationId || null;
+  const traceId = req?.traceId || req?.headers?.['x-trace-id'] || null;
+
   const error = {
     success: false,
     error: {
@@ -13,7 +16,9 @@ const errorHandler = (err, req, res, next) => {
       ...(err.details && { details: err.details }),
       timestamp: err.timestamp || new Date().toISOString(),
       path: req.originalUrl,
-      method: req.method
+      method: req.method,
+      ...(requestId && { request_id: requestId }),
+      ...(traceId && { trace_id: traceId })
     }
   };
 
@@ -24,7 +29,9 @@ const errorHandler = (err, req, res, next) => {
     path: req.originalUrl,
     method: req.method,
     userId: req.user?.id,
-    ip: req.ip
+    ip: req.ip,
+    requestId,
+    traceId
   };
 
   if (err.statusCode >= 500) {
@@ -40,6 +47,8 @@ const errorHandler = (err, req, res, next) => {
  * Middleware para manejar rutas no encontradas
  */
 const notFoundHandler = (req, res) => {
+  const requestId = req?.requestId || req?.headers?.['x-request-id'] || req?.correlationId || null;
+  const traceId = req?.traceId || req?.headers?.['x-trace-id'] || null;
   res.status(404).json({
     success: false,
     error: {
@@ -47,7 +56,9 @@ const notFoundHandler = (req, res) => {
       message: `Ruta ${req.originalUrl} no encontrada`,
       timestamp: new Date().toISOString(),
       path: req.originalUrl,
-      method: req.method
+      method: req.method,
+      ...(requestId && { request_id: requestId }),
+      ...(traceId && { trace_id: traceId })
     }
   });
 };

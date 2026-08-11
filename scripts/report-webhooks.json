@@ -1,68 +1,68 @@
 {
   "base": "http://localhost:3000",
-  "secret": "whsec_fase8_f203f5c53d7f",
+  "secret": "whsec_fase8_fcbfd3c97769",
   "results": [
     {
       "code": "W01",
       "name": "Login admin → token",
       "pass": true,
-      "ms": 1855,
+      "ms": 901,
       "detail": "company 00000000…"
     },
     {
       "code": "W02",
       "name": "Setup: webhook ACTIVO hmac → httpbin.org/post (client.created)",
       "pass": true,
-      "ms": 154,
-      "detail": "id 23"
+      "ms": 89,
+      "detail": "id 31"
     },
     {
       "code": "W03",
       "name": "Disparo: crear cliente → log pending en webhook_logs",
       "pass": true,
-      "ms": 1452,
-      "detail": "log 57 (pending)"
+      "ms": 1347,
+      "detail": "log 128 (sending)"
     },
     {
       "code": "W04",
       "name": "Entrega + FIRMA HMAC verificada end-to-end (echo httpbin)",
       "pass": true,
-      "ms": 1198,
-      "detail": "200 + firma OK (ip 54.81.88.174)"
+      "ms": 2729,
+      "detail": "200 + firma OK (ip 32.196.52.218)"
     },
     {
       "code": "W05",
       "name": "SSRF: IP privada/metadata 169.254.169.254 → rechazado",
       "pass": true,
-      "ms": 284,
+      "ms": 275,
       "detail": "400: SSRF blocked"
     },
     {
       "code": "W06",
       "name": "SSRF: hostnames bloqueados (localhost / metadata.google.internal)",
       "pass": true,
-      "ms": 563,
+      "ms": 541,
       "detail": "localhost + metadata.google.internal bloqueados"
     },
     {
       "code": "W07",
       "name": "Retry con backoff: /status/500 → 3 intentos → error definitivo",
       "pass": true,
-      "ms": 4696,
+      "ms": 8716,
       "detail": "error tras 3/3 intentos"
     },
     {
       "code": "W08",
       "name": "Contadores: success_count / last_status del webhook W02",
       "pass": true,
-      "ms": 103,
+      "ms": 92,
       "detail": "success_count=2, last_status=success"
     },
     {
       "code": "W09",
       "name": "process-queue: responde resumen JSON válido",
       "pass": true,
-      "ms": 92,
+      "ms": 81,
       "detail": "processed=0"
     }
   ],

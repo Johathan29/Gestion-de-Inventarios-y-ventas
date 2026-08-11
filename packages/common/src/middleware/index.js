@@ -138,10 +138,16 @@ export function errorHandler(err, req, res, _next) {
     console.error(`[ERROR] ${err.message}`, err.stack);
   }
 
+  // Fase 9: trazabilidad estándar (request_id / trace_id)
+  const requestId = req?.requestId || req?.headers?.['x-request-id'] || req?.headers?.['x-correlation-id'] || null;
+  const traceId = req?.traceId || req?.headers?.['x-trace-id'] || null;
+
   const response = {
     success: false,
     message,
     code: err.code || 'INTERNAL_ERROR',
+    ...(requestId && { request_id: requestId }),
+    ...(traceId && { trace_id: traceId }),
     ...(Object.keys(err.details || {}).length > 0 && { details: err.details }),
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   };

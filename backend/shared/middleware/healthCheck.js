@@ -168,9 +168,91 @@ function getServiceList() {
   return Object.keys(SERVICE_LIST);
 }
 
+// ============================================================
+// Fase 9 — Checks profundos (DB, cola de webhooks)
+// ============================================================
+
+/**
+ * Verifica la base de datos (Supabase/PostgREST) con el service key.
+ * Hace GET al root REST: conectividad + autenticación en un solo paso.
+ */
+function checkDatabase() {
+  // Fallback: en dev el gateway se lanza con cwd api-gateway (sin .env propio).
+  // Cargar backend/.env (y raíz) si el proceso no trae SUPABASE_URL.
+  if (!process.env.SUPABASE_URL) {
+    try {
+      const dotenv = require('dotenv');
+      const path = require('path');
+      dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+      dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+    } catch { /* dotenv no disponible → se reportará como no configurado */ }
+  }
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url) {
+    return Promise.resolve({ ok: false, latency: 0, error: 'SUPABASE_URL no configurado' });
+  }
+  const start = Date.now();
+  return new Promise((resolve) => {
+    const target = new URL(url.endsWith('/') ? url : url + '/');
+    target.pathname = '/rest/v1/';
+    const req = http.get({
+      hostname: target.hostname,
+      port: target.port || 443,
+      path: target.pathname,
+      headers: {
+        apikey: key || '',
+        ...(key ? { Authorization: `Bearer ${key}` } : {}),
+        Accept: 'application/json',
+      },
+      timeout: SERVICE_TIMEOUT,
+    }, (res) => {
+      res.resume();
+      const latency = Date.now() - start;
+      // PostgREST responde 200/301/404 en el root; cualquier HTTP válido = DB alcanzable
+      const ok = res.statusCode >= 200 && res.statusCode < 500;
+      resolve({ ok, latency, statusCode: res.statusCode, error: ok ? null : `HTTP ${res.statusCode}` });
+    });
+    req.on('timeout', () => { req.destroy(); resolve({ ok: false, latency: SERVICE_TIMEOUT, error: 'TIMEOUT' }); });
+    req.on('error', (err) => resolve({ ok: false, latency: Date.now() - start, error: err.code || err.message }));
+  });
+}
+
+/**
+ * Estado de la cola de webhooks + fallos del worker (integration-service).
+ * El /health del integration-service expone webhookQueueDepth y webhookFailures.
+ */
+function getWebhookQueueInfo() {
+  return new Promise((resolve) => {
+    const start = Date.now();
+    const req = http.get({ hostname: 'localhost', port: 3024, path: '/health', timeout: SERVICE_TIMEOUT }, (res) => {
+      let data = '';
+      res.on('data', (c) => (data += c));
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          resolve({
+            ok: true,
+            latency: Date.now() - start,
+            webhookQueueDepth: parsed.webhookQueueDepth ?? null,
+            webhookFailures: parsed.webhookFailures ?? null,
+            db: parsed.db ?? null,
+          });
+        } catch {
+          resolve({ ok: false, latency: Date.now() - start, error: 'parse' });
+        }
+      });
+    });
+    req.on('timeout', () => { req.destroy(); resolve({ ok: false, latency: SERVICE_TIMEOUT, error: 'TIMEOUT' }); });
+    req.on('error', (err) => resolve({ ok: false, latency: Date.now() - start, error: err.code || err.message }));
+  });
+}
+
 module.exports = {
   checkService,
   checkAllServices,
+  checkDatabase,
+  getWebhookQueueInfo,
   getServiceList,
   SERVICE_LIST
 };

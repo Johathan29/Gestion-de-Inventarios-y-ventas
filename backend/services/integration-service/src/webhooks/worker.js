@@ -12,6 +12,13 @@ const DEFAULT_INTERVAL_MS = 4000;
 const DEFAULT_BATCH = 20;
 const BACKOFF_CAP_MS = 10 * 60 * 1000; // 10 minutos máx entre reintentos
 
+// Fase 9 — contador de fallos definitivos (exposición en /health)
+let webhookFailureCount = 0;
+
+export function getWebhookFailureCount() {
+  return webhookFailureCount;
+}
+
 /**
  * Procesa UN ciclo completo del worker. Devuelve resumen.
  */
@@ -48,6 +55,7 @@ async function processLog(supabase, log) {
 
   if (whErr || !webhook) {
     // Webhook eliminado → marcar log como error definitivo
+    webhookFailureCount += 1;
     await supabase.from('webhook_logs').update({
       status: 'error',
       error_message: 'Webhook no encontrado',
@@ -116,6 +124,7 @@ async function processLog(supabase, log) {
   }
 
   // ── Agotado el número de intentos → error definitivo ───────────────────
+  webhookFailureCount += 1;
   await supabase.from('webhooks').update({
     last_status: 'error',
     last_triggered_at: now,

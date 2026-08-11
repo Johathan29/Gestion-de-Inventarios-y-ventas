@@ -67,6 +67,9 @@ const logAuditEvent = async (req, res, next) => {
         new_values,
         ip_address,
         user_agent,
+        // Fase 9: trazabilidad — correlación con el gateway
+        request_id: req.headers['x-request-id'] || req.headers['x-correlation-id'] || null,
+        trace_id: req.headers['x-trace-id'] || null,
         created_at: new Date().toISOString()
       })
       .select()

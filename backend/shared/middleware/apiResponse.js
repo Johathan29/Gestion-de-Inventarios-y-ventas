@@ -19,6 +19,14 @@ function successResponse(res, data = null, message = 'Operación exitosa', statu
     response.correlationId = res.req.correlationId;
   }
 
+  // Fase 9: request_id / trace_id estandarizados (trazabilidad distribuida)
+  if (res.req && res.req.requestId) {
+    response.request_id = res.req.requestId;
+  }
+  if (res.req && res.req.traceId) {
+    response.trace_id = res.req.traceId;
+  }
+
   // Incluir paginación si está disponible
   if (data && data.pagination) {
     response.pagination = data.pagination;
@@ -59,6 +67,14 @@ function errorResponse(res, message = 'Error interno del servidor', statusCode =
 
   if (res.req && res.req.correlationId) {
     response.error.correlationId = res.req.correlationId;
+  }
+
+  // Fase 9: request_id / trace_id estandarizados
+  if (res.req && res.req.requestId) {
+    response.error.request_id = res.req.requestId;
+  }
+  if (res.req && res.req.traceId) {
+    response.error.trace_id = res.req.traceId;
   }
 
   if (details && process.env.NODE_ENV !== 'production') {

@@ -84,7 +84,7 @@ export class PaymentGatewayClient {
     const status = MOCK_STATUSES[normalized] || 'approved';
 
     if (status === 'approved') {
-      this._logger.info(`[PaymentGateway:mock] Cobro aprobado por $${amount} (token ${token || '—'})`);
+      this._logger.info(`[PaymentGateway:mock] Cobro aprobado por $${amount} (token ${token ? '[REDACTED]' : '—'})`);
       return {
         status: 'approved',
         gatewayReference: `mock_${Date.now()}`,
@@ -96,7 +96,7 @@ export class PaymentGatewayClient {
       this._logger.info(`[PaymentGateway:mock] Cobro pendiente por $${amount}`);
       return { status: 'pending', gatewayReference: `mock_pending_${Date.now()}`, lastFour: null, message: 'Pago pendiente' };
     }
-    this._logger.warn(`[PaymentGateway:mock] Cobro rechazado por $${amount} (token ${token})`);
+    this._logger.warn(`[PaymentGateway:mock] Cobro rechazado por $${amount} (token ${token ? '[REDACTED]' : '—'})`);
     return { status: 'declined', gatewayReference: '', lastFour: null, message: 'Tarjeta rechazada (modo simulado)' };
   }
 }

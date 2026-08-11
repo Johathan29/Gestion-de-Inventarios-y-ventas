@@ -3,6 +3,8 @@ const express = require('express');
 const router = express.Router();
 const { getCircuitBreaker } = require('../../shared/middleware/circuitBreaker');
 const { CORRELATION_HEADER } = require('../../shared/middleware/correlationId');
+const { REQUEST_ID_HEADER, TRACE_ID_HEADER } = require('../../shared/middleware/requestId');
+const { recordCheckout } = require('../../shared/middleware/metrics');
 
 // Timeouts por servicio (ms)
 const SERVICE_TIMEOUTS = {
@@ -70,6 +72,13 @@ function createResilientProxy(name, service) {
       if (req.correlationId) {
         proxyReq.setHeader('x-correlation-id', req.correlationId);
       }
+      // Fase 9: propagar request_id / trace_id (trazabilidad distribuida)
+      if (req.requestId || req.headers[REQUEST_ID_HEADER]) {
+        proxyReq.setHeader(REQUEST_ID_HEADER, req.requestId || req.headers[REQUEST_ID_HEADER]);
+      }
+      if (req.traceId || req.headers[TRACE_ID_HEADER]) {
+        proxyReq.setHeader(TRACE_ID_HEADER, req.traceId || req.headers[TRACE_ID_HEADER]);
+      }
       // Propagar usuario actual si está autenticado
       if (req.user) {
         proxyReq.setHeader('x-user-id', req.user.id);
@@ -85,6 +94,12 @@ function createResilientProxy(name, service) {
       // Propagar Correlation ID desde respuesta del servicio
       if (!res.getHeader('x-correlation-id') && req.correlationId) {
         res.setHeader('x-correlation-id', req.correlationId);
+      }
+      if (!res.getHeader(REQUEST_ID_HEADER) && (req.requestId || req.headers[REQUEST_ID_HEADER])) {
+        res.setHeader(REQUEST_ID_HEADER, req.requestId || req.headers[REQUEST_ID_HEADER]);
+      }
+      if (!res.getHeader(TRACE_ID_HEADER) && (req.traceId || req.headers[TRACE_ID_HEADER])) {
+        res.setHeader(TRACE_ID_HEADER, req.traceId || req.headers[TRACE_ID_HEADER]);
       }
     },
     onError: (err, req, res) => {
@@ -152,9 +167,12 @@ const checkoutProxy = createProxyMiddleware('/api/v1/checkout', {
   },
   onProxyRes: (proxyRes, req, res) => {
     if (!res.getHeader('x-correlation-id') && req.correlationId) res.setHeader('x-correlation-id', req.correlationId);
+    // Fase 9: métricas de checkout (success/failure)
+    recordCheckout(res.statusCode < 400);
   },
   onError: (err, req, res) => {
     console.error(`[Gateway][checkout] Error: ${err.message} [${req.correlationId || 'no-id'}]`);
+    recordCheckout(false);
     res.status(503).json({
       success: false,
       error: { code: 'SERVICE_UNAVAILABLE', message: 'Servicio checkout no disponible', service: 'checkout', correlationId: req.correlationId || null, timestamp: new Date().toISOString() }

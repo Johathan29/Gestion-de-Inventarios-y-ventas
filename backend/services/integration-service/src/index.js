@@ -11,7 +11,7 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
 import { integrationRouter } from './router.js';
-import { startWebhookWorker } from './webhooks/worker.js';
+import { startWebhookWorker, getWebhookFailureCount } from './webhooks/worker.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -27,7 +27,33 @@ app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost
 app.use(express.json({ limit: '10mb' }));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 500, standardHeaders: true, legacyHeaders: false }));
 
-app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'integration-service', port: PORT, timestamp: new Date().toISOString() }));
+app.get('/health', async (_req, res) => {
+  // Fase 9: health profundo (DB, profundidad de cola de webhooks, fallos del worker)
+  let db = 'ok';
+  let webhookQueueDepth = null;
+  try {
+    const { count, error } = await supabase
+      .from('webhook_logs')
+      .select('id', { count: 'exact', head: true })
+      .in('status', ['pending', 'retrying', 'sending']);
+    if (error) {
+      db = 'degraded';
+    } else {
+      webhookQueueDepth = count ?? 0;
+    }
+  } catch (e) {
+    db = 'degraded';
+  }
+  res.json({
+    status: 'ok',
+    service: 'integration-service',
+    port: PORT,
+    timestamp: new Date().toISOString(),
+    db,
+    webhookQueueDepth,
+    webhookFailures: getWebhookFailureCount(),
+  });
+});
 
 app.use('/api/integrations', integrationRouter(supabase));
 

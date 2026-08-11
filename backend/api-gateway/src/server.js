@@ -7,7 +7,9 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const dotenv = require('dotenv');
 const { serviceRoutes, services, SERVICE_TIMEOUTS } = require('./routes');
 const { correlationIdMiddleware, CORRELATION_HEADER } = require('../../shared/middleware/correlationId');
-const { checkAllServices, checkService, getServiceList } = require('../../shared/middleware/healthCheck');
+const { requestIdMiddleware, getRequestId, getTraceId } = require('../../shared/middleware/requestId');
+const { metricsMiddleware, metricsHandler } = require('../../shared/middleware/metrics');
+const { checkAllServices, checkService, getServiceList, checkDatabase, getWebhookQueueInfo } = require('../../shared/middleware/healthCheck');
 const { getCircuitBreaker, getAllCircuitStates } = require('../../shared/middleware/circuitBreaker');
 
 dotenv.config();
@@ -55,11 +57,23 @@ const allowedOrigins = [
 app.use(cors({
   origin: isProduction ? process.env.CORS_ORIGIN : allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id', 'x-requested-with'],
-  exposedHeaders: ['x-correlation-id', 'x-request-id'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id', 'x-request-id', 'x-trace-id', 'x-company-id', 'x-idempotency-key', 'x-requested-with'],
+  exposedHeaders: ['x-correlation-id', 'x-request-id', 'x-trace-id'],
   credentials: true,
   maxAge: 86400 // 24h preflight cache
 }));
+
+// ============================================================
+// 4b. REQUEST ID + TRACE ID (Trazabilidad distribuida estándar)
+//      Genera x-request-id / x-trace-id y los propaga; mantiene
+//      x-correlation-id como alias de compatibilidad.
+// ============================================================
+app.use(requestIdMiddleware);
+
+// ============================================================
+// 4c. MÉTRICAS (Prometheus) — registra cada request
+// ============================================================
+app.use(metricsMiddleware);
 
 // ============================================================
 // 4. CORRELATION ID (Trazabilidad distribuida)
@@ -174,8 +188,66 @@ app.get('/health', (req, res) => {
     service: 'api-gateway',
     version: '2.0.0',
     correlationId: req.correlationId,
+    requestId: getRequestId(req),
+    traceId: getTraceId(req),
     uptime: process.uptime()
   });
+});
+
+// Health check de vida (liveness): el proceso responde
+app.get('/health/live', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'api-gateway',
+    version: '2.0.0',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    requestId: getRequestId(req)
+  });
+});
+
+// Health check de readiness: dependencias críticas (DB, servicios, cola)
+app.get('/health/ready', async (req, res) => {
+  const requestId = getRequestId(req);
+  try {
+    const [db, servicesReport, webhookQueue] = await Promise.all([
+      checkDatabase(),
+      checkAllServices(),
+      getWebhookQueueInfo()
+    ]);
+
+    const unhealthy = servicesReport.summary.unhealthy > 0 || !db.ok;
+    const degraded = servicesReport.summary.degraded > 0 || (webhookQueue.ok && (webhookQueue.db === 'degraded'));
+    const status = unhealthy ? 'unhealthy' : degraded ? 'degraded' : 'healthy';
+
+    res.status(unhealthy ? 503 : 200).json({
+      status,
+      timestamp: new Date().toISOString(),
+      version: '2.0.0',
+      uptime: process.uptime(),
+      requestId,
+      database: {
+        status: db.ok ? 'healthy' : 'unhealthy',
+        latencyMs: db.latency,
+        error: db.error || null
+      },
+      webhookQueue,
+      services: servicesReport.services,
+      summary: servicesReport.summary,
+      gateway: {
+        status: 'healthy',
+        memory: process.memoryUsage(),
+        version: '2.0.0'
+      }
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'unhealthy',
+      message: 'Error verificando dependencias',
+      error: err.message,
+      requestId
+    });
+  }
 });
 
 // Health check detallado de todos los servicios
@@ -241,6 +313,11 @@ app.get('/health/circuit-breakers', (req, res) => {
 });
 
 // ============================================================
+// 6b. MÉTRICAS PROMETHEUS (Fase 9)
+// ============================================================
+app.get('/metrics', metricsHandler);
+
+// ============================================================
 // 7. APLICAR RATE LIMITERS ESPECÍFICOS
 // ============================================================
 app.use('/api/v1/auth/login', authLimiter);
@@ -264,6 +341,8 @@ app.use(express.urlencoded({ extended: true, limit: process.env.MAX_BODY_SIZE ||
 // ============================================================
 app.use((err, req, res, next) => {
   const correlationId = req.correlationId || 'unknown';
+  const requestId = getRequestId(req);
+  const traceId = getTraceId(req);
   const statusCode = err.status || err.statusCode || 500;
 
   console.error(`[${correlationId}] Gateway Error:`, {
@@ -282,6 +361,8 @@ app.use((err, req, res, next) => {
         ? 'Error interno del servidor'
         : err.message || 'Error en el gateway',
       correlationId,
+      ...(requestId && { request_id: requestId }),
+      ...(traceId && { trace_id: traceId }),
       timestamp: new Date().toISOString()
     }
   });
@@ -291,12 +372,16 @@ app.use((err, req, res, next) => {
 // 11. 404 MEJORADO
 // ============================================================
 app.use((req, res) => {
+  const requestId = getRequestId(req);
+  const traceId = getTraceId(req);
   res.status(404).json({
     success: false,
     error: {
       code: 'NOT_FOUND',
       message: `Ruta ${req.originalUrl} no encontrada`,
       correlationId: req.correlationId,
+      ...(requestId && { request_id: requestId }),
+      ...(traceId && { trace_id: traceId }),
       timestamp: new Date().toISOString()
     }
   });
@@ -311,6 +396,9 @@ app.listen(PORT, () => {
   console.log(`📡 Puerto: ${PORT}`);
   console.log(`📍 Health: http://localhost:${PORT}/health`);
   console.log(`🔍 Services: http://localhost:${PORT}/health/services`);
+  console.log(`🟢 Live: http://localhost:${PORT}/health/live`);
+  console.log(`🟡 Ready: http://localhost:${PORT}/health/ready`);
+  console.log(`📊 Metrics: http://localhost:${PORT}/metrics`);
   console.log(`🔄 Microservicios montados en /api/v1/`);
   console.log(`🔒 Rate limit global: ${process.env.GLOBAL_RATE_LIMIT || 1000}/15min`);
   console.log(`🌐 CORS: ${isProduction ? process.env.CORS_ORIGIN : allowedOrigins.join(', ')}`);
