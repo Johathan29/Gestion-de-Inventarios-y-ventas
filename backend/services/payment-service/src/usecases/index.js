@@ -4,8 +4,15 @@
 
 import crypto from 'crypto';
 import { PaymentTransaction, CashRegister, TRANSACTION_STATUSES, CASH_REGISTER_STATUSES } from '../domain/index.js';
-import { PaymentProcessedEvent, PaymentRefundedEvent, CashRegisterOpenedEvent, CashRegisterClosedEvent } from '../events/index.js';
+import {
+  PaymentProcessedEvent, PaymentRefundedEvent, PaymentAuthorizedEvent,
+  PaymentCapturedEvent, PaymentFailedEvent, PaymentExpiredEvent,
+  PaymentPartiallyRefundedEvent, CashRegisterOpenedEvent, CashRegisterClosedEvent,
+} from '../events/index.js';
 import { PaymentGatewayClient } from '../infrastructure/payment-gateway.js';
+
+// TTL de pagos pendientes (máquina de estados: PAYMENT_PENDING → PAYMENT_EXPIRED)
+const PENDING_TTL_MS = 15 * 60 * 1000;
 
 export class ProcessPaymentUseCase {
   constructor({ paymentMethodRepo, transactionRepo, eventBus }) {
@@ -42,7 +49,10 @@ export class ProcessPaymentUseCase {
     });
 
     // Pago con tarjeta tokenizada → cobrar vía pasarela (PSP)
-    if (token || cardId) {
+    if (method.type === 'card') {
+      if (!token && !cardId) {
+        throw new Error('CARD_PAYMENT_TOKEN_REQUIRED');
+      }
       let result;
       try {
         result = await this._gateway.charge({
@@ -54,27 +64,30 @@ export class ProcessPaymentUseCase {
         });
       } catch (gatewayErr) {
         transaction.fail(`Error de pasarela: ${gatewayErr.message}`);
-        const failed = await this._transactionRepo.save(transaction);
+        await this._transactionRepo.save(transaction);
         throw new Error('PAYMENT_GATEWAY_ERROR');
       }
 
       // Referencia de la pasarela (nunca el token)
       transaction._reference = result.gatewayReference || transaction.reference;
+      transaction._gatewayTransactionId = result.gatewayReference || null;
       transaction._notes = result.message || transaction.notes;
 
       if (result.status === 'approved') {
-        transaction.complete();
+        // El PSP mock hace auth+capture en 1 paso → captura directa
+        transaction.capture();
       } else if (result.status === 'pending') {
-        transaction._status = TRANSACTION_STATUSES.PENDING;
+        // Pago pendiente: TTL de expiración (máquina de estados)
+        transaction._expiresAt = new Date(Date.now() + PENDING_TTL_MS);
         transaction._processedAt = null;
       } else {
         transaction.fail(result.message || 'Tarjeta rechazada');
-        const failed = await this._transactionRepo.save(transaction);
+        await this._transactionRepo.save(transaction);
         throw new Error('PAYMENT_DECLINED');
       }
     } else {
-      // Métodos sin token (cash/transfer) — se completan directamente
-      transaction.complete();
+      // Métodos sin token (cash/transfer) — se completan directamente (POS nunca pasa por gateway)
+      transaction.capture();
     }
 
     const saved = await this._transactionRepo.save(transaction);
@@ -94,11 +107,83 @@ export class RefundPaymentUseCase {
     const transaction = await this._transactionRepo.findById(transactionId);
     if (!transaction) throw new Error('NOT_FOUND');
 
+    // Refund total: solo desde captured o partially_refunded
     transaction.refund();
-    const saved = await this._transactionRepo.updateStatus(transactionId, transaction.status);
+    const saved = await this._transactionRepo.update(transaction);
     await this._eventBus.publish(new PaymentRefundedEvent(saved));
 
     return saved;
+  }
+}
+
+/**
+ * Procesa un webhook de la pasarela (payment.authorized/captured/failed/...).
+ * Seguridad: la firma se verifica en el controlador; aquí se garantiza
+ * idempotencia (dedup por event_id) y transiciones válidas de la máquina
+ * de estados. Un evento duplicado o replay es un no-op / rechazo.
+ */
+export class HandleGatewayWebhookUseCase {
+  constructor({ transactionRepo, eventBus }) {
+    this._transactionRepo = transactionRepo;
+    this._eventBus = eventBus;
+  }
+
+  async execute({ eventId, eventType, createdAt, transactionId, gatewayTransactionId, payload }) {
+    // 1) Idempotencia: el mismo event_id solo se procesa una vez
+    const existing = await this._transactionRepo.findWebhookEvent(eventId);
+    if (existing) return { status: 'duplicate', eventId };
+
+    // 2) Replay protection: evento demasiado antiguo → rechazo
+    const received = new Date(createdAt || Date.now());
+    if (Date.now() - received.getTime() > 5 * 60 * 1000) {
+      return { status: 'replay_rejected', eventId };
+    }
+
+    // 3) Buscar la transacción (por id o por gateway_transaction_id)
+    let transaction = null;
+    if (transactionId) transaction = await this._transactionRepo.findById(transactionId);
+    if (!transaction && gatewayTransactionId) {
+      transaction = await this._transactionRepo.findByGatewayTransactionId(gatewayTransactionId);
+    }
+    if (!transaction) return { status: 'not_found', eventId };
+
+    // 4) Aplicar la transición según el tipo de evento
+    const map = {
+      'payment.authorized': (t) => t.authorize(),
+      'payment.captured': (t) => t.capture(),
+      'payment.failed': (t) => t.fail(payload?.failure_reason || 'Rechazado por pasarela'),
+      'payment.expired': (t) => t.expire(),
+      'payment.refunded': (t) => t.refund(),
+      'payment.partially_refunded': (t) => t.partialRefund(),
+    };
+    const apply = map[eventType];
+    if (!apply) return { status: 'unknown_event', eventId };
+
+    try {
+      apply(transaction);
+    } catch (err) {
+      // Transición inválida (p.ej. captured → failed): registrar y no-op
+      return { status: 'invalid_transition', eventId, message: err.message };
+    }
+
+    // 5) Persistir la transición + dedup del evento (misma operación)
+    const saved = await this._transactionRepo.update(transaction);
+    await this._transactionRepo.saveWebhookEvent({ eventId, eventType, transactionId: transaction.id, payload });
+    await this._publishEvent(eventType, saved);
+
+    return { status: 'processed', eventId, transaction: saved };
+  }
+
+  _publishEvent(eventType, transaction) {
+    switch (eventType) {
+      case 'payment.authorized': return this._eventBus.publish(new PaymentAuthorizedEvent(transaction));
+      case 'payment.captured': return this._eventBus.publish(new PaymentCapturedEvent(transaction));
+      case 'payment.failed': return this._eventBus.publish(new PaymentFailedEvent(transaction));
+      case 'payment.expired': return this._eventBus.publish(new PaymentExpiredEvent(transaction));
+      case 'payment.refunded': return this._eventBus.publish(new PaymentRefundedEvent(transaction));
+      case 'payment.partially_refunded': return this._eventBus.publish(new PaymentPartiallyRefundedEvent(transaction));
+      default: return Promise.resolve();
+    }
   }
 }
 

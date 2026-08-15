@@ -6,6 +6,7 @@ import {
   ProcessPaymentUseCase, RefundPaymentUseCase, ListPaymentMethodsUseCase,
   OpenCashRegisterUseCase, CloseCashRegisterUseCase,
   ListCashRegistersUseCase, GetPaymentTransactionsUseCase,
+  HandleGatewayWebhookUseCase,
 } from '../usecases/index.js';
 
 export class PaymentsApplicationService {
@@ -17,6 +18,7 @@ export class PaymentsApplicationService {
     this._closeCashRegister = new CloseCashRegisterUseCase({ cashRegisterRepo, eventBus });
     this._listCashRegisters = new ListCashRegistersUseCase({ cashRegisterRepo });
     this._getPaymentTransactions = new GetPaymentTransactionsUseCase({ transactionRepo });
+    this._handleGatewayWebhook = new HandleGatewayWebhookUseCase({ transactionRepo, eventBus });
   }
 
   processPayment(input) { return this._processPayment.execute(input); }
@@ -26,4 +28,5 @@ export class PaymentsApplicationService {
   closeCashRegister(input) { return this._closeCashRegister.execute(input); }
   listCashRegisters(filters) { return this._listCashRegisters.execute(filters); }
   getPaymentTransactions(saleId) { return this._getPaymentTransactions.execute(saleId); }
+  handleGatewayWebhook(input) { return this._handleGatewayWebhook.execute(input); }
 }

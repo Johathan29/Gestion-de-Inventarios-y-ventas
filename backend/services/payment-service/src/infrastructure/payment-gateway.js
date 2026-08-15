@@ -42,8 +42,13 @@ export class PaymentGatewayClient {
    * idempotencyKey evita cobros duplicados en reintentos.
    */
   async charge({ token, cardId, amount, currency = 'MXN', idempotencyKey, description = '' }) {
+    const source = token || cardId;
+    if (!source) {
+      throw new Error('PAYMENT_SOURCE_REQUIRED');
+    }
+
     if (!this.isConfigured) {
-      return this._mockCharge({ token, amount });
+      return this._mockCharge({ token: source, amount });
     }
 
     const path = this._provider === 'stripe'
@@ -53,8 +58,8 @@ export class PaymentGatewayClient {
         : '/charges';
 
     const payload = this._provider === 'mercadopago'
-      ? { token, transaction_amount: amount, description, installments: 1, payment_method_id: 'card', payer: {} }
-      : { source: token, amount, currency, description };
+      ? { token: source, transaction_amount: amount, description, installments: 1, payment_method_id: 'card', payer: {} }
+      : { source, amount, currency, description };
 
     const headers = {
       Authorization: `Bearer ${this._secretKey}`,

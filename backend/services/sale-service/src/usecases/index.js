@@ -738,7 +738,9 @@ export class CheckoutUseCase {
 
       const body = await resp.json();
       const status = body?.data?.status;
-      if (status === 'completed') return 'paid';
+      // Máquina de estados Fase 6: 'captured' es el estado objetivo;
+      // 'completed' se acepta por retro-compatibilidad (migración 074).
+      if (status === 'captured' || status === 'completed') return 'paid';
       if (status === 'failed') return 'failed';
       return 'pending';
     } catch (err) {

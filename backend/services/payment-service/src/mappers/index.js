@@ -86,6 +86,11 @@ export class PaymentTransactionMapper {
       processedAt: raw.processed_at,
       notes: raw.notes || '',
       idempotencyKey: raw.idempotency_key || null,
+      authorizedAt: raw.authorized_at || null,
+      capturedAt: raw.captured_at || null,
+      refundedAt: raw.refunded_at || null,
+      expiresAt: raw.expires_at || null,
+      gatewayTransactionId: raw.gateway_transaction_id || null,
       createdAt: raw.created_at,
       updatedAt: raw.updated_at,
     });
@@ -105,6 +110,11 @@ export class PaymentTransactionMapper {
       processed_at: domain.processedAt?.toISOString(),
       notes: domain.notes,
       idempotency_key: domain.idempotencyKey || null,
+      authorized_at: domain.authorizedAt?.toISOString() || null,
+      captured_at: domain.capturedAt?.toISOString() || null,
+      refunded_at: domain.refundedAt?.toISOString() || null,
+      expires_at: domain.expiresAt?.toISOString() || null,
+      gateway_transaction_id: domain.gatewayTransactionId || null,
       // Auditoría genérica (028/055): mantener la referencia a la entidad
       reference_type: domain.saleId ? 'sale' : (domain.invoiceId ? 'invoice' : null),
       reference_id: domain.saleId || domain.invoiceId || null,

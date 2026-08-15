@@ -5,12 +5,18 @@
 import { AggregateRoot, Entity } from '@erp/shared-kernel';
 
 export const PAYMENT_TYPES = ['cash', 'card', 'transfer', 'check', 'credit', 'wallet', 'other'];
+// Máquina de estados formal (docs/payments/PAYMENT-STATE-MACHINE.md, Fase 6)
 export const TRANSACTION_STATUSES = {
   PENDING: 'pending',
-  COMPLETED: 'completed',
+  AUTHORIZED: 'authorized',
+  CAPTURED: 'captured',
+  // Alias legacy: antes 'completed' → ahora 'captured' (migración 074)
+  COMPLETED: 'captured',
   FAILED: 'failed',
-  REFUNDED: 'refunded',
   CANCELLED: 'cancelled',
+  EXPIRED: 'expired',
+  REFUNDED: 'refunded',
+  PARTIALLY_REFUNDED: 'partially_refunded',
 };
 export const CASH_REGISTER_STATUSES = {
   OPEN: 'open',
@@ -117,7 +123,7 @@ export class CashRegister extends AggregateRoot {
 }
 
 export class PaymentTransaction extends AggregateRoot {
-  constructor({ id, saleId, invoiceId, paymentMethodId, paymentMethodName, amount, reference, status, processedBy, processedAt, notes, idempotencyKey, createdAt, updatedAt }) {
+  constructor({ id, saleId, invoiceId, paymentMethodId, paymentMethodName, amount, reference, status, processedBy, processedAt, notes, idempotencyKey, authorizedAt, capturedAt, refundedAt, expiresAt, gatewayTransactionId, createdAt, updatedAt }) {
     super(id);
     this._saleId = saleId;
     this._invoiceId = invoiceId;
@@ -130,6 +136,11 @@ export class PaymentTransaction extends AggregateRoot {
     this._processedAt = processedAt || null;
     this._notes = notes || '';
     this._idempotencyKey = idempotencyKey || null;
+    this._authorizedAt = authorizedAt || null;
+    this._capturedAt = capturedAt || null;
+    this._refundedAt = refundedAt || null;
+    this._expiresAt = expiresAt || null;
+    this._gatewayTransactionId = gatewayTransactionId || null;
     this._createdAt = createdAt || new Date();
     this._updatedAt = updatedAt || new Date();
   }
@@ -145,25 +156,72 @@ export class PaymentTransaction extends AggregateRoot {
   get processedAt() { return this._processedAt; }
   get notes() { return this._notes; }
   get idempotencyKey() { return this._idempotencyKey; }
+  get authorizedAt() { return this._authorizedAt; }
+  get capturedAt() { return this._capturedAt; }
+  get refundedAt() { return this._refundedAt; }
+  get expiresAt() { return this._expiresAt; }
+  get gatewayTransactionId() { return this._gatewayTransactionId; }
   get createdAt() { return this._createdAt; }
   get updatedAt() { return this._updatedAt; }
 
-  complete() {
-    this._status = TRANSACTION_STATUSES.COMPLETED;
-    this._processedAt = new Date();
+  /** Marca la transacción como expirada (TTL) o la lanza según la máquina de estados */
+  _transition(to, { processed = false, reason = null } = {}) {
+    const from = this._status;
+    const allowed = {
+      [TRANSACTION_STATUSES.PENDING]: ['authorized', 'captured', 'failed', 'cancelled', 'expired'],
+      [TRANSACTION_STATUSES.AUTHORIZED]: ['captured', 'failed'],
+      [TRANSACTION_STATUSES.CAPTURED]: ['refunded', 'partially_refunded'],
+      [TRANSACTION_STATUSES.PARTIALLY_REFUNDED]: ['refunded'],
+    };
+    if (!allowed[from]?.includes(to)) {
+      throw new Error(`INVALID_TRANSITION:${from}->${to}`);
+    }
+    this._status = to;
+    if (processed) this._processedAt = new Date();
+    if (reason) this._notes = reason;
     this._updatedAt = new Date();
+  }
+
+  authorize() {
+    this._transition(TRANSACTION_STATUSES.AUTHORIZED);
+    this._authorizedAt = new Date();
+  }
+
+  capture() {
+    this._transition(TRANSACTION_STATUSES.CAPTURED, { processed: true });
+    this._capturedAt = new Date();
+  }
+
+  /** Alias legacy de capture() (código previo a Fase 6) */
+  complete() {
+    this.capture();
   }
 
   fail(reason) {
-    this._status = TRANSACTION_STATUSES.FAILED;
-    this._notes = reason;
-    this._updatedAt = new Date();
+    this._transition(TRANSACTION_STATUSES.FAILED, { reason });
+  }
+
+  cancel() {
+    this._transition(TRANSACTION_STATUSES.CANCELLED);
+  }
+
+  expire() {
+    this._transition(TRANSACTION_STATUSES.EXPIRED);
+  }
+
+  partialRefund() {
+    this._transition(TRANSACTION_STATUSES.PARTIALLY_REFUNDED);
+    this._refundedAt = new Date();
   }
 
   refund() {
-    if (this._status !== TRANSACTION_STATUSES.COMPLETED) throw new Error('CANNOT_REFUND');
-    this._status = TRANSACTION_STATUSES.REFUNDED;
-    this._updatedAt = new Date();
+    this._transition(TRANSACTION_STATUSES.REFUNDED);
+    this._refundedAt = new Date();
+  }
+
+  isTerminal() {
+    return [TRANSACTION_STATUSES.FAILED, TRANSACTION_STATUSES.CANCELLED,
+      TRANSACTION_STATUSES.EXPIRED, TRANSACTION_STATUSES.REFUNDED].includes(this._status);
   }
 
   toJSON() {
@@ -175,6 +233,9 @@ export class PaymentTransaction extends AggregateRoot {
       amount: this._amount, reference: this._reference,
       status: this._status, processedBy: this._processedBy,
       processedAt: this._processedAt, notes: this._notes,
+      authorizedAt: this._authorizedAt, capturedAt: this._capturedAt,
+      refundedAt: this._refundedAt, expiresAt: this._expiresAt,
+      gatewayTransactionId: this._gatewayTransactionId,
       createdAt: this._createdAt, updatedAt: this._updatedAt,
     };
   }

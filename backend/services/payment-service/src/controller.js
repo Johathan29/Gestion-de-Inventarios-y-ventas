@@ -3,13 +3,59 @@
 // ============================================================
 
 import { Router } from 'express';
+import crypto from 'crypto';
 import { authenticate, authorize, validate, asyncHandler, idempotent, ROLES } from '@erp/common';
 import { tenantContext } from '@erp/shared-kernel';
 import { ProcessPaymentDTO, RefundPaymentDTO, OpenCashRegisterDTO, CloseCashRegisterDTO } from './DTOs/index.js';
 import bcrypt from 'bcryptjs';
 
+// Secreto de firma de webhooks de la pasarela (Fase 6). En producción usar
+// PSP_WEBHOOK_SECRET; en desarrollo un valor fijo documentado.
+const WEBHOOK_SECRET = process.env.PSP_WEBHOOK_SECRET || 'dev-webhook-secret';
+
+function verifyWebhookSignature(req) {
+  const signature = req.headers['x-webhook-signature'] || '';
+  const rawBody = req.rawBody || Buffer.from(JSON.stringify(req.body || {}));
+  const expected = 'sha256=' + crypto.createHmac('sha256', WEBHOOK_SECRET).update(rawBody).digest('hex');
+  return signature === expected;
+}
+
 export function createPaymentsRouter(appService, supabase) {
   const router = Router();
+
+  // ==================== WEBHOOKS DE PASARELA (Fase 6) ====================
+  // Sin auth de usuario: autenticado por firma HMAC (x-webhook-signature).
+  // Idempotencia: dedup por event_id en payment_webhook_events.
+  // Replay protection: eventos > 5 min se rechazan.
+  router.post('/webhooks/gateway',
+    asyncHandler(async (req, res) => {
+      if (!verifyWebhookSignature(req)) {
+        return res.status(401).json({
+          success: false,
+          error: { code: 'INVALID_WEBHOOK_SIGNATURE', message: 'Firma de webhook inválida' },
+        });
+      }
+
+      const event = req.body || {};
+      if (!event.id || !event.type) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_WEBHOOK_PAYLOAD', message: 'Faltan event.id o event.type' },
+        });
+      }
+
+      const result = await appService.handleGatewayWebhook({
+        eventId: event.id,
+        eventType: event.type,
+        createdAt: event.created_at,
+        transactionId: event.data?.transaction_id,
+        gatewayTransactionId: event.data?.gateway_transaction_id,
+        payload: event.data || {},
+      });
+
+      res.json({ success: true, data: result });
+    })
+  );
 
   router.use(authenticate, tenantContext);
 

@@ -24,7 +24,11 @@ const app = express();
 const PORT = process.env.PAYMENT_SERVICE_PORT || 3019;
 
 async function main() {
-  app.use(express.json({ limit: '10mb' }));
+  // verify: capturar rawBody para verificación de firma HMAC de webhooks (Fase 6)
+  app.use(express.json({
+    limit: '10mb',
+    verify: (req, res, buf) => { req.rawBody = buf; },
+  }));
 
   app.use(tenantContext);
 

@@ -224,9 +224,16 @@
     <transition name="fade">
       <div v-if="success" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
         <div class="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl text-center">
-          <span class="material-symbols-outlined text-6xl text-green-500 mb-4">check_circle</span>
-          <h3 class="text-2xl font-bold text-gray-900 mb-2">¡Pedido Exitoso!</h3>
-          <p class="text-gray-500 mb-6">Tu pedido ha sido registrado correctamente. Recibirás una confirmación por correo.</p>
+          <span v-if="!paymentPending" class="material-symbols-outlined text-6xl text-green-500 mb-4">check_circle</span>
+          <span v-else class="material-symbols-outlined text-6xl text-amber-500 mb-4">hourglass_top</span>
+          <h3 class="text-2xl font-bold text-gray-900 mb-2">
+            {{ paymentPending ? 'Pedido creado — Pago pendiente' : '¡Pedido Exitoso!' }}
+          </h3>
+          <p v-if="!paymentPending" class="text-gray-500 mb-6">Tu pedido ha sido registrado correctamente. Recibirás una confirmación por correo.</p>
+          <p v-else class="text-gray-500 mb-6">
+            Tu pedido fue registrado, pero el pago está <strong>pendiente de confirmación</strong>.
+            Te notificaremos en cuanto se confirme. No se te cobrará hasta entonces.
+          </p>
           <div class="flex flex-col gap-3">
             <router-link to="/account/purchases" class="w-full py-3 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors font-medium">
               Ver Mis Compras
@@ -258,6 +265,7 @@ const { taxRate, taxIncluded, loadConfig } = useEcommerceConfig();
 const loadingCart = ref(true);
 const processing = ref(false);
 const success = ref(false);
+const paymentPending = ref(false); // Fase 6: pedido creado con pago pendiente
 const errorMsg = ref('');
 const cartItems = ref([]);
 const savedCards = ref([]);
@@ -348,7 +356,10 @@ async function placeOrder() {
       source: 'ecommerce'
     };
 
-    await checkoutAPI.checkout(payload);
+    await checkoutAPI.checkout(payload).then(({ data }) => {
+      // Fase 6: distinguir "Compra confirmada" de "Pedido creado, pago pendiente"
+      paymentPending.value = data?.paymentStatus === 'pending' || data?.status === 'pending';
+    });
     success.value = true;
     cartItems.value = [];
   } catch (e) {
