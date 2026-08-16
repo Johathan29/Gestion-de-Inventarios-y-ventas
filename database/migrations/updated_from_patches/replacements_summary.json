@@ -1,0 +1,100 @@
+[
+  {
+    "file": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\030_triggers_and_functions.sql",
+    "out": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\updated_from_patches\\030_triggers_and_functions.sql",
+    "replacements": [
+      {
+        "fn": "auto_assign_company_id",
+        "backup": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\backups_from_automation\\030_triggers_and_functions.sql.__auto_assign_company_id.backup.sql"
+      }
+    ]
+  },
+  {
+    "file": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\031_multitenant_architecture.sql",
+    "out": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\updated_from_patches\\031_multitenant_architecture.sql",
+    "replacements": [
+      {
+        "fn": "auto_assign_company_id",
+        "backup": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\backups_from_automation\\031_multitenant_architecture.sql.__auto_assign_company_id.backup.sql"
+      }
+    ]
+  },
+  {
+    "file": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\032_standardized_schema.sql",
+    "out": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\updated_from_patches\\032_standardized_schema.sql",
+    "replacements": [
+      {
+        "fn": "auto_assign_company_id",
+        "backup": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\backups_from_automation\\032_standardized_schema.sql.__auto_assign_company_id.backup.sql"
+      },
+      {
+        "fn": "auto_assign_company_id",
+        "backup": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\backups_from_automation\\032_standardized_schema.sql.__auto_assign_company_id.backup.sql"
+      }
+    ]
+  },
+  {
+    "file": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\032_standardized_schema_fixed.sql",
+    "out": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\updated_from_patches\\032_standardized_schema_fixed.sql",
+    "replacements": [
+      {
+        "fn": "auto_assign_company_id",
+        "backup": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\backups_from_automation\\032_standardized_schema_fixed.sql.__auto_assign_company_id.backup.sql"
+      }
+    ]
+  },
+  {
+    "file": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\061_tenant_company_guarantee.sql",
+    "out": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\updated_from_patches\\061_tenant_company_guarantee.sql",
+    "replacements": [
+      {
+        "fn": "auto_assign_company_id",
+        "backup": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\backups_from_automation\\061_tenant_company_guarantee.sql.__auto_assign_company_id.backup.sql"
+      }
+    ]
+  },
+  {
+    "file": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\062_erp_core_company_id.sql",
+    "out": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\updated_from_patches\\062_erp_core_company_id.sql",
+    "replacements": [
+      {
+        "fn": "auto_assign_company_id",
+        "backup": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\backups_from_automation\\062_erp_core_company_id.sql.__auto_assign_company_id.backup.sql"
+      }
+    ]
+  },
+  {
+    "file": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\064_inventory_concurrency.sql",
+    "out": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\updated_from_patches\\064_inventory_concurrency.sql",
+    "replacements": [
+      {
+        "fn": "fn_stock_entry",
+        "backup": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\backups_from_automation\\064_inventory_concurrency.sql.__fn_stock_entry.backup.sql"
+      }
+    ]
+  },
+  {
+    "file": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\065_inventory_kardex_atomic.sql",
+    "out": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\updated_from_patches\\065_inventory_kardex_atomic.sql",
+    "replacements": [
+      {
+        "fn": "fn_stock_entry",
+        "backup": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\backups_from_automation\\065_inventory_kardex_atomic.sql.__fn_stock_entry.backup.sql"
+      }
+    ]
+  },
+  {
+    "file": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\hotfix_002_fix_company_id_columns.sql",
+    "out": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\updated_from_patches\\hotfix_002_fix_company_id_columns.sql",
+    "replacements": [
+      {
+        "fn": "fn_register_webhook_event",
+        "backup": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\backups_from_automation\\hotfix_002_fix_company_id_columns.sql.__fn_register_webhook_event.backup.sql"
+      },
+      {
+        "fn": "fn_fire_webhooks",
+        "backup": "C:\\Users\\rosar\\Documents\\Project\\Gestion de Inventarios y ventas\\database\\migrations\\backups_from_automation\\hotfix_002_fix_company_id_columns.sql.__fn_fire_webhooks.backup.sql"
+      }
+    ]
+  }
+]
