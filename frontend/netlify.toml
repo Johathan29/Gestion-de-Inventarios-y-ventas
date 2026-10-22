@@ -1,0 +1,11 @@
+# Configuración de Netlify para el frontend (Vue + Vite).
+# La carpeta base del sitio es "frontend", así que las rutas son relativas a ella.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Vue Router usa createWebHistory: todas las rutas deben servir index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
